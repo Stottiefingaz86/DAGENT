@@ -1,7 +1,7 @@
 /**
  * One SpecKit pipe: BRD → design mock/refine → sign-off → dev delivery → (dev agents).
  * `live` is post–dev-agent ship; Design Agent stops at `ready_for_dev` / delivery.
- * See `.cursor/knowledge/chris-taste/PIPELINE.md`.
+ * See `knowledge/chris-taste/PIPELINE.md`.
  */
 export type AgentJobStatus =
   | 'received'

@@ -10,7 +10,7 @@ export function Skeleton({ className, ...props }: ComponentProps<'div'>) {
     <div
       data-slot="skeleton"
       aria-hidden
-      className={cn('lm-shimmer rounded-[10px] bg-[var(--skeleton)]', className)}
+      className={cn('lm-shimmer rounded-lg bg-[var(--skeleton)]', className)}
       {...props}
     />
   )
@@ -260,7 +260,7 @@ export function CasinoWallpaperSkeleton({
           )}
         >
           {Array.from({ length: 24 }, (_, i) => (
-            <Skeleton key={i} className="aspect-[152/207] w-full min-w-0 rounded-[10px]" />
+            <Skeleton key={i} className="aspect-[152/207] w-full min-w-0 rounded-lg" />
           ))}
         </div>
       </section>
@@ -289,8 +289,8 @@ export function CasinoJackpotsSkeleton({ className }: { className?: string }) {
               <Skeleton className="ml-auto size-9 rounded-md" />
               <Skeleton className="size-9 rounded-md" />
             </div>
-            <Skeleton className="mb-3 hidden h-[50px] w-full rounded-[10px] md:block" />
-            <Skeleton className="mb-3 h-[50px] w-full rounded-[10px] md:hidden" />
+            <Skeleton className="mb-3 hidden h-[50px] w-full rounded-lg md:block" />
+            <Skeleton className="mb-3 h-[50px] w-full rounded-lg md:hidden" />
           </div>
           <div className="flex gap-3 overflow-hidden py-4 pl-6">
             {Array.from({ length: 8 }, (_, i) => (

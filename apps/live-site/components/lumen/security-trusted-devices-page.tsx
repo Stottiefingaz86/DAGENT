@@ -130,7 +130,7 @@ function HeaderCard() {
 
       <div
         data-name="section-header-navigation"
-        className="rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <div className="flex items-center gap-1 lg:gap-4">
           <Link
@@ -266,7 +266,7 @@ export function SecurityTrustedDevicesPage({ className }: { className?: string }
       {/* Mobile accordion — Device Name + Last Seen */}
       <div
         data-name="table-trusted-devices"
-        className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)] lg:hidden"
+        className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)] lg:hidden"
       >
         <div className="grid grid-cols-[1fr_auto_auto] gap-2 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
           <span>Device Name</span>
@@ -326,7 +326,7 @@ export function SecurityTrustedDevicesPage({ className }: { className?: string }
       {/* Desktop table */}
       <div
         data-name="table-trusted-devices"
-        className="hidden overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)] lg:block"
+        className="hidden overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)] lg:block"
       >
         <Table>
           <TableHeader>

@@ -129,7 +129,7 @@ export const FOUNDATION_STORIES: LumenStory[] = [
               className={`flex h-24 flex-col justify-between rounded-lg border border-border p-3 ${bg} ${fg}`}
             >
               <span className="text-xs font-medium">{name}</span>
-              <span className="text-[10px] opacity-70">{bg}</span>
+              <span className="text-size-xxs opacity-70">{bg}</span>
             </div>
           ))}
         </div>
@@ -252,10 +252,10 @@ export const FOUNDATION_STORIES: LumenStory[] = [
             {SHELL_ICONS.map((name) => (
               <div
                 key={name}
-                className="flex flex-col items-center gap-2 rounded-[10px] border border-border bg-card p-3"
+                className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3"
               >
                 <ShellIcon name={name} tone="token" className="size-6 text-foreground" />
-                <span className="truncate text-[10px] text-muted-foreground">{name}</span>
+                <span className="truncate text-size-xxs text-muted-foreground">{name}</span>
               </div>
             ))}
           </div>
@@ -300,7 +300,7 @@ export const FOUNDATION_STORIES: LumenStory[] = [
     group: 'Foundations',
     description: 'Elevation + default content card shadow.',
     importPath: 'tokens / card recipe',
-    code: `<div className="rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]" />`,
+    code: `<div className="rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]" />`,
     render: () => (
       <div className="space-y-8">
         <div className="flex flex-wrap gap-8 bg-background p-4">
@@ -314,10 +314,10 @@ export const FOUNDATION_STORIES: LumenStory[] = [
             </div>
           ))}
         </div>
-        <div className="rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+        <div className="rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
           <p className="text-sm font-semibold">Default content card</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            rounded-[10px] · border-border · bg-card · soft shadow
+            rounded-lg · border-border · bg-card · soft shadow
           </p>
         </div>
       </div>
@@ -328,7 +328,7 @@ export const FOUNDATION_STORIES: LumenStory[] = [
     title: 'Radius',
     group: 'Foundations',
     importPath: 'tokens',
-    code: `rounded-lg · rounded-[10px] (cards) · rounded-full (pills)`,
+    code: `rounded-lg · rounded-lg (cards) · rounded-full (pills)`,
     render: () => (
       <div className="flex flex-wrap items-end gap-4">
         {(
@@ -336,7 +336,7 @@ export const FOUNDATION_STORIES: LumenStory[] = [
             ['sm', 'rounded-sm'],
             ['md', 'rounded-md'],
             ['lg', 'rounded-lg'],
-            ['10px', 'rounded-[10px]'],
+            ['10px', 'rounded-lg'],
             ['full', 'rounded-full'],
           ] as const
         ).map(([label, cls]) => (

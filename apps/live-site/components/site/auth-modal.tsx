@@ -202,7 +202,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[12px] font-medium text-muted-foreground">
+      <label className="mb-1.5 block text-size-xs font-medium text-muted-foreground">
         {label}
         {required ? (
           <span className="text-primary" aria-hidden>
@@ -276,12 +276,12 @@ function PasswordCriteriaTip({
         zIndex: 500,
       }}
     >
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mb-1.5 text-size-xxs font-semibold uppercase tracking-wide text-muted-foreground">
         Still need
       </p>
       <ul className="flex flex-col gap-1">
         {missing.map((rule) => (
-          <li key={rule.id} className="flex items-center gap-1.5 text-[12px] leading-4 text-foreground">
+          <li key={rule.id} className="flex items-center gap-1.5 text-size-xs leading-4 text-foreground">
             <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
             {rule.label}
           </li>
@@ -527,7 +527,7 @@ function SocialSignUpOptions({
                         onPick(p.id)
                       }}
                       className={cn(
-                        'flex w-full items-center gap-3 px-4 py-3 text-left text-[14px] font-medium text-foreground',
+                        'flex w-full items-center gap-3 px-4 py-3 text-left text-size-sm font-medium text-foreground',
                         '[@media(hover:hover)_and_(pointer:fine)]:hover:bg-accent',
                         'disabled:opacity-60',
                       )}
@@ -816,7 +816,7 @@ function JoinVerifyPanel({
       : email.trim() || 'your email'
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <h2 className="shrink-0 text-[18px] font-bold tracking-tight text-foreground">
+      <h2 className="shrink-0 text-size-lg font-bold tracking-tight text-foreground">
         Verify your account
       </h2>
       <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">
@@ -840,7 +840,7 @@ function JoinVerifyPanel({
         </Field>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-[12px] font-medium text-muted-foreground">
+          <span className="text-size-xs font-medium text-muted-foreground">
             Verification code <span className="text-primary">*</span>
           </span>
           <AuthOtpInput value={otp} onChange={onOtpChange} disabled={verifying} />
@@ -882,13 +882,13 @@ function JoinVerifyPanel({
         <button
           type="button"
           onClick={onResend}
-          className="self-start text-[12px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          className="self-start text-size-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
           Resend code
         </button>
 
         {showDemoHint ? (
-          <p className="text-[12px] text-muted-foreground">Demo code: 12345</p>
+          <p className="text-size-xs text-muted-foreground">Demo code: 12345</p>
         ) : null}
 
         {error ? <p className="-mt-1 text-xs text-primary">{error}</p> : null}
@@ -957,7 +957,7 @@ function JoinWelcomePanel({
         <h3 className="mt-2 text-[26px] font-bold leading-tight tracking-tight text-foreground sm:text-[28px]">
           Welcome, {name}!
           <br />
-          <span className="text-[22px] font-semibold sm:text-[24px]">
+          <span className="text-[22px] font-semibold sm:text-size-2xl">
             Your account is ready.
           </span>
         </h3>
@@ -967,7 +967,7 @@ function JoinWelcomePanel({
         initial={{ y: 12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.45, duration: 0.35 }}
-        className="mt-7 w-full rounded-[10px] border border-border bg-card p-4 text-left shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="mt-7 w-full rounded-lg border border-border bg-card p-4 text-left shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
@@ -979,7 +979,7 @@ function JoinWelcomePanel({
               $250 in Free Sports Bets{' '}
               <span className="font-normal text-muted-foreground">+</span> 100 Free Spins
             </p>
-            <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+            <p className="mt-1 text-size-xs leading-snug text-muted-foreground">
               On your first deposit.
             </p>
           </div>
@@ -1566,7 +1566,7 @@ export function AuthModal() {
               />
             ) : authView === 'login' ? (
               <>
-                <h2 id="auth-modal-title" className="shrink-0 text-[18px] font-bold tracking-tight text-foreground">
+                <h2 id="auth-modal-title" className="shrink-0 text-size-lg font-bold tracking-tight text-foreground">
                   Welcome back
                 </h2>
                 <div className="mt-3 flex flex-col gap-3">
@@ -1657,7 +1657,7 @@ export function AuthModal() {
               </>
             ) : (
               <>
-                <h2 id="auth-modal-title" className="shrink-0 text-[18px] font-bold tracking-tight text-foreground">
+                <h2 id="auth-modal-title" className="shrink-0 text-size-lg font-bold tracking-tight text-foreground">
                   Create an account
                 </h2>
                 <div className="mt-3 flex flex-col gap-2.5">
@@ -1859,7 +1859,7 @@ export function AuthModal() {
                       onCheckedChange={(checked) =>
                         setJoin((prev) => ({ ...prev, terms: checked === true }))
                       }
-                      className="mt-0.5 size-[18px] shrink-0 rounded-[4px] border-input"
+                      className="mt-0.5 size-[18px] shrink-0 rounded-xs border-input"
                     />
                     <span className="text-[13px] leading-snug text-muted-foreground">
                       I acknowledge that I am over the age of 18 and agree to the{' '}

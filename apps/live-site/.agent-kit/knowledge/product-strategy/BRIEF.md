@@ -1,4 +1,4 @@
-# BetOnline Product Strategy 2026–2028 — agent brief
+# Product Strategy 2026–2028 — agent brief
 
 **Sources** (full decks — do not invent beyond these):
 - `Product_Strategy_2026-2028_Final.pdf`

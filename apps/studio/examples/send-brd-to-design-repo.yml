@@ -2,6 +2,7 @@
 # When a BRD is added or changed under brds/, it is copied into the design repo's inbox/.
 # The Design Studio picks it up and opens a job. Needs a secret DESIGN_REPO_TOKEN
 # (a fine-grained GitHub token with Contents: read & write on the design repo).
+# BRDs land on main under inbox/ only — the live site does not rebuild (apps/live-site/vercel.json ignoreCommand).
 name: Send BRD to design
 on:
   push:
@@ -14,7 +15,7 @@ jobs:
         with: { fetch-depth: 2 }
       - uses: actions/checkout@v4
         with:
-          repository: Stottiefingaz86/AI-Design-Stream
+          repository: Stottiefingaz86/DAGENT   # the design repo
           token: ${{ secrets.DESIGN_REPO_TOKEN }}
           path: design
       - name: Copy changed BRDs into inbox/

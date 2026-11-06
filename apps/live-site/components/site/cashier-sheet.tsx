@@ -220,7 +220,7 @@ function MobileCashier({
         data-state={open ? 'open' : 'closed'}
         data-dragging={dragging ? 'true' : undefined}
         {...bind}
-        className="absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-t-[14px] bg-background shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-t-xl bg-background shadow-[0_0_16px_rgba(0,0,0,0.06)]"
         style={offset > 0 ? { transform: `translateY(${offset}px)`, transition: 'none' } : undefined}
       >
         <div
@@ -360,7 +360,7 @@ export function CashierPanel({
 
         <div
           data-name="Drawer / Deposit"
-          className="mx-3 mb-3 flex min-h-[60%] flex-col gap-6 rounded-[10px] border border-border bg-card px-4 pb-4 pt-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+          className="mx-3 mb-3 flex min-h-[60%] flex-col gap-6 rounded-lg border border-border bg-card px-4 pb-4 pt-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
         >
           {showCardKyc ? (
             <CardBillingKycForm
@@ -406,7 +406,7 @@ export function CashierPanel({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 px-3 pb-3">
           <div
             data-wallet-welcome-offer=""
-            className="pointer-events-auto relative overflow-hidden rounded-[10px] border border-border bg-background p-3.5 pr-10 shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+            className="pointer-events-auto relative overflow-hidden rounded-lg border border-border bg-background p-3.5 pr-10 shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
           >
             <button
               type="button"
@@ -426,7 +426,7 @@ export function CashierPanel({
                   $250 in Free Sports Bets{' '}
                   <span className="font-normal text-muted-foreground">+</span> 100 Free Spins
                 </p>
-                <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
+                <p className="mt-1 text-size-xs leading-snug text-muted-foreground">
                   On your first deposit.
                 </p>
               </div>
@@ -660,7 +660,7 @@ function CryptoCoinView({ coin, onOpenPicker }: { coin: CashierCoin; onOpenPicke
           </div>
 
           <div className="flex w-full flex-col gap-1">
-            <p className="text-[10px] font-semibold leading-[14px] text-muted-foreground">
+            <p className="text-size-xxs font-semibold leading-[14px] text-muted-foreground">
               DEPOSIT ADDRESS
             </p>
             <div className="flex w-full items-center gap-5">
@@ -898,9 +898,9 @@ function CryptoDepositTracker({
         </p>
       </div>
 
-      <div className="rounded-[10px] border border-border bg-secondary p-3.5">
+      <div className="rounded-lg border border-border bg-secondary p-3.5">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-size-xxs font-semibold uppercase tracking-wide text-muted-foreground">
             Confirmations
           </span>
           <span className="text-xs font-semibold tabular-nums text-foreground">
@@ -926,7 +926,7 @@ function CryptoDepositTracker({
         </div>
       </div>
 
-      <div className="divide-y divide-border rounded-[10px] border border-border bg-secondary text-sm">
+      <div className="divide-y divide-border rounded-lg border border-border bg-secondary text-sm">
         <div className="flex items-center justify-between gap-3 px-3.5 py-3">
           <span className="text-muted-foreground">Amount</span>
           {stage === 'waiting' ? (
@@ -1082,7 +1082,7 @@ function KycField({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[12px] font-medium text-muted-foreground">
+      <span className="text-size-xs font-medium text-muted-foreground">
         {label}
         {required ? (
           <span className="text-primary" aria-hidden>
@@ -1137,7 +1137,7 @@ function CardBillingKycForm({ onBack }: { onBack: () => void }) {
           <h3 className="text-sm font-semibold leading-5 text-foreground">
             Billing information
           </h3>
-          <p className="text-[12px] leading-4 text-muted-foreground">
+          <p className="text-size-xs leading-4 text-muted-foreground">
             Required for credit card deposits.
           </p>
         </div>
@@ -1279,13 +1279,13 @@ function formatExpiry(raw: string) {
 function CardBrandMark({ brand }: { brand: CardBrand }) {
   if (brand === 'visa') {
     return (
-      <span className="flex h-[22px] w-[29px] items-center justify-center rounded-[4px] border border-border bg-[#1a1f71] text-[8px] font-bold tracking-wide text-white">
+      <span className="flex h-[22px] w-[29px] items-center justify-center rounded-xs border border-border bg-[#1a1f71] text-[8px] font-bold tracking-wide text-white">
         VISA
       </span>
     )
   }
   return (
-    <span className="flex h-[22px] w-[29px] items-center justify-center rounded-[4px] border border-border bg-white">
+    <span className="flex h-[22px] w-[29px] items-center justify-center rounded-xs border border-border bg-white">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`${ASSET}/mastercard.svg`} alt="" width={16} height={12} className="max-w-none" />
     </span>
@@ -1353,9 +1353,9 @@ function CardDepositTracker({
         </p>
       </div>
 
-      <div className="rounded-[10px] border border-border bg-secondary p-3.5">
+      <div className="rounded-lg border border-border bg-secondary p-3.5">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-size-xxs font-semibold uppercase tracking-wide text-muted-foreground">
             {done ? 'Complete' : 'Verifying'}
           </span>
           <span className="text-xs font-semibold tabular-nums text-foreground">
@@ -1374,7 +1374,7 @@ function CardDepositTracker({
         </div>
       </div>
 
-      <div className="divide-y divide-border rounded-[10px] border border-border bg-secondary text-sm">
+      <div className="divide-y divide-border rounded-lg border border-border bg-secondary text-sm">
         <div className="flex items-center justify-between gap-3 px-3.5 py-3">
           <span className="text-muted-foreground">Amount</span>
           {stage === 'waiting' ? (
@@ -1442,7 +1442,7 @@ function AddCardForm({
         </button>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold leading-5 text-foreground">Add card</h3>
-          <p className="text-[12px] leading-4 text-muted-foreground">Card details only — no extra steps.</p>
+          <p className="text-size-xs leading-4 text-muted-foreground">Card details only — no extra steps.</p>
         </div>
       </div>
 
@@ -1639,7 +1639,7 @@ function CreditCardHome() {
                     setAdding(true)
                   }}
                 >
-                  <span className="flex size-[22px] items-center justify-center rounded-[4px] border border-dashed border-border text-base leading-none text-muted-foreground">
+                  <span className="flex size-[22px] items-center justify-center rounded-xs border border-dashed border-border text-base leading-none text-muted-foreground">
                     +
                   </span>
                   Add new card
@@ -1670,7 +1670,7 @@ function CreditCardHome() {
           <div className="flex w-full flex-col items-center py-12">
             <label
               className={cn(
-                'flex items-center justify-center text-[36px] font-semibold leading-10',
+                'flex items-center justify-center text-size-4xl font-semibold leading-10',
                 amount || focused ? 'text-foreground' : 'text-muted-foreground',
               )}
             >
@@ -1717,12 +1717,12 @@ function CreditCardHome() {
           <div className="flex w-full items-center justify-center rounded-lg border border-border bg-secondary px-4 py-2">
             <div className="flex w-[286px] items-center justify-center gap-9">
               <div className="w-[100px] text-center">
-                <p className="text-[10px] font-semibold leading-[14px] text-muted-foreground">FEE</p>
+                <p className="text-size-xxs font-semibold leading-[14px] text-muted-foreground">FEE</p>
                 <p className="text-xs font-medium leading-4 text-secondary-foreground">9.75%</p>
               </div>
               <span className="h-8 w-px bg-border" />
               <div className="w-[100px] text-center">
-                <p className="text-[10px] font-semibold leading-[14px] text-muted-foreground">TOTAL AMOUNT</p>
+                <p className="text-size-xxs font-semibold leading-[14px] text-muted-foreground">TOTAL AMOUNT</p>
                 <p className="text-xs font-medium leading-4 text-secondary-foreground">
                   ${total.toFixed(2)} USD
                 </p>
@@ -1772,7 +1772,7 @@ function OthersHome() {
           >
             {'tile' in item && item.tile ? (
               <span
-                className="flex h-9 w-12 items-center justify-center overflow-hidden rounded-[4px] border border-border"
+                className="flex h-9 w-12 items-center justify-center overflow-hidden rounded-xs border border-border"
                 style={{ background: item.tile }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1806,7 +1806,7 @@ function WithdrawRedirectDialog({ onCancel }: { onCancel: () => void }) {
         role="alertdialog"
         aria-labelledby="cashier-redirect-title"
         aria-describedby="cashier-redirect-body"
-        className="flex w-full max-w-[500px] flex-col gap-4 rounded-[10px] border border-border bg-popover p-6 shadow-lg"
+        className="flex w-full max-w-[500px] flex-col gap-4 rounded-lg border border-border bg-popover p-6 shadow-lg"
       >
         <div className="flex flex-col items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}

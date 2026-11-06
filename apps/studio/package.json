@@ -1,8 +1,8 @@
 {
-  "name": "betonline-design-studio",
+  "name": "design-studio",
   "private": true,
   "version": "0.1.0",
-  "description": "Design Studio: dashboard + Claude design agent worker for the BetOnline design repo",
+  "description": "Design Studio: dashboard + Claude design agent worker for the design repo",
   "type": "module",
   "engines": {
     "node": ">=20"

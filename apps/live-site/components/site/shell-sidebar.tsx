@@ -162,7 +162,7 @@ function NavItem({
     <>
       <span
         className={cn(
-          'flex shrink-0 items-center justify-center rounded-[8px] transition-colors duration-200 ease-in-out',
+          'flex shrink-0 items-center justify-center rounded-md transition-colors duration-200 ease-in-out',
           expanded ? (item.emphasis || item.active ? 'size-8' : 'size-6') : 'size-10',
           item.active && 'bg-[var(--sidebar-primary)]',
           !item.active && item.emphasis && 'bg-[var(--surface-muted-1-inverted)]',
@@ -174,7 +174,7 @@ function NavItem({
           <img
             src={item.iconSrc}
             alt=""
-            className="size-full rounded-[6px] object-cover object-top"
+            className="size-full rounded-sm object-cover object-top"
           />
         ) : (
           <ShellIcon
@@ -192,7 +192,7 @@ function NavItem({
               {item.label}
             </span>
             {item.subtitle ? (
-              <span className="block truncate text-[10px] font-normal leading-[14px] opacity-80">
+              <span className="block truncate text-size-xxs font-normal leading-[14px] opacity-80">
                 {item.subtitle}
               </span>
             ) : null}

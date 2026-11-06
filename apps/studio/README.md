@@ -20,11 +20,11 @@ Everything is written into the design repo under `specs/<slug>/`, so it is versi
 | `events.jsonl` | the whole back-and-forth with the agent |
 | `brd.md` / `brd.pdf` | the BRD as it arrived |
 | `spec.md` | SpecKit spec with Strategy alignment |
-| `proposal.html` | the proposal board (Lumen tokens) shown in Preview |
+| `refs/*.png` | real screenshots of today's site and the prototype (questions, proposal, QA) |
 | `feedback.md` + `feedback/` | every feedback round verbatim + screenshots |
 | `dev-delivery.md` | the handoff for the dev repo |
 
-Durable feedback goes further: the agent writes it into `.cursor/knowledge/chris-taste/` or the skills, and the Feedback tab lists what it learned.
+Durable feedback goes further: the agent writes it into `knowledge/chris-taste/` or the skills, and the Feedback tab lists what it learned.
 
 ## What you need
 
@@ -34,7 +34,7 @@ Durable feedback goes further: the agent writes it into `.cursor/knowledge/chris
 
 ## Run it
 
-From the repo root (`BetOnline_Claude_Handoff`):
+From the repo root (`design-agent`):
 
 ```bash
 cd apps/studio
@@ -89,7 +89,7 @@ The worker uses the MCP servers in the repo's `.mcp.json` (copy `.mcp.json.examp
 |---|---|
 | Cursor agent chat | **Claude Code** in a terminal (`npm i -g @anthropic-ai/claude-code`, then `claude` in the repo) — or the Claude app |
 | `.cursor/rules/*.mdc` | `CLAUDE.md` at the repo root (it points at the same rules) |
-| `.cursor/skills/*` | `.claude/skills/<name>/SKILL.md` — Claude Code finds these automatically |
+| `.claude/skills/*` | `.claude/skills/<name>/SKILL.md` — Claude Code finds these automatically |
 | Cursor MCP settings | `.mcp.json` at the repo root |
 | Cursor cloud agent (`@cursor/sdk`) | **Claude Agent SDK** — this worker (`lib/claude-runner.mjs`) |
 | `CURSOR_API_KEY` | `ANTHROPIC_API_KEY` |

@@ -49,7 +49,7 @@ import { cn } from '@/lib/utils'
 
 const ROW_HOVER = 'hover:!bg-surface-muted-3'
 const CARD =
-  'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
+  'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
 /** Match cashier BTC converter fields — solid elevated fill, not bg-background/card wash. */
 const FIELD = 'rounded-lg border border-input bg-popover'
 const RAF_ICON = '/shell/figma/raf'

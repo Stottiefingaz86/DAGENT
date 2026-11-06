@@ -126,6 +126,21 @@ const config: Config = {
           'foreground-inverted': 'var(--sidebar-foreground-inverted)',
         },
       },
+      /* Lumen type scale as size-only utilities (text-size-xs …): sets font-size from the token, leaves line-height alone. */
+      fontSize: {
+        'size-xxs': 'var(--typography-font-size-xxs)',
+        'size-xs': 'var(--typography-font-size-xs)',
+        'size-sm': 'var(--typography-font-size-sm)',
+        'size-base': 'var(--typography-font-size-base)',
+        'size-lg': 'var(--typography-font-size-lg)',
+        'size-xl': 'var(--typography-font-size-xl)',
+        'size-2xl': 'var(--typography-font-size-2xl)',
+        'size-3xl': 'var(--typography-font-size-3xl)',
+        'size-4xl': 'var(--typography-font-size-4xl)',
+        'size-5xl': 'var(--typography-font-size-5xl)',
+        'size-6xl': 'var(--typography-font-size-6xl)',
+        'size-7xl': 'var(--typography-font-size-7xl)',
+      },
       fontFamily: {
         sans: ['var(--font-figtree)', 'var(--font-family-font-sans)', 'sans-serif'],
         figtree: ['var(--font-figtree)', 'var(--font-family-font-sans)', 'sans-serif'],

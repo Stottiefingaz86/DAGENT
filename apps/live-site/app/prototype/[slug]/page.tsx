@@ -1,9 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { DailyRacesPage } from '@/components/lumen/daily-races-page'
+import {
+  EXPANDING_BANNERS_SLUG,
+  ExpandingBannersPrototype,
+} from '@/components/lumen/expanding-banner-row-prototype'
 import { PrototypeInitiativeFallback } from '@/components/lumen/prototype-initiative-fallback'
 import { VipBenefitsPrototypePage } from '@/components/lumen/vip-benefits-prototype-page'
 import {
@@ -47,6 +51,13 @@ export default function PrototypePage() {
 
   const body = (() => {
     if (slug === '001-daily-races-page') return <DailyRacesPage />
+    if (slug === EXPANDING_BANNERS_SLUG) {
+      return (
+        <Suspense fallback={null}>
+          <ExpandingBannersPrototype />
+        </Suspense>
+      )
+    }
     if (looksLikeBenefitsInitiative(slug, job?.title, job?.brief)) {
       return <VipBenefitsPrototypePage />
     }

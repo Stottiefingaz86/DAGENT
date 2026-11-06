@@ -1,11 +1,5 @@
 # Agents
 
-Follow **`CLAUDE.md`** as the source of truth for this repo.
+Follow **`CLAUDE.md`**: it is the source of truth for every agent working in this repo (Claude Code, the Design Studio worker, Cursor).
 
-Design / live-site work always starts with:
-
-`.cursor/skills/lumen-build/SKILL.md`
-
-(+ `patterns.md`, chris-taste, Lumen constitution, product strategy).
-
-MCP setup: `docs/CLAUDE_MCP_SETUP.md`.
+Skills live in `.claude/skills/` (Cursor users: `npm run skills:sync` mirrors them to `.cursor/skills/`). Knowledge lives in `knowledge/`. The pipeline contract with other repos is `docs/PIPELINE.md`.

@@ -1091,7 +1091,7 @@ function lumenMapForJob(job: AgentJob): {
         '`bg-background`, `bg-card`, `bg-secondary`, `bg-popover`',
         '`border-border`, `border-input`',
         '`text-foreground`, `text-muted-foreground`',
-        '`rounded-[10px]` content cards + `hover:!bg-surface-muted-3` rows',
+        '`rounded-lg` content cards + `hover:!bg-surface-muted-3` rows',
         'VIP metal colors via `VIP_LEVEL_COLOR` (Gold / Silver / Bronze crests)',
       ],
       motion: [

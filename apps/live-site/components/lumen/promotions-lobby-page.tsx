@@ -135,7 +135,7 @@ export function PromoCard({
       whileTap={{ scale: 1.01, y: -1 }}
       transition={TILE_SPRING}
       className={cn(
-        'group relative z-0 flex cursor-pointer flex-col overflow-hidden rounded-[10px] border border-border bg-card',
+        'group relative z-0 flex cursor-pointer flex-col overflow-hidden rounded-lg border border-border bg-card',
         'shadow-[0_0_16px_0_rgba(0,0,0,0.06)]',
         'transition-[border-color,box-shadow] duration-150 hover:border-foreground/15 hover:shadow-[0_0_20px_rgba(0,0,0,0.1)]',
         'motion-reduce:!transform-none',

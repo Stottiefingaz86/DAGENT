@@ -193,7 +193,7 @@ function TransactionsTable({ filters }: { filters: TxFilters }) {
   return (
     <div
       data-name="table-transactions"
-      className="rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+      className="rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]"
     >
       <Table>
         <TableHeader>
@@ -348,7 +348,7 @@ export function TransactionsPage({ className }: { className?: string }) {
           <IconFilter className="size-3.5" stroke={2} aria-hidden />
           Filters
           {activeCount > 0 ? (
-            <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+            <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary text-size-xxs font-semibold text-primary-foreground">
               {activeCount}
             </span>
           ) : null}

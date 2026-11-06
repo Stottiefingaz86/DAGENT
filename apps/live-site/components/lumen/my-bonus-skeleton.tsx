@@ -36,7 +36,7 @@ export function MyBonusSkeleton({ className }: { className?: string }) {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="flex gap-4 border-b border-border px-4 py-3 text-xs font-medium text-muted-foreground">
           <span className="w-[14%]">Name</span>
           <span className="hidden w-[12%] sm:block">Code</span>

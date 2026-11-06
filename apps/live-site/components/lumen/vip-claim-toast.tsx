@@ -204,7 +204,7 @@ export function VipClaimToastHost() {
         data-vip-claim-toast=""
         role="status"
         aria-live="assertive"
-        className="w-[min(340px,calc(100%-32px))] overflow-hidden rounded-[12px] border border-white/10 bg-[#2c2c2c] text-white shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+        className="w-[min(340px,calc(100%-32px))] overflow-hidden rounded-[12px] border border-white/10 bg-[var(--brand-grey-800)] text-white shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
         style={{
           position: 'fixed',
           top: coords.top,
@@ -293,8 +293,8 @@ export function VipClaimToastHost() {
       role="status"
       aria-live="assertive"
       className={cn(
-        'w-[min(360px,calc(100%-32px))] overflow-hidden rounded-[10px]',
-        'border border-success/50 bg-[#2c2c2c] text-white shadow-[0_12px_40px_rgba(0,0,0,0.65)]',
+        'w-[min(360px,calc(100%-32px))] overflow-hidden rounded-lg',
+        'border border-success/50 bg-[var(--brand-grey-800)] text-white shadow-[0_12px_40px_rgba(0,0,0,0.65)]',
         !isPolling && 'cursor-pointer',
       )}
       style={{
@@ -315,7 +315,7 @@ export function VipClaimToastHost() {
         <span
           className={cn(
             'mt-0.5 grid size-6 shrink-0 place-items-center rounded-full',
-            isPolling ? 'bg-warning text-foreground' : 'bg-[#4ade80] text-black',
+            isPolling ? 'bg-warning text-foreground' : 'bg-[var(--colors-green-400)] text-black',
           )}
         >
           {isPolling ? (
@@ -364,9 +364,9 @@ export function VipClaimToastHost() {
         ) : null}
       </div>
       {!isPolling ? (
-        <div className="h-1 w-full bg-[#4ade80]/20">
+        <div className="h-1 w-full bg-[var(--colors-green-400)]/20">
           <div
-            className="h-full origin-left bg-[#4ade80]"
+            className="h-full origin-left bg-[var(--colors-green-400)]"
             style={{
               animation: `vip-claim-toast-timer ${toastMs}ms linear forwards`,
               animationPlayState: paused ? 'paused' : 'running',

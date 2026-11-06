@@ -30,3 +30,10 @@ apps/studio/.studio-sessions.json
 
 apps/live-site/.next-prototype
 .dagent-upload.tar.gz
+.studio-preview/
+
+# local only
+archive/
+.cursor/skills/
+*.tsbuildinfo
+apps/live-site/.env.local

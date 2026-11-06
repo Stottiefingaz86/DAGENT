@@ -84,7 +84,7 @@ async function main() {
         '  tokens/figma/tailwind.json        (💨 Tailwind primitives)',
         '  tokens/figma/responsive.json      (web/tablet/mobile)',
         '  tokens/figma/brand-palettes.json  (brand colour ramps)',
-        '  tokens/figma/brand-<name>.json    (🚀 Themes — one per brand, e.g. brand-betonline.json)',
+        '  tokens/figma/brand-<name>.json    (🚀 Themes — one per brand, one file per brand)',
         'Paste the JSON exactly as the plugin produced it. Do not rename tokens.',
       ].join('\n'),
     );

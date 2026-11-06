@@ -14,7 +14,7 @@ const CHIP_SPRING = { type: 'spring' as const, stiffness: 500, damping: 30, mass
 function rouletteTone(num: number) {
   if (num === 0) return 'bg-[#388e3c]'
   if (ROULETTE_REDS.has(num)) return 'bg-[#b71c1c]'
-  return 'bg-[#171717]'
+  return 'bg-[var(--colors-neutral-900)]'
 }
 
 /** Deterministic starter spin history so shelves don't all match. */
@@ -62,7 +62,7 @@ export function RouletteHistory({
             exit={{ scale: 0, opacity: 0, width: 0 }}
             transition={CHIP_SPRING}
             className={cn(
-              'inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-medium text-white',
+              'inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1 text-size-xxs font-medium text-white',
               rouletteTone(item.num),
             )}
           >
@@ -106,7 +106,7 @@ export function BaccaratHistory({
             exit={{ scale: 0, opacity: 0, width: 0 }}
             transition={CHIP_SPRING}
             className={cn(
-              'inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white',
+              'inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1 text-size-xxs font-semibold text-white',
               item.result === 'B' && 'bg-[#b71c1c]',
               item.result === 'P' && 'bg-[#1565c0]',
               item.result === 'T' && 'bg-[#388e3c]',
@@ -137,7 +137,7 @@ export function BlackjackSeats({
       )}
     >
       <IconUser className="size-3 text-white/70" strokeWidth={2} />
-      <span className="text-[10px] font-semibold text-white">
+      <span className="text-size-xxs font-semibold text-white">
         {occupied}/{total}
       </span>
     </div>

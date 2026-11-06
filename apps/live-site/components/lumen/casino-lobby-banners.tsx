@@ -105,7 +105,7 @@ export function VipProgressBanner({
         }
       }}
       className={cn(
-        'relative flex h-[164px] w-[288px] shrink-0 cursor-pointer flex-col justify-between rounded-[10px] border border-border bg-card p-4 shadow-none',
+        'relative flex h-[164px] w-[288px] shrink-0 cursor-pointer flex-col justify-between rounded-lg border border-border bg-card p-4 shadow-none',
         BANNER_HOVER,
         className,
       )}
@@ -192,13 +192,13 @@ export function DailyRacesBanner({
         }
       }}
       className={cn(
-        'relative flex h-[164px] w-[288px] shrink-0 cursor-pointer flex-col justify-between rounded-[10px] border border-border bg-card p-4 shadow-none',
+        'relative flex h-[164px] w-[288px] shrink-0 cursor-pointer flex-col justify-between rounded-lg border border-border bg-card p-4 shadow-none',
         BANNER_HOVER,
         className,
       )}
     >
       {loading ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[10px] bg-background/55 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-background/55 backdrop-blur-[1px]">
           <Loader2Icon className="size-8 animate-spin text-foreground" aria-hidden />
         </div>
       ) : null}
@@ -281,7 +281,7 @@ export function PromoLobbyBanner({
         }
       }}
       className={cn(
-        'group relative flex h-[164px] w-[340px] shrink-0 cursor-pointer overflow-hidden rounded-[10px] border border-border bg-card shadow-none',
+        'group relative flex h-[164px] w-[340px] shrink-0 cursor-pointer overflow-hidden rounded-lg border border-border bg-card shadow-none',
         BANNER_HOVER,
         className,
       )}
@@ -308,7 +308,7 @@ export function PromoLobbyBanner({
       ) : null}
 
       {loading ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-[10px] bg-background/55 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-background/55 backdrop-blur-[1px]">
           <Loader2Icon className="size-8 animate-spin text-foreground" aria-hidden />
         </div>
       ) : null}
@@ -322,7 +322,7 @@ export function PromoLobbyBanner({
         <div className="flex w-[164px] shrink-0 flex-col gap-1">
           <span
             className={cn(
-              'inline-flex w-fit rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-[14px]',
+              'inline-flex w-fit rounded-full px-1.5 py-0.5 text-size-xxs font-medium leading-[14px]',
               !bleed && 'bg-foreground text-background',
               bleed && !darkTag && 'bg-white text-black',
               darkTag && 'rounded-md bg-black text-white uppercase tracking-wide',
@@ -332,7 +332,7 @@ export function PromoLobbyBanner({
           </span>
           <h3
             className={cn(
-              'line-clamp-2 text-[20px] font-extrabold leading-5',
+              'line-clamp-2 text-size-xl font-extrabold leading-5',
               bleed ? 'text-white' : 'text-foreground',
             )}
           >
@@ -341,7 +341,7 @@ export function PromoLobbyBanner({
           <p
             className={cn(
               /* 3 lines so welcome free-spins copy can finish with “at BetOnline!” */
-              'line-clamp-3 text-[10px] font-normal leading-3',
+              'line-clamp-3 text-size-xxs font-normal leading-3',
               bleed ? 'text-white/75' : 'text-muted-foreground',
             )}
           >
@@ -367,13 +367,13 @@ export function PromoLobbyBanner({
       {!bleed ? (
         <div
           aria-hidden={!imageAlt}
-          className="pointer-events-none absolute inset-y-0 right-0 w-[160px] overflow-hidden rounded-br-[10px] rounded-tr-[10px] bg-surface-muted-2"
+          className="pointer-events-none absolute inset-y-0 right-0 w-[160px] overflow-hidden rounded-br-lg rounded-tr-lg bg-surface-muted-2"
         >
           {imageSrc ? (
             <img src={imageSrc} alt={imageAlt} className="size-full object-contain object-center p-2" />
           ) : (
             <div className="flex size-full flex-col items-center justify-center gap-1 px-2 text-center text-muted-foreground">
-              <span className="text-[10px] leading-tight">safe zone</span>
+              <span className="text-size-xxs leading-tight">safe zone</span>
             </div>
           )}
         </div>

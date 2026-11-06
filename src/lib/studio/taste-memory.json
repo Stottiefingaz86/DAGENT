@@ -4,7 +4,7 @@
     {
       "id": "seed-shell",
       "kind": "rule",
-      "text": "Always the shipped shell: live-site ShellHeader + collapsed ShellSidebar (96px). Never invent a BETONLINE wordmark header.",
+      "text": "Always the shipped shell: live-site ShellHeader + collapsed ShellSidebar (96px). Never invent a brand wordmark header.",
       "source": "seed",
       "createdAt": "2026-10-14T00:00:00.000Z"
     },

@@ -18,20 +18,20 @@ const GAME_POP = { type: 'spring' as const, stiffness: 320, damping: 28, mass: 0
 
 /** Ticker colors — Figma 130:436517. Mega is the gradient; Must Drop is vip-rewards. */
 const TICKER_TIER_CLASS: Record<(typeof JACKPOT_TIERS)[number]['tone'], string> = {
-  must: 'text-[#edc555]',
-  mini: 'text-[#22c55e]',
-  minor: 'text-[#06b6d4]',
-  major: 'text-[#ec4899]',
+  must: 'text-[var(--vip-rewards-gold-a500)]',
+  mini: 'text-[var(--colors-green-500)]',
+  minor: 'text-[var(--colors-cyan-500)]',
+  major: 'text-[var(--colors-pink-500)]',
   mega: 'bg-gradient-to-r from-[#ed9a63] via-[#eca545] to-[#d36913] bg-clip-text text-transparent',
 }
 
 /** Dropdown tier colors — Must Drop is the gradient; Mega is vip-level-1. */
 const DROPDOWN_TIER_CLASS: Record<(typeof JACKPOT_TIERS)[number]['tone'], string> = {
   must: 'bg-gradient-to-r from-[#ed9a63] via-[#eca545] to-[#d36913] bg-clip-text text-transparent',
-  mini: 'text-[#22c55e]',
-  minor: 'text-[#06b6d4]',
-  major: 'text-[#ec4899]',
-  mega: 'text-[#eaaf6d]',
+  mini: 'text-[var(--colors-green-500)]',
+  minor: 'text-[var(--colors-cyan-500)]',
+  major: 'text-[var(--colors-pink-500)]',
+  mega: 'text-[var(--vip-rewards-bronze-300)]',
 }
 
 const MUST_DROP_BG =
@@ -125,7 +125,7 @@ function SwitchControl({
         className={cn(
           'relative block rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-colors',
           track,
-          checked ? 'bg-[#ee3536]' : 'bg-[rgba(255,255,255,0.24)]',
+          checked ? 'bg-primary' : 'bg-[var(--opacity-white-500)]',
         )}
       >
         <span
@@ -177,7 +177,7 @@ function JackpotTierContent({
             {item.label.toUpperCase()}
           </span>
           <LauncherAmount value={amount} className="shrink-0 text-white" />
-          <span className="shrink-0 text-[10px] font-semibold leading-none text-[#edc555] tabular-nums">
+          <span className="shrink-0 text-size-xxs font-semibold leading-none text-[var(--vip-rewards-gold-a500)] tabular-nums">
             in {countdown}
           </span>
         </>
@@ -186,7 +186,7 @@ function JackpotTierContent({
           <span className={cn(TICKER_TIER_CLASS[item.tone], 'shrink-0 whitespace-nowrap')}>
             {item.label.toUpperCase()}
           </span>
-          <LauncherAmount value={amount} className="shrink-0 text-[rgba(255,255,255,0.87)]" />
+          <LauncherAmount value={amount} className="shrink-0 text-[var(--opacity-white-900)]" />
         </>
       )}
     </>
@@ -222,7 +222,7 @@ function JackpotRowMobile({
       onClick={advance}
       className={cn(
         'flex h-8 w-full shrink-0 items-center justify-center overflow-hidden',
-        isMust ? MUST_DROP_BG : 'bg-[#212121]',
+        isMust ? MUST_DROP_BG : 'bg-[var(--brand-grey-900)]',
       )}
     >
       <span className="relative flex h-full w-full items-center justify-center overflow-hidden">
@@ -322,7 +322,7 @@ function OtherTierMarquee({
   )
 
   return (
-    <div className="relative flex h-full min-w-0 flex-1 items-center overflow-hidden bg-[#212121]">
+    <div className="relative flex h-full min-w-0 flex-1 items-center overflow-hidden bg-[var(--brand-grey-900)]">
       <span className="w-px shrink-0 self-stretch bg-white/[0.08]" aria-hidden />
       <div className="min-w-0 flex-1 overflow-hidden">
         <div className="jackpot-tier-marquee">
@@ -468,12 +468,12 @@ function JackpotInfoPanel({
   return (
     <div
       data-name="Jackpot Info"
-      className="shell-scroll flex max-h-[min(460px,70vh)] w-full flex-col overflow-y-auto overscroll-contain rounded-lg border border-white/[0.08] bg-[#2c2c2c] px-1 py-2 text-[rgba(255,255,255,0.87)] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]"
+      className="shell-scroll flex max-h-[min(460px,70vh)] w-full flex-col overflow-y-auto overscroll-contain rounded-lg border border-white/[0.08] bg-[var(--brand-grey-800)] px-1 py-2 text-[var(--opacity-white-900)] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]"
     >
       <div className="flex items-center gap-2 px-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-normal leading-5">Jackpot opt-in</p>
-          <p className="text-xs leading-4 text-[rgba(255,255,255,0.6)]">
+          <p className="text-xs leading-4 text-[var(--opacity-white-800)]">
             Opt in to all tiers at once. Each adds <span className="font-bold">{spinCost}</span> to your stake per spin
           </p>
         </div>
@@ -484,7 +484,7 @@ function JackpotInfoPanel({
       <div className="flex items-center gap-2 px-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-normal leading-5">Jackpot Ticker</p>
-          <p className="text-xs leading-4 text-[rgba(255,255,255,0.6)]">Hide the live amounts below the header</p>
+          <p className="text-xs leading-4 text-[var(--opacity-white-800)]">Hide the live amounts below the header</p>
         </div>
         <SwitchControl checked={ticker} onCheckedChange={onTickerChange} ariaLabel="Jackpot ticker" />
       </div>
@@ -496,17 +496,17 @@ function JackpotInfoPanel({
           {INFO_TIERS.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-4 rounded-[10px] border border-white/[0.08] bg-[rgba(250,250,250,0.05)] px-4 py-3"
+              className="flex items-center justify-between gap-4 rounded-lg border border-white/[0.08] bg-[var(--opacity-white-50)] px-4 py-3"
             >
               <div className="min-w-0">
                 <p className={cn('text-xs font-medium leading-4', DROPDOWN_TIER_CLASS[item.tone])}>{item.label}</p>
                 {item.tone === 'must' ? (
-                  <p className="text-xs font-normal leading-4 text-[rgba(255,255,255,0.6)] tabular-nums">in {countdown}</p>
+                  <p className="text-xs font-normal leading-4 text-[var(--opacity-white-800)] tabular-nums">in {countdown}</p>
                 ) : null}
               </div>
               <LauncherAmount
                 value={amounts[item.id]}
-                className="shrink-0 text-xs font-medium leading-4 text-[rgba(255,255,255,0.87)]"
+                className="shrink-0 text-xs font-medium leading-4 text-[var(--opacity-white-900)]"
               />
             </li>
           ))}
@@ -520,7 +520,7 @@ function JackpotInfoPanel({
           {INFO_TIERS.map((item) => (
             <li key={`${item.id}-note`} className="flex flex-col gap-1">
               <p className={cn('text-xs font-medium leading-4', DROPDOWN_TIER_CLASS[item.tone])}>{item.noteName}</p>
-              <p className="text-xs font-normal leading-4 text-[rgba(255,255,255,0.6)]">{item.description}</p>
+              <p className="text-xs font-normal leading-4 text-[var(--opacity-white-800)]">{item.description}</p>
             </li>
           ))}
         </ul>
@@ -592,13 +592,13 @@ function OptInPill({
       ref={rootRef}
       data-name="button-optin"
       className={cn(
-        'relative z-20 flex items-center overflow-visible rounded-full border border-white/[0.08] bg-[rgba(250,250,250,0.05)] py-px',
+        'relative z-20 flex items-center overflow-visible rounded-full border border-white/[0.08] bg-[var(--opacity-white-50)] py-px',
         infoOpen && 'shadow-[0_0_0_3px_rgba(163,163,163,0.3)]',
       )}
     >
       <button
         type="button"
-        className="inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-[rgba(255,255,255,0.87)] transition-colors hover:bg-white/5"
+        className="inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-[var(--opacity-white-900)] transition-colors hover:bg-white/5"
         aria-label="Jackpot Info"
         aria-expanded={infoOpen}
         aria-haspopup="dialog"
@@ -725,14 +725,14 @@ export function GameLauncher({
       role="dialog"
       aria-modal="true"
       aria-label={game.title}
-      className="dark fixed inset-0 z-[320] flex flex-col bg-[#0a0a0a] p-3 text-[rgba(255,255,255,0.87)] sm:p-4"
+      className="dark fixed inset-0 z-[320] flex flex-col bg-[var(--colors-neutral-950)] p-3 text-[var(--opacity-white-900)] sm:p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.22, ease: LAUNCHER_EASE }}
     >
       <motion.div
         data-name="jackpot-header"
-        className="relative z-10 flex w-full shrink-0 flex-col overflow-hidden rounded-[14px] border border-white/[0.08] bg-[#212121]"
+        className="relative z-10 flex w-full shrink-0 flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-[var(--brand-grey-900)]"
         initial={{ opacity: 0, y: '-120%' }}
         animate={{ opacity: 1, y: 0 }}
         transition={HEADER_DROP}
@@ -749,13 +749,13 @@ export function GameLauncher({
                   onFavoriteChange={onFavoriteChange}
                   className="md:hidden"
                 />
-                <p className="min-w-0 truncate text-xs font-medium leading-4 text-[rgba(255,255,255,0.87)] md:hidden">
+                <p className="min-w-0 truncate text-xs font-medium leading-4 text-[var(--opacity-white-900)] md:hidden">
                   {game.title}
                 </p>
                 <span className="hidden md:block" aria-hidden />
               </div>
 
-              <p className="hidden text-center text-sm font-medium leading-5 text-[rgba(255,255,255,0.87)] md:block">
+              <p className="hidden text-center text-sm font-medium leading-5 text-[var(--opacity-white-900)] md:block">
                 {game.title}
               </p>
 
@@ -777,7 +777,7 @@ export function GameLauncher({
                     aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                     aria-pressed={fullscreen}
                     onClick={toggleFullscreen}
-                    className="inline-flex size-7 items-center justify-center rounded-lg p-1.5 text-[rgba(255,255,255,0.87)] transition-colors hover:bg-white/10"
+                    className="inline-flex size-7 items-center justify-center rounded-lg p-1.5 text-[var(--opacity-white-900)] transition-colors hover:bg-white/10"
                   >
                     {fullscreen ? <IconMinimize className="size-4" /> : <IconMaximize className="size-4" />}
                   </button>
@@ -791,7 +791,7 @@ export function GameLauncher({
                     type="button"
                     aria-label="Close game"
                     onClick={onClose}
-                    className="inline-flex size-7 items-center justify-center rounded-lg p-1.5 text-[rgba(255,255,255,0.87)] transition-colors hover:bg-white/10"
+                    className="inline-flex size-7 items-center justify-center rounded-lg p-1.5 text-[var(--opacity-white-900)] transition-colors hover:bg-white/10"
                   >
                     <IconX className="size-4" />
                   </button>
@@ -810,7 +810,7 @@ export function GameLauncher({
       {/* Game stage — single pop; no layered overlay fade (that read as a wipe). */}
       <motion.div
         data-name="game-viewport"
-        className="relative mt-3 min-h-0 flex-1 origin-center overflow-hidden rounded-[14px] bg-black sm:mt-4"
+        className="relative mt-3 min-h-0 flex-1 origin-center overflow-hidden rounded-xl bg-black sm:mt-4"
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ ...GAME_POP, delay: 0.1 }}

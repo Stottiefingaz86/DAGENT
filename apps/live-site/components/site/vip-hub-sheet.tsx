@@ -169,7 +169,7 @@ function MobileVipHub({ open, onClose }: { open: boolean; onClose: () => void })
         data-state={open ? 'open' : 'closed'}
         data-dragging={dragging ? 'true' : undefined}
         {...bind}
-        className="dark absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-t-[10px] bg-background text-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="dark absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-t-lg bg-background text-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]"
         style={offset > 0 ? { transform: `translateY(${offset}px)`, transition: 'none' } : undefined}
       >
         <div
@@ -432,7 +432,7 @@ function VipProgressCard() {
   return (
     <section
       data-name="Progress Bar"
-      className="cursor-default select-none rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+      className="cursor-default select-none rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
     >
       <div className="flex items-start gap-3">
         <VipProgressCrown tone={crownTone} size={52} className="size-[52px]" />
@@ -455,7 +455,7 @@ function VipProgressCard() {
           >
             <VipProgressBarFill percent={grown} tone={barTone} />
           </div>
-          <p className="text-[10px] leading-[14px] text-muted-foreground">
+          <p className="text-size-xxs leading-[14px] text-muted-foreground">
             {updatedLabel}
           </p>
         </div>
@@ -466,7 +466,7 @@ function VipProgressCard() {
 
 function EmptyVipTab({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-[10px] border border-border bg-card px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border bg-card px-6 py-12 text-center">
       <Image src="/shell/figma/vip/crown.svg" alt="" width={40} height={40} className="opacity-40" unoptimized />
       <p className="text-sm text-muted-foreground">{label} will appear here</p>
     </div>
@@ -773,7 +773,7 @@ function BirthdayRewardRow({ loggedOut = false }: { loggedOut?: boolean }) {
     return (
       <article
         data-name="Card_BirthdayDob"
-        className="flex w-full flex-col gap-3 rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="flex w-full flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <div className="flex items-center gap-2">
           <IconCake className="size-6 shrink-0 text-foreground" stroke={1.75} aria-hidden />

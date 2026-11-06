@@ -1,5 +1,5 @@
 ---
-description: Always keep BetOnline 2026–2028 product strategy in mind
+description: Always keep 2026–2028 product strategy in mind
 alwaysApply: true
 ---
 
@@ -7,8 +7,8 @@ alwaysApply: true
 
 Before advising on features, prioritisation, BRDs, or live-site UX direction, read:
 
-1. `.cursor/knowledge/product-strategy/BRIEF.md` — strategy north star
-2. `.cursor/knowledge/product-strategy/COMPETITOR_RESEARCH.md` — Chris-liked competitor patterns (Rainbet, Winna, …)
+1. `knowledge/product-strategy/BRIEF.md` — strategy north star
+2. `knowledge/product-strategy/COMPETITOR_RESEARCH.md` — Chris-liked competitor patterns (Rainbet, Winna, …)
 3. When arguing friction / activation: `research/Journey_Audits_2026.pdf`
 
 Full decks: `Product_Strategy_2026-2028_Final.pdf`, `Product_Strategy_50_Features_and_Initiatives.pdf`.

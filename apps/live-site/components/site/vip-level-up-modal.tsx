@@ -37,7 +37,7 @@ export function VipLevelUpModal() {
         aria-modal="true"
         aria-labelledby="vip-level-up-title"
         className={cn(
-          'relative z-10 flex w-full max-w-[400px] flex-col overflow-hidden rounded-[14px]',
+          'relative z-10 flex w-full max-w-[400px] flex-col overflow-hidden rounded-xl',
           'border border-border bg-background text-foreground shadow-[0_24px_80px_rgba(0,0,0,0.55)]',
           'animate-in fade-in-0 zoom-in-95 duration-300',
         )}
@@ -82,7 +82,7 @@ export function VipLevelUpModal() {
             {VIP_SILVER_UNLOCKED_LABELS.map((label) => (
               <li
                 key={label}
-                className="flex items-center gap-2.5 rounded-[10px] border border-border bg-card px-3 py-2.5"
+                className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5"
               >
                 <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--vip-rewards-silver-400,#b4b2b2)]/15 text-[var(--vip-rewards-silver-300,#d8d6d6)]">
                   <IconCheck className="size-3.5" strokeWidth={2.5} />

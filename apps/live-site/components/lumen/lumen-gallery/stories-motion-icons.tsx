@@ -65,10 +65,10 @@ export const MOTION_ICON_STORIES: LumenStory[] = [
         {ICON_SAMPLE.map((name) => (
           <div
             key={name}
-            className="flex flex-col items-center gap-2 rounded-[10px] border border-border bg-card p-3"
+            className="flex flex-col items-center gap-2 rounded-lg border border-border bg-card p-3"
           >
             <ShellIcon name={name} tone="token" className="size-6 text-foreground" />
-            <span className="truncate text-center text-[10px] text-muted-foreground">
+            <span className="truncate text-center text-size-xxs text-muted-foreground">
               {ICON_LABEL[name] ?? name}
             </span>
             {ICON_LABEL[name] ? (
@@ -160,7 +160,7 @@ fireJoinWelcomeConfetti()`,
 
 /* Mounted in ShellFrame — path picks HOME / CASINO / SPORTS / PROMOS dock */`,
     render: () => (
-      <div className="relative mx-auto h-[220px] w-full max-w-[390px] overflow-hidden rounded-[14px] border border-border bg-[#121212]">
+      <div className="relative mx-auto h-[220px] w-full max-w-[390px] overflow-hidden rounded-xl border border-border bg-[#121212]">
         <p className="px-4 pt-4 text-xs text-muted-foreground">
           Preview host — dock pins to bottom (live ShellMobileNav).
         </p>

@@ -158,7 +158,7 @@ export function CasinoSearchOverlay({
               </Typography>
 
               {showingResults && games.length === 0 ? (
-                <div className="rounded-[10px] border border-border bg-card px-4 py-12 text-center text-sm text-muted-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+                <div className="rounded-lg border border-border bg-card px-4 py-12 text-center text-sm text-muted-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]">
                   No games match “{trimmed}”.
                 </div>
               ) : (

@@ -50,7 +50,7 @@ export default async function RootLayout({
         className={figtree.variable}
         suppressHydrationWarning
       >
-        <body className={figtree.className} style={{ background: '#0a0a0a', margin: 0 }}>
+        <body className={figtree.className} style={{ background: 'var(--colors-neutral-950)', margin: 0 }}>
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
@@ -115,14 +115,14 @@ export default async function RootLayout({
             alignItems: 'center',
             justifyContent: 'center',
             /* Dark-mode page bg — don’t wait for ThemeProvider / .dark class. */
-            background: '#1a1a1a',
+            background: 'var(--brand-grey-950)',
           }}
           dangerouslySetInnerHTML={{
-            __html: '<betonline-loader duration="2400" style="--loader-width:min(320px,72vw)"></betonline-loader>',
+            __html: '<site-loader duration="2400" style="--loader-width:min(320px,72vw)"></site-loader>',
           }}
         />
         <Script src="/lumen-tip.js" strategy="beforeInteractive" />
-        <Script src="/betonline-loader.js" strategy="beforeInteractive" />
+        <Script src="/site-loader.js" strategy="beforeInteractive" />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="lumen-shell-theme-v2">
           <SiteArrivalLoader />
           <PassGate>

@@ -13,7 +13,7 @@ const ASSET = '/shell/figma/account'
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex w-full flex-col gap-0.5 lg:w-[200px]">
-      <p className="text-[10px] font-semibold uppercase leading-[14px] text-muted-foreground">
+      <p className="text-size-xxs font-semibold uppercase leading-[14px] text-muted-foreground">
         {label}
       </p>
       <p className="text-sm leading-5 text-secondary-foreground">{value}</p>
@@ -53,7 +53,7 @@ export function ProfileSettingsPage({ className }: { className?: string }) {
 
       <div
         data-name="module-personal-details"
-        className="rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">

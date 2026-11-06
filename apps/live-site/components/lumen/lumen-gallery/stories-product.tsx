@@ -67,7 +67,7 @@ function PageTabs<T extends string>({
       <p className="font-mono text-[11px] text-muted-foreground">{file}</p>
       <div
         data-lumen-allow=""
-        className="overflow-hidden rounded-[10px] border border-border bg-background"
+        className="overflow-hidden rounded-lg border border-border bg-background"
       >
         {children}
       </div>
@@ -205,7 +205,7 @@ import { ORIGINALS_GAMES } from '@/lib/lumen/casino-lobby-catalog'
 
 <Favorite inline isFavorited={false} title="Plinko" />`,
     render: () => (
-      <div className="flex items-center gap-4 rounded-[10px] border border-border bg-card p-4">
+      <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
         <Favorite inline title="Plinko" />
         <Favorite inline isFavorited title="Dice" />
       </div>

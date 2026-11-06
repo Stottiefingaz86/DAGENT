@@ -1,90 +1,50 @@
-# BetOnline Design Build — Claude Code / Claude Design
+# Design Agent Repo: agent instructions
 
-You are working in the **BetOnline agentic design** monorepo. Ship live-site UI to Lumen + Chris taste — not generic AI layouts.
+You are working in the **design stage** of an agentic product pipeline (see `docs/PIPELINE.md`). You design and prototype product UI with the **Lumen** design system and the Head of Design's taste. You do not write production code for other repos.
 
-## Read first (every feature / flow / BRD)
+## Read first (every feature, flow or BRD)
 
-0. `.cursor/knowledge/chris-taste/SURFACES.md` — **which part of the site a BRD touches** (any iGaming feature: rewards, account, cashier, casino, sportsbook, poker…) → routes, components, taste notes, strategy initiative, Mobbin queries
-1. `.cursor/skills/lumen-build/SKILL.md` — **required** for any live-site work  
-2. `.cursor/skills/lumen-build/patterns.md` — nav, cards, inputs, tables, claims, sticky, Figma→code  
-3. `.specify/memory/constitution.md` — **Principle I: Lumen Only**  
-4. Relevant `.cursor/knowledge/chris-taste/*.md` (AUTH_JOIN, COPY, DAILY_SPIN, LIVE_WINS, PIPELINE, DESIGN_AGENT_APP, …)  
-5. `.cursor/knowledge/product-strategy/BRIEF.md` + `COMPETITOR_RESEARCH.md` when advising or inventing UX  
+0. `knowledge/chris-taste/SURFACES.md`: which part of the site the work touches → routes, components, taste notes, strategy initiative, Mobbin queries
+1. `.claude/skills/design-agent/SKILL.md`: **the playbook** (flow, gates, learning loop, dev-delivery template)
+2. `.claude/skills/lumen-build/SKILL.md` + `patterns.md`: **required** for any UI work
+3. `.specify/memory/constitution.md`: Principle I, **Lumen only**; Principle VI, strategy first
+4. The `knowledge/chris-taste/*.md` notes SURFACES.md lists. Always `PIPELINE.md`, `COPY.md`, `CONFIRMATION_STATES.md`, `POLISH.md`
+5. `knowledge/product-strategy/BRIEF.md` + `COMPETITOR_RESEARCH.md` when advising or inventing UX
 
-Also mirrored under `.claude/skills/project/` for Claude discovery.
-
-## What this repo is
+## Repo map
 
 | Path | Role |
-|------|------|
-| `apps/live-site/` | Next.js BetOnline **live-site shell** (product UI to extend) |
-| `src/components/lumen/` + `tokens/` + `.storybook/` | **Lumen design system** + Storybook |
-| `.cursor/skills/` | SpecKit + lumen-build |
-| `.cursor/knowledge/` | Chris taste + product strategy + competitor research |
-| `.cursor/rules/` | Always-on rules (Lumen, build stack, strategy) |
-| `.specify/` | SpecKit constitution / templates |
-| `docs/Design_Agent_North_Star_Process.pdf` | Design Agent north-star process |
-| `.claude/skills/figma-plugin/` | Figma MCP skills (design↔code, generate, library) |
-| `.claude/skills/mobbin/` | **Mobbin** competitor-screen skill |
-| `.claude/mcp/mobbin/` | Official Mobbin MCP config (`api.mobbin.com/mcp`) |
+|---|---|
+| `apps/studio/` | Design Studio: the team dashboard and the agent worker |
+| `apps/live-site/` | Product shell (Next.js). Prototypes at `app/prototype/[slug]`, run on **:3001** |
+| `tokens/`, `src/components/lumen/`, `.storybook/` | Lumen design system |
+| `.claude/skills/` | All skills, one folder each (design-agent, lumen-build, speckit-*, figma-*, mobbin) |
+| `knowledge/` | `chris-taste/` (learned taste rules) + `product-strategy/` |
+| `.specify/` | SpecKit constitution + templates |
+| `specs/<slug>/` | Per-project outputs: brd, spec, feedback, refs, dev-delivery |
+| `inbox/` | BRDs from other repos |
 
-## North-star Design Agent flow
+## Hard rules
 
-```
-Product BRD → load skills + Mobbin + strategy
-  → agent builds journey + prototype (:3001)
-  → HUMAN #1 direction feedback
-  → agent revises
-  → HUMAN #2 refine (motion / sound / tokens)
-  → learn into chris-taste
-  → HUMAN #3 Final sign-off (Chris)
-  → package for Dev (+ optional Figma)
-```
-
-Desk UI (when running live-site): `/designagent`.
-
-## Hard product rules (summary)
-
-- **Lumen only** — tokens/components; no raw hex / parallel primitives  
-- **ShellFrame** + `#shell-scroll`; soft-nav + skeletons  
-- Dark inputs on cards: `border-input bg-popover`  
-- Mobile carousels: **swipe only** — never edge chevrons on touch  
-- Auth: see `AUTH_JOIN.md` — Email → Password → Verify → welcome  
-- Competitor patterns: **Mobbin + research** → translate to Lumen, **never clone**  
-- Do **not** commit unless asked; deploy live-site with Vercel when asked  
+- **Lumen only.** Tokens and existing components only: no raw hex, off-scale sizes or new primitives. If Lumen lacks something, write a component brief and ask.
+- **Real shell, real screenshots.** Prototypes and proposal drafts sit in `ShellFrame` on the real site. Never redraw the site, logo or components in HTML/SVG. Brand marks come only through `ShellLogo` / `ShellLettermark`.
+- **Rewards celebrate; chrome stays quiet.** Use the shell's claim sequence (confetti + sound + toast + count-up), slight glass on chrome only, and one motion family (`POLISH.md`).
+- Mobile carousels: swipe only, never edge chevrons on touch. Dark inputs on cards: `border-input bg-popover`.
+- **Peers inspire, never clone** (Mobbin + `COMPETITOR_RESEARCH.md`).
+- **Every piece of feedback is recorded** (`specs/<slug>/feedback.md`); durable rules go into `knowledge/chris-taste/` or the skills.
+- **Never commit, push or deploy** unless the Head of Design asks. `main` is production on Vercel.
+- **Figma:** Lumen library only. Write only to the "Design Agent" file, one page per project. Never edit existing files (`knowledge/chris-taste/FIGMA.md`).
 
 ## Commands
 
 ```bash
-# Design system / Storybook (repo root)
-npm install
-npm run storybook
-
-# Live site
-cd apps/live-site && npm install
-npm run dev          # demo :3000
-npm run dev:3001     # prototype lane
+npm run studio                                  # Design Studio :4100 (starts the prototype lane :3001)
+npm --prefix apps/live-site run dev:3001        # prototype lane by hand
+npm run tokens:lint apps/live-site/app/prototype
+cd apps/live-site && npx tsc --noEmit
+npm run skills:check
 ```
 
-## MCP (required for full power)
+## Connectors
 
-See `docs/CLAUDE_MCP_SETUP.md` and `.mcp.json.example`.
-
-| MCP | Endpoint | Skills / config in this pack |
-|-----|----------|------------------------------|
-| **Mobbin** | `https://api.mobbin.com/mcp` | `.claude/skills/mobbin/` + `.claude/mcp/mobbin/` + rule `mobbin-usage.mdc` |
-| **Figma** | Figma official MCP | `.claude/skills/figma-plugin/` |
-
-**Mobbin first** for peer flows (Rainbet join, Winna rewards, live wins). Load `.claude/skills/mobbin/SKILL.md` before searching. Paid Mobbin plan required; else use `COMPETITOR_RESEARCH.md` + `competitors/`.
-
-Load Figma skills from `.claude/skills/figma-plugin/` before Figma tool calls (especially `figma-design-to-code`, `figma-use`, `figma-generate-design`).
-
-## SpecKit
-
-Use `.cursor/skills/speckit-*` for BRD → plan → tasks. Specs live under `specs/`.
-
-## Do not ship
-
-- Secrets (`.env` is excluded from this handoff — copy from `.env.example`)  
-- Unmerged prototypes onto demo `:3000` until Chris says **Merge**  
-- Peer brand clones (Rainbet/Winna art, gems, purple chrome)  
+`.mcp.json` declares **Figma** and **Mobbin**. Load the matching skill before calling them (`figma-use` before any Figma write; `mobbin` before searching). See `docs/CONNECTORS.md`.

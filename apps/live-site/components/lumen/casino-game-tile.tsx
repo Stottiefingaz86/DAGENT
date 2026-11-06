@@ -22,8 +22,8 @@ import {
 
 const TAG_CLASS: Record<CasinoTileTag, string> = {
   Original: 'border-white/25 bg-white/10 text-white',
-  Live: 'border-transparent bg-[#dc2626] text-white',
-  Tournament: 'border-[#edc555] bg-[#6d4e03] text-white',
+  Live: 'border-transparent bg-[var(--colors-red-600)] text-white',
+  Tournament: 'border-[var(--vip-rewards-gold-a500)] bg-[#6d4e03] text-white',
 }
 
 /** Soft spring — long settle, no snappy overshoot (desktop hover lift). */
@@ -177,7 +177,7 @@ export function CasinoGameTile({
       }}
       className={cn(
         /* overflow-visible so favorite glass / hover chrome isn’t clipped at the edge */
-        'group relative z-0 h-[207px] w-[152px] shrink-0 cursor-pointer overflow-visible rounded-[10px] bg-card',
+        'group relative z-0 h-[207px] w-[152px] shrink-0 cursor-pointer overflow-visible rounded-lg bg-card',
         'shadow-[0_0_16px_rgba(0,0,0,0.06)] touch-manipulation',
         'motion-reduce:!transform-none',
         className,
@@ -186,17 +186,17 @@ export function CasinoGameTile({
       <img
         src={game.imageSrc}
         alt=""
-        className="absolute inset-0 size-full rounded-[10px] object-cover"
+        className="absolute inset-0 size-full rounded-lg object-cover"
       />
       {/* Originals / hideTitle art already includes title + brand — no bottom fade. */}
       {game.tag !== 'Original' && !hideTitle ? (
-        <div className="pointer-events-none absolute inset-0 rounded-[10px] bg-gradient-to-t from-black/90 from-0% to-transparent to-[46%]" />
+        <div className="pointer-events-none absolute inset-0 rounded-lg bg-gradient-to-t from-black/90 from-0% to-transparent to-[46%]" />
       ) : null}
 
       {/* Dim — desktop hover / focus only; always on while loading. */}
       <div
         className={cn(
-          'absolute inset-0 z-20 rounded-[10px] bg-black/55 transition-opacity duration-200 ease-out',
+          'absolute inset-0 z-20 rounded-lg bg-black/55 transition-opacity duration-200 ease-out',
           loading
             ? 'opacity-100'
             : 'pointer-events-none opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 group-focus-visible:opacity-100',
@@ -256,7 +256,7 @@ export function CasinoGameTile({
           {!dense ? (
             <span
               className={cn(
-                'inline-flex h-[18px] items-center rounded-full border px-1.5 text-[10px] font-medium leading-[14px]',
+                'inline-flex h-[18px] items-center rounded-full border px-1.5 text-size-xxs font-medium leading-[14px]',
                 TAG_CLASS[game.tag],
               )}
             >
@@ -291,7 +291,7 @@ export function CasinoGameTile({
               <BlackjackSeats occupied={game.live.seats.occupied} total={game.live.seats.total} />
             ) : null}
           </div>
-          <p className="mt-1 text-[10px] font-medium leading-[14px] text-white">{game.live.range}</p>
+          <p className="mt-1 text-size-xxs font-medium leading-[14px] text-white">{game.live.range}</p>
         </div>
       ) : null}
     </motion.article>
@@ -317,7 +317,7 @@ export function PlayRandomTile({
       transition={finePointer ? TILE_SPRING : TILE_PRESS_SPRING}
       onClick={() => onLaunch?.(pickRandomLobbyGame())}
       className={cn(
-        'relative z-0 flex h-[207px] w-[152px] shrink-0 flex-col items-center justify-center gap-4 rounded-[10px] border border-border bg-card',
+        'relative z-0 flex h-[207px] w-[152px] shrink-0 flex-col items-center justify-center gap-4 rounded-lg border border-border bg-card',
         'shadow-[0_0_16px_rgba(0,0,0,0.06)]',
         'transition-colors active:bg-accent',
         'motion-reduce:!transform-none',

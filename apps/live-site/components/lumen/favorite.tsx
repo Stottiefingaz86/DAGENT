@@ -94,7 +94,7 @@ export function Favorite({
         className={cn(
           'flex size-8 items-center justify-center overflow-visible rounded-full',
           inline
-            ? 'relative z-10 size-7 shrink-0 rounded-lg p-1.5 text-[rgba(255,255,255,0.87)] transition-colors hover:bg-white/10'
+            ? 'relative z-10 size-7 shrink-0 rounded-lg p-1.5 text-[var(--opacity-white-900)] transition-colors hover:bg-white/10'
             : 'absolute right-1.5 top-1.5 z-40 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100',
           className
         )}
@@ -109,7 +109,7 @@ export function Favorite({
           <IconHeart
             className={cn(
               'relative z-10 size-4 shrink-0',
-              on ? 'fill-pink-500 text-pink-500' : inline ? 'text-[rgba(255,255,255,0.87)]' : 'text-white',
+              on ? 'fill-pink-500 text-pink-500' : inline ? 'text-[var(--opacity-white-900)]' : 'text-white',
             )}
             strokeWidth={2}
             aria-hidden

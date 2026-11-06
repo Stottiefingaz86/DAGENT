@@ -78,6 +78,8 @@ export class Store extends EventEmitter {
     })) {
       if (has(f)) out[k] = f
     }
+    // Since Nov 2026 the handover is a folder; its README is the delivery file.
+    if (has('handover/README.md')) out.delivery = 'handover/README.md'
     const shots = path.join(d, 'feedback')
     out.screenshots = fs.existsSync(shots) ? fs.readdirSync(shots).filter((f) => !f.startsWith('.')) : []
     return out

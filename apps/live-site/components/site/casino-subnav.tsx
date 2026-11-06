@@ -337,7 +337,7 @@ export function CasinoSubNav({
                   aria-hidden
                   data-sub-menu-thumb=""
                   className={cn(
-                    'pointer-events-none absolute top-0.5 z-0 h-11 rounded-full bg-[#ee3536]',
+                    'pointer-events-none absolute top-0.5 z-0 h-11 rounded-full bg-primary',
                     motion &&
                       'transition-[left,width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
                   )}

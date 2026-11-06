@@ -20,10 +20,23 @@ type ConfettiOptions = Parameters<typeof confettiLib>[0]
 type ConfettiInstance = (opts?: ConfettiOptions) => Promise<null> | null
 
 let cachedInstance: ConfettiInstance | null = null
+let cachedCanvas: HTMLCanvasElement | null = null
+
+/**
+ * Confetti draws on a canvas, which can't read CSS variables — resolve Lumen tokens to
+ * their current values (brand + light/dark aware) at fire time. Unknown tokens are dropped.
+ */
+export function tokenColors(vars: string[]): string[] {
+  if (typeof window === 'undefined') return []
+  const cs = getComputedStyle(document.documentElement)
+  return vars.map((v) => cs.getPropertyValue(v).trim()).filter(Boolean)
+}
 
 function ensureInstance(): ConfettiInstance | null {
   if (typeof window === 'undefined') return null
-  if (cachedInstance) return cachedInstance
+  // If anything removed our canvas from the page, build a fresh one (a stale instance draws nowhere).
+  if (cachedInstance && cachedCanvas?.isConnected) return cachedInstance
+  cachedInstance = null
 
   const canvas = document.createElement('canvas')
   canvas.setAttribute('data-bol-confetti', 'true')
@@ -39,6 +52,7 @@ function ensureInstance(): ConfettiInstance | null {
     zIndex: '2147483646',
   })
   document.body.appendChild(canvas)
+  cachedCanvas = canvas
 
   cachedInstance = confettiLib.create(canvas, {
     resize: true,

@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "figma": {
-      "description": "Official Figma MCP — auth in Claude. Skills: .claude/skills/figma-plugin/",
+      "description": "Official Figma MCP — auth in Claude. Skills: .claude/skills/figma-*",
       "url": "https://mcp.figma.com/mcp"
     },
     "mobbin": {

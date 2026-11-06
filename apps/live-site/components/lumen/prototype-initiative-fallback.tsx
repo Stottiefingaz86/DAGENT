@@ -11,7 +11,7 @@ export function PrototypeInitiativeFallback({ job }: { job: AgentJob }) {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 sm:px-6">
-      <div className="rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {job.surface} · design lane
         </div>
@@ -29,7 +29,7 @@ export function PrototypeInitiativeFallback({ job }: { job: AgentJob }) {
               key={src}
               src={src}
               alt=""
-              className="max-h-64 w-full rounded-[10px] border border-border object-contain bg-popover"
+              className="max-h-64 w-full rounded-lg border border-border object-contain bg-popover"
             />
           ))}
         </div>

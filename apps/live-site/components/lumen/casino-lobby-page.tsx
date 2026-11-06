@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import NumberFlow from '@number-flow/react'
@@ -143,11 +143,11 @@ function ShelfHeader({
 }
 
 const TIER_LABEL_CLASS: Record<(typeof JACKPOT_TIERS)[number]['tone'], string> = {
-  must: 'text-[#f97316]',
+  must: 'text-[var(--colors-orange-500)]',
   mega: 'bg-gradient-to-r from-[#ed9a63] via-[#eca545] to-[#d36913] bg-clip-text text-transparent',
-  major: 'text-[#ec4899]',
-  minor: 'text-[#06b6d4]',
-  mini: 'text-[#22c55e]',
+  major: 'text-[var(--colors-pink-500)]',
+  minor: 'text-[var(--colors-cyan-500)]',
+  mini: 'text-[var(--colors-green-500)]',
 }
 
 function JackpotAmount({ value, className }: { value: number; className?: string }) {
@@ -182,7 +182,7 @@ function JackpotTierLabel({
           <span className={cn(TIER_LABEL_CLASS.must, 'shrink-0')}>{item.label}</span>
           <JackpotAmount value={amount} className="shrink-0 text-white" />
           {'countdown' in item && item.countdown ? (
-            <span className="shrink-0 text-[10px] font-semibold leading-[14px] text-white/95">
+            <span className="shrink-0 text-size-xxs font-semibold leading-[14px] text-white/95">
               in {item.countdown}
             </span>
           ) : null}
@@ -217,7 +217,7 @@ function JackpotTierBar({
     <div
       data-name="jackpot-tier-bar"
       className={cn(
-        'mb-3 hidden h-[50px] w-full overflow-hidden rounded-[10px] border border-border bg-card md:grid',
+        'mb-3 hidden h-[50px] w-full overflow-hidden rounded-lg border border-border bg-card md:grid',
         hasMust
           ? 'grid-cols-[minmax(0,1.35fr)_repeat(4,minmax(0,1fr))]'
           : 'grid-cols-4',
@@ -300,7 +300,7 @@ function JackpotRotatingBanner({
         aria-label={`${item.label} $${amounts[item.id].toFixed(2)}`}
         onClick={advance}
         className={cn(
-          'relative isolate flex h-[50px] w-full items-center justify-center overflow-hidden rounded-[10px] px-3 text-sm font-bold leading-5',
+          'relative isolate flex h-[50px] w-full items-center justify-center overflow-hidden rounded-lg px-3 text-sm font-bold leading-5',
           isMust
             ? 'bg-[linear-gradient(90deg,#c48633_0%,#722d10_20%,#a65615_50%,#c48633_75%,#722d10_100%)]'
             : 'border border-border bg-card',
@@ -585,7 +585,7 @@ function CasinoThemeBanner({
           <span
             className={cn(
               'inline-flex h-5 items-center rounded-full px-1.5 text-xs font-medium',
-              onLight ? 'bg-[#22c55e] text-white' : 'bg-[#edc555] text-black',
+              onLight ? 'bg-[var(--colors-green-500)] text-white' : 'bg-[var(--vip-rewards-gold-a500)] text-black',
             )}
           >
             {badge}
@@ -595,7 +595,7 @@ function CasinoThemeBanner({
             shape="h2"
             weight="semibold"
             className={cn(
-              'mt-2 text-[36px] leading-10',
+              'mt-2 text-size-4xl leading-10',
               onLight ? 'text-foreground' : 'text-white',
             )}
           >
@@ -887,7 +887,7 @@ export function CasinoActivity() {
         data-name="Casino activity"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         {/* Desktop header */}
         <div className="hidden h-[42px] items-center border-b border-border bg-surface-muted-1 text-sm font-medium text-muted-foreground md:flex">
@@ -989,7 +989,12 @@ export function CasinoActivity() {
 }
 
 /** Casino-Lumen 69:47911 lobby — banners through activity. Shell owns sub-nav + SEO. */
-export function CasinoLobby() {
+export function CasinoLobby({
+  bannerRow,
+}: {
+  /** Design-lane override for the top banner row (prototype drafts only). */
+  bannerRow?: ReactNode
+} = {}) {
   const router = useRouter()
   const { launchGame, startNavigating, setCashierOpen } = useShell()
 
@@ -1026,7 +1031,7 @@ export function CasinoLobby() {
   return (
     <div data-name="lobby_content" className="w-full bg-background pb-8">
       <div className="py-4">
-        <CasinoLobbyBannerRow promos={lobbyPromos} />
+        {bannerRow ?? <CasinoLobbyBannerRow promos={lobbyPromos} />}
       </div>
       <ContinuePlayingShelf />
       {/* Future feature — above Originals for early social proof / Discover. */}

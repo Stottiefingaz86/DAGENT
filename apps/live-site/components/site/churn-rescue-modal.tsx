@@ -51,7 +51,7 @@ export function ChurnRescueModal() {
           aria-labelledby="churn-rescue-title"
           className={cn(
             'relative z-10 flex max-h-[min(92svh,720px)] w-full max-w-[520px] flex-col',
-            'rounded-[14px] border border-border bg-background text-foreground',
+            'rounded-xl border border-border bg-background text-foreground',
             'shadow-[0_24px_80px_rgba(0,0,0,0.55)]',
             'animate-in fade-in-0 zoom-in-95 duration-300',
           )}

@@ -55,7 +55,7 @@ Closing Verify without Verify does **not** create the account.
 
 - Label **Username** (not Full Name). Strip spaces while typing.
 - Format: 3–20 chars, letters / numbers / `_` only.
-- Live check (debounce ~320ms): spinner → green check / red X. Demo taken: `admin`, `betonline`, `chris`, `dealer`, `jackpot`, `player1`, `support`, `vip`, `winner`.
+- Live check (debounce ~320ms): spinner → green check / red X. Demo taken: `admin`, `chris`, `dealer`, `jackpot`, `player1`, `support`, `vip`, `winner`.
 - Error when taken: **Username is taken**. Join blocked until available.
 - Stored on profile as `fullName` (display handle). Welcome greets with the handle.
 - Sports / VIP gates: same as journey 1 (no name gate).

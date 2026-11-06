@@ -1,3 +1,0 @@
-# build an new registration form, the goal is to get users to sign up…
-
-build an new registration form, the goal is to get users to sign up, deposit and play a casino game as fast as possible, you can look at reasearch, rainbet.com, winna.com for reference will need the journey, must haves, email, name, OTP, create password. tick box to say im over 18

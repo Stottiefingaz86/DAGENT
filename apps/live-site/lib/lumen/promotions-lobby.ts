@@ -82,7 +82,7 @@ export const PROMOTIONS_LOBBY_BANNERS: PromoLobbyBannerItem[] = [
 ]
 
 /** Reward art — sentence-case titles baked into the stills. */
-const REWARD = '/betonline-rewards-sentence-case'
+const REWARD = '/rewards-sentence-case'
 
 /** Promo26 4×3 grid cards. */
 export const PROMOTIONS_LOBBY_CARDS: PromoLobbyCard[] = [

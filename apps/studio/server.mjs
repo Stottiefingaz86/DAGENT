@@ -1,4 +1,4 @@
-// BetOnline Design Studio — dashboard + design agent worker.
+// Design Studio — dashboard + design agent worker.
 //   npm start        → http://localhost:4100
 // Runs the Claude design agent. Needs ANTHROPIC_API_KEY (paste it on first launch, or put it in apps/studio/.env).
 import http from 'node:http'
@@ -11,6 +11,12 @@ import { createClaudeRunner } from './lib/claude-runner.mjs'
 import { watchInbox } from './lib/inbox.mjs'
 import { createLane } from './lib/lane.mjs'
 import { createAuth } from './lib/auth.mjs'
+import { createTaste } from './lib/taste.mjs'
+import { createComments } from './lib/comments.mjs'
+import { renderAnnotated } from './lib/capture.mjs'
+import crypto from 'node:crypto'
+import * as P from './lib/prompts.mjs'
+import { execFile } from 'node:child_process'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -39,15 +45,25 @@ const LINKS = {
 
 const store = new Store(REPO_ROOT)
 const auth = createAuth(here)
+const taste = createTaste(REPO_ROOT)
+const comments = createComments(store)
+// Live presence: who is looking at which screenshot, and where their cursor is (memory only, never stored).
+const PALETTE = ['#ff2d95', '#38bdf8', '#a78bfa', '#4ade80', '#fbbf24', '#fb7185', '#2dd4bf', '#f97316']
+// Each person keeps one colour: by the order they were added (so a small team never shares a colour).
+const colorFor = (id) => {
+  const i = auth.list().findIndex((u) => u.id === id)
+  return PALETTE[(i >= 0 ? i : parseInt(crypto.createHash('md5').update(String(id)).digest('hex').slice(0, 6), 16)) % PALETTE.length]
+}
+const broadcast = (msg) => store.emit('change', msg)
 // The studio runs the prototype lane itself (apps/live-site on :3001).
 const lane = createLane({ repoRoot: REPO_ROOT, origin: LINKS.prototypeOrigin, onChange: (st) => store.emit('change', { type: 'lane', lane: st }) })
-const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL, siteOrigin: LINKS.prototypeOrigin, lane })
+const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL, siteOrigin: LINKS.prototypeOrigin, lane, taste })
 // No key → no run. Never a stand-in agent.
 async function runner(slug, prompt, signal) {
   if (!connected()) throw new Error('The design agent isn’t connected. Add your Anthropic API key on the studio home screen, then Retry.')
   return claude(slug, prompt, signal)
 }
-const orch = createOrchestrator({ store, runner })
+const orch = createOrchestrator({ store, runner, taste })
 
 // API keys live in apps/studio/.env.keys (git-ignored by the repo's .env.* rule).
 // Several keys can be stored (e.g. Personal, Business); one is active.
@@ -86,6 +102,67 @@ for (const j of store.list()) {
 }
 
 watchInbox({ store, repoRoot: REPO_ROOT, onJob: (slug) => orch.start(slug) })
+
+// --- Lumen watch: re-check the design system on start and every 6 hours ---
+let lumen = { checkedAt: null, changed: false, latest: '', latestDate: '' }
+function readLumenLog() {
+  try {
+    const log = fs.readFileSync(path.join(REPO_ROOT, 'knowledge', 'lumen', 'CHANGELOG.md'), 'utf8')
+    const entry = (log.split(/\n(?=## )/)[1] || '').trim()
+    return { latest: entry.slice(0, 1200), latestDate: /^## (\d{4}-\d{2}-\d{2})/.exec(entry)?.[1] || '', baseline: /· baseline/.test(entry.split('\n')[0]) }
+  } catch {
+    return { latest: '', latestDate: '', baseline: true }
+  }
+}
+function lumenWatch() {
+  execFile(process.execPath, [path.join(REPO_ROOT, 'scripts', 'lumen-watch.mjs'), '--json'], { cwd: REPO_ROOT, timeout: 120000 }, (err, out) => {
+    let summary = null
+    try {
+      summary = JSON.parse(String(out).trim().split('\n').pop())
+    } catch {}
+    lumen = { checkedAt: new Date().toISOString(), changed: !!summary?.changed, error: err && !summary ? String(err.message).slice(0, 200) : null, ...readLumenLog() }
+    if (summary?.changed) {
+      console.log('  Lumen changed — recorded in knowledge/lumen/CHANGELOG.md')
+      store.emit('change', { type: 'lumen', lumen })
+    }
+  })
+}
+lumenWatch()
+setInterval(lumenWatch, 6 * 3600e3).unref()
+
+// Research: the competitor/market research Figma folder (knowledge/product-strategy/RESEARCH_SOURCES.md).
+// scripts/research-watch.mjs lists it with FIGMA_TOKEN and records new/updated files in knowledge/research/CHANGELOG.md.
+let research = { checkedAt: null, changed: false, error: null, files: 0 }
+function researchWatch() {
+  execFile(process.execPath, [path.join(REPO_ROOT, 'scripts', 'research-watch.mjs'), '--json'], { cwd: REPO_ROOT, timeout: 120000, env: process.env }, (err, out) => {
+    let summary = null
+    try {
+      summary = JSON.parse(String(out).trim().split('\n').pop())
+    } catch {}
+    research = { checkedAt: new Date().toISOString(), changed: !!summary?.changed, files: summary?.files || 0, updated: summary?.updated || [], error: summary?.error || (err && !summary ? String(err.message).slice(0, 200) : null) }
+    if (summary?.changed) store.emit('change', { type: 'research', research })
+  })
+}
+researchWatch()
+setInterval(researchWatch, 6 * 3600e3).unref()
+
+// Is the design agent signed in to Figma? (Connect Figma.command does the one-time sign-in.)
+let figmaStatus = { connected: null, checkedAt: null, detail: '' }
+function figmaCheck() {
+  const sdkDir = path.join(here, "node_modules", "@anthropic-ai")
+  let cli = ''
+  try {
+    const d = fs.readdirSync(sdkDir).find((n) => n.startsWith('claude-agent-sdk-') && fs.existsSync(path.join(sdkDir, n, 'claude')))
+    if (d) cli = path.join(sdkDir, d, 'claude')
+  } catch {}
+  if (!cli) return (figmaStatus = { connected: null, checkedAt: new Date().toISOString(), detail: 'Claude Code program not found yet (start the studio once).' })
+  execFile(cli, ['mcp', 'list'], { timeout: 60000, env: process.env }, (err, out) => {
+    const line = String(out || '').split('\n').find((l) => /figma/i.test(l)) || ''
+    figmaStatus = { connected: /✓|connected/i.test(line) && !/✗|failed|needs auth/i.test(line), checkedAt: new Date().toISOString(), detail: line.trim() || 'Figma not added — run Connect Figma.command.' }
+  })
+}
+figmaCheck()
+setInterval(figmaCheck, 30 * 60e3).unref()
 
 // --- live updates (Server-Sent Events) ---
 const clients = new Set()
@@ -126,7 +203,7 @@ function serveFile(res, file) {
   fs.createReadStream(file).pipe(res)
 }
 // Only these repo folders are readable from the browser.
-const PUBLIC_ROOTS = ['specs', 'tokens', 'apps/live-site/public', 'inbox', '.cursor/knowledge', '.cursor/skills', '.claude/skills', '.specify']
+const PUBLIC_ROOTS = ['specs', 'tokens', 'apps/live-site/public', 'inbox', 'knowledge', '.claude/skills', '.specify']
 function saveUploads(slug, files = [], sub = 'attachments') {
   const saved = []
   for (const f of files) {
@@ -141,11 +218,14 @@ function saveUploads(slug, files = [], sub = 'attachments') {
 // What the agent reads: skills, taste notes, strategy, research.
 function listKnowledge() {
   const groups = [
-    ['Playbook', '.cursor/skills/design-agent', /SKILL\.md$/],
-    ['Build skill', '.cursor/skills/lumen-build', /\.md$/],
-    ['SpecKit', '.cursor/skills', /speckit-(specify|clarify|plan|tasks|checklist|analyze)\/SKILL\.md$/],
-    ['Chris taste', '.cursor/knowledge/chris-taste', /\.md$/],
-    ['Strategy & research', '.cursor/knowledge/product-strategy', /\.(md|pdf)$/],
+    ['Playbook', '.claude/skills/design-agent', /SKILL\.md$/],
+    ['Build & taste rules', '.claude/skills/lumen-build', /\.md$/],
+    ['SpecKit', '.claude/skills', /speckit-[\w-]+\/SKILL\.md$/],
+    ['Figma', '.claude/skills', /figma-[\w-]+\/SKILL\.md$/],
+    ['Research', '.claude/skills/mobbin', /SKILL\.md$/],
+    ['Chris taste', 'knowledge/chris-taste', /\.md$/],
+    ['Lumen', 'knowledge/lumen', /\.md$/],
+    ['Strategy & research', 'knowledge/product-strategy', /\.(md|pdf)$/],
     ['Rules', '.specify/memory', /\.md$/],
   ]
   const walk = (dir, depth = 0) => {
@@ -156,7 +236,7 @@ function listKnowledge() {
     name,
     items: walk(path.join(REPO_ROOT, rel))
       .map((f) => path.relative(REPO_ROOT, f))
-      .filter((f) => re.test(f) && !(name === 'Playbook' && f.includes('figma-plugin')) && !(name === 'Playbook' && f.includes('/project/')))
+      .filter((f) => re.test(f))
       .map((f) => {
         let title = path.basename(f)
         if (f.endsWith('.md')) {
@@ -213,6 +293,41 @@ const server = http.createServer(async (req, res) => {
       auth.logout(req, res)
       return send(res, 200, { ok: true })
     }
+    // ---- Dev agents (other repos): handover download + design questions. Intake token, or a signed-in person, or this computer. ----
+    const dv = /^\/api\/jobs\/([a-z0-9-]+)\/(dev-questions|handover|handover\.tar\.gz)$/.exec(p)
+    if (dv) {
+      const okDev = req.user || (INTAKE_TOKEN ? req.headers.authorization === `Bearer ${INTAKE_TOKEN}` : isLocal(req))
+      if (!okDev) return send(res, 401, { error: 'Bad or missing token (set STUDIO_INTAKE_TOKEN and send it as Bearer).' })
+      const [, slug, what] = dv
+      const job = store.get(slug)
+      if (!job) return send(res, 404, { error: 'No such project' })
+      const hdir = path.join(store.dir(slug), 'handover')
+      if (what === 'dev-questions') {
+        if (req.method === 'GET') return send(res, 200, (job.devQuestions || []).map(({ id, text, status, answer, source, askedAt, answeredAt }) => ({ id, text, status, answer, source, askedAt, answeredAt })))
+        if (req.method !== 'POST') return send(res, 405, { error: 'GET or POST' })
+        if (!connected()) return send(res, 503, { error: 'The design agent is not connected right now.' })
+        const b = await readJson(req)
+        const qs = (Array.isArray(b.questions) ? b.questions : [b.question || b.text]).filter(Boolean).slice(0, 20)
+        if (!qs.length) return send(res, 400, { error: 'Send { "from": "dev-repo", "questions": [{ "text": "…", "context": "…" }] }' })
+        const made = orch.devQuestions(slug, qs, String(b.from || req.user?.name || 'dev').slice(0, 60))
+        return send(res, 202, { ids: made.map((q) => q.id), poll: `/api/jobs/${slug}/dev-questions` })
+      }
+      if (!fs.existsSync(hdir)) return send(res, 404, { error: 'No handover yet — it is written after Final sign-off.' })
+      if (what === 'handover') {
+        let manifest = null
+        try { manifest = JSON.parse(fs.readFileSync(path.join(hdir, 'manifest.json'), 'utf8')) } catch {}
+        const files = fs.readdirSync(hdir, { recursive: true }).map(String).filter((f) => fs.statSync(path.join(hdir, f)).isFile())
+        return send(res, 200, { slug, title: job.title, status: job.status, prototype: job.previewUrl || null, figma: job.figma || null, manifest, files: files.map((f) => `specs/${slug}/handover/${f}`), download: `/api/jobs/${slug}/handover.tar.gz` })
+      }
+      // The whole package: spec + handover (+ the prototype's source files listed in the manifest).
+      res.writeHead(200, { 'Content-Type': 'application/gzip', 'Content-Disposition': `attachment; filename="${slug}-handover.tar.gz"` })
+      const parts = ['handover', 'spec.md', 'brd.md', 'feedback.md'].filter((f) => fs.existsSync(path.join(store.dir(slug), f)))
+      const proto = path.join(REPO_ROOT, 'apps', 'live-site', 'app', 'prototype', slug)
+      const tar = (await import('node:child_process')).spawn('tar', ['-czf', '-', '-C', store.dir(slug), ...parts, ...(fs.existsSync(proto) ? ['-C', path.join(REPO_ROOT, 'apps', 'live-site', 'app', 'prototype'), slug] : [])])
+      tar.stdout.pipe(res)
+      tar.on('error', () => res.end())
+      return
+    }
     // Everything else needs a login (BRDs from other repos use the intake token instead).
     const isApi = p.startsWith('/api/') && p !== '/api/intake'
     const publicAsset = p === '/files/apps/live-site/public/shell/design-agent/logo-mark.png' // sign-in screen logo
@@ -243,7 +358,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
     if (p === '/api/config') {
-      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
+      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), lumen, research, figma: figmaStatus, me: req.user ? { id: req.user.id, color: colorFor(req.user.id) } : null, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
     }
     if (p === '/api/lane') {
       if (req.method === 'POST') lane.ensure()
@@ -281,6 +396,110 @@ const server = http.createServer(async (req, res) => {
       applyActiveKey()
       return send(res, 200, { ...publicKeys(), connected: connected() })
     }
+    // ---- Taste: what the agent has learned (Owner keeps or undoes) ----
+    if (p === '/api/taste' && req.method === 'GET') {
+      return send(res, 200, { rules: taste.rules().reverse(), signals: taste.signals({ limit: 80 }) })
+    }
+    if (p === '/api/taste/review' && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can keep or undo learned rules.' })
+      const body = await readJson(req)
+      try {
+        taste.review(String(body.id || ''), body.action, who(req))
+      } catch (e) {
+        return send(res, 400, { error: e.message })
+      }
+      return send(res, 200, { rules: taste.rules().reverse() })
+    }
+    // ---- Recommendations: the agent looks for gaps against the strategy (Owner starts a run) ----
+    if (p === '/api/recommend' && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can start a recommendations run.' })
+      if (!connected()) return send(res, 400, { error: 'Connect the design agent first (Settings → API keys).' })
+      const b = await readJson(req)
+      const job = store.create({ title: `Recommendations · ${new Date().toISOString().slice(0, 10)}`, surface: 'Recommendations', brief: String(b.focus || 'Find gaps against the product strategy'), source: 'recommendation', requester: who(req) })
+      orch.run(job.slug, P.recommendPrompt(store.get(job.slug), String(b.focus || '').slice(0, 1000)))
+      return send(res, 201, store.get(job.slug))
+    }
+    if (p === '/api/ideas' && req.method === 'GET') {
+      const runs = store.list().filter((j) => j.source === 'recommendation')
+      return send(res, 200, runs.map((j) => ({ slug: j.slug, title: j.title, status: j.status, running: orch.isRunning(j.slug), brief: j.brief, at: j.updatedAt, ideas: j.ideas || [] })))
+    }
+    if (p === '/api/ideas/promote' && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can turn an idea into a project.' })
+      const b = await readJson(req)
+      const run = store.get(String(b.slug || ''))
+      const idea = run?.ideas?.find((i) => i.id === b.id)
+      if (!idea) return send(res, 404, { error: 'No such idea' })
+      const ideaFile = path.join(REPO_ROOT, path.normalize(String(idea.file || '')).replace(/^(\.\.(\/|\\|$))+/, ''))
+      const text = ideaFile.startsWith(REPO_ROOT + path.sep) && fs.existsSync(ideaFile) ? fs.readFileSync(ideaFile, 'utf8') : `${idea.title}\n\n${idea.summary}`
+      const job = store.create({ title: idea.title, surface: 'From recommendation', brief: `Recommendation from ${run.slug} (${idea.file}).\n\n${text}`, source: 'recommendation-idea', requester: who(req) })
+      store.update(run.slug, (j) => ({ ideas: j.ideas.map((i) => (i.id === idea.id ? { ...i, project: job.slug } : i)) }))
+      orch.start(job.slug)
+      return send(res, 201, store.get(job.slug))
+    }
+    // ---- Maintenance jobs the agent runs (Owner) ----
+    if (p.startsWith('/api/maintenance/') && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can start maintenance.' })
+      if (!connected()) return send(res, 400, { error: 'Connect the design agent first (Settings → API keys).' })
+      const kind = p.split('/').pop()
+      const spec = { 'lumen-figma': ['Lumen check in Figma', P.lumenFigmaPrompt], 'tidy-taste': ['Tidy taste notes', P.tidyTastePrompt] }[kind]
+      if (!spec) return send(res, 404, { error: 'Unknown maintenance job' })
+      const job = store.create({ title: `${spec[0]} · ${new Date().toISOString().slice(0, 10)}`, surface: 'Maintenance', brief: spec[0], source: 'maintenance', requester: who(req) })
+      orch.run(job.slug, spec[1](store.get(job.slug)))
+      return send(res, 201, store.get(job.slug))
+    }
+    // ---- Live cursors on screenshots ----
+    if (p === '/api/presence' && req.method === 'POST') {
+      const b = await readJson(req)
+      broadcast({ type: 'cursor', slug: String(b.slug || ''), image: String(b.image || ''), x: Number(b.x), y: Number(b.y), leave: !!b.leave, user: { id: req.user.id, name: req.user.name, color: colorFor(req.user.id) } })
+      return send(res, 200, { ok: true })
+    }
+    // ---- Pinned comments on screenshots ----
+    const cm = /^\/api\/jobs\/([a-z0-9-]+)\/comments(?:\/(reply|resolve|delete|send))?$/.exec(p)
+    if (cm) {
+      const [, slug, op] = cm
+      if (!store.get(slug)) return send(res, 404, { error: 'No such job' })
+      if (req.method === 'GET') return send(res, 200, comments.list(slug).map((c) => ({ ...c, color: colorFor(c.byId) })))
+      const b = await readJson(req)
+      try {
+        if (!op) comments.add(slug, b, req.user)
+        else if (op === 'reply') comments.reply(slug, String(b.id), b.text, req.user)
+        else if (op === 'resolve') comments.resolve(slug, String(b.id), b.value, req.user)
+        else if (op === 'delete') comments.remove(slug, String(b.id), req.user, role(req) === 'owner')
+        else if (op === 'send') {
+          const list = comments.unsent(slug)
+          if (!list.length) return send(res, 400, { error: 'No new comments to send.' })
+          const byImage = new Map()
+          for (const c of list) byImage.set(c.image, [...(byImage.get(c.image) || []), c])
+          const shots = []
+          const stamp = Date.now().toString(36)
+          for (const [image, pins] of byImage) {
+            const rel = `specs/${slug}/feedback/pins-${path.basename(image).replace(/\.\w+$/, '')}-${stamp}.png`
+            try {
+              await renderAnnotated({ src: path.join(REPO_ROOT, image), pins, outFile: path.join(REPO_ROOT, rel) })
+              shots.push(rel)
+            } catch (e) {
+              console.error('annotate failed:', e.message)
+              shots.push(image)
+            }
+          }
+          const pct = (v) => `${Math.round(v * 100)}%`
+          const text = [
+            `Pinned comments on the screenshots (${list.length}). Numbered pins are drawn on the annotated copies — Read them first; x/y are % from the image's left/top edge.`,
+            ...[...byImage].map(([image, pins]) => [`On \`${image}\`:`, ...pins.map((c) => [`- #${c.n} at (x ${pct(c.x)}, y ${pct(c.y)}) — ${c.by}: "${c.text}"`, ...c.replies.map((r) => `  ↳ ${r.by}: "${r.text}"`)].join('\n'))].join('\n')),
+          ].join('\n\n')
+          const job = store.get(slug)
+          if (job.status === 'direction') {
+            if (role(req) !== 'owner') return send(res, 403, { error: 'During direction review only the Owner sends changes. Leave comments; the Owner sends them.' })
+            orch.direction(slug, 'changes', text, who(req), shots)
+          } else orch.message(slug, text, shots, who(req))
+          comments.markSent(slug, list.map((c) => c.id))
+        }
+      } catch (e) {
+        return send(res, 400, { error: e.message })
+      }
+      broadcast({ type: 'comments', slug })
+      return send(res, 200, comments.list(slug).map((c) => ({ ...c, color: colorFor(c.byId) })))
+    }
     if (p === '/api/jobs' && req.method === 'GET') return send(res, 200, store.list())
     if (p === '/api/skills') return send(res, 200, listKnowledge())
     if (p === '/api/jobs' && req.method === 'POST') {
@@ -311,6 +530,11 @@ const server = http.createServer(async (req, res) => {
       if (!action && req.method === 'GET') return send(res, 200, { ...job, events: store.events(slug), running: orch.isRunning(slug) })
       if (req.method !== 'POST') return send(res, 405, { error: 'POST only' })
       const body = await readJson(req)
+      if (action === 'react') {
+        const value = body.value === 'like' ? 'like' : 'dislike'
+        orch.react(slug, body.target === 'proposal' ? 'proposal' : 'prototype', value, String(body.note || '').trim().slice(0, 1200), who(req))
+        return send(res, 200, store.get(slug))
+      }
       if (action === 'delete') {
         if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can delete projects.' })
         return send(res, 200, { deleted: slug, trash: await deleteJob(slug) })
@@ -371,7 +595,7 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  BetOnline Design Studio  →  http://localhost:${PORT}`)
+  console.log(`\n  Design Studio  →  http://localhost:${PORT}`)
   console.log(`  Repo: ${REPO_ROOT}`)
   console.log(`  Access: ${HOST === '127.0.0.1' ? 'this computer only' : `network (${HOST}) — login required`}${auth.needsSetup() ? ' · first open: create the Owner account' : ''}`)
   console.log(`  Agent: ${connected() ? `Claude${process.env.STUDIO_MODEL ? ` · ${process.env.STUDIO_MODEL}` : ''}` : 'not connected yet — open the studio and paste your Anthropic API key'}`)

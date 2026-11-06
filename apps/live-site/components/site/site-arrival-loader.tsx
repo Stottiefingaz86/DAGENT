@@ -15,6 +15,13 @@ export function SiteArrivalLoader() {
     const el = document.getElementById(BOOT_ID)
     if (!el) return
 
+    /* Studio capture_site (headless Chrome) waits ~1.2s — skip the 4.8s brand loop
+       for automated browsers so screenshots show the product, not the loader. */
+    if (typeof navigator !== 'undefined' && navigator.webdriver) {
+      el.remove()
+      return
+    }
+
     /* Pin on <body> with inline fixed styles (already on the node from layout). */
     if (el.parentElement !== document.body) {
       document.body.appendChild(el)

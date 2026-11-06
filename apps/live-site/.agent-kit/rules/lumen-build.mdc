@@ -7,8 +7,8 @@ alwaysApply: true
 
 On **every** user request in this repo — before planning or editing — read and follow:
 
-`.cursor/skills/lumen-build/SKILL.md`
+`.claude/skills/lumen-build/SKILL.md`
 
-Then open `.cursor/skills/lumen-build/patterns.md` when the task touches nav, cards, inputs, tables, claims/toasts, sticky layouts, shelves, or Figma→code.
+Then open `.claude/skills/lumen-build/patterns.md` when the task touches nav, cards, inputs, tables, claims/toasts, sticky layouts, shelves, or Figma→code.
 
 Do not skip this for “small” tweaks. Chris’s shell/sub-nav/card/hover/toast/input patterns live there; inventing outside them regresses the product.

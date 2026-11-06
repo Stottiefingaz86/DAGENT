@@ -1,21 +1,11 @@
 import confettiLib from 'canvas-confetti'
+import { tokenColors } from '@/lib/confetti'
 
 let redeemAudio: HTMLAudioElement | null = null
 let numbersAudio: HTMLAudioElement | null = null
 let numbersFadeTimer = 0
 let numbersStopTimer = 0
 
-/** Remove any broken custom confetti canvases from earlier experiments. */
-function scrubLegacyCanvases() {
-  if (typeof document === 'undefined') return
-  document.querySelectorAll('[data-bol-confetti]').forEach((node) => node.remove())
-}
-
-function resolvePrimary(): string {
-  if (typeof window === 'undefined') return '#ee3536'
-  const computed = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()
-  return computed || '#ee3536'
-}
 
 /** Normalised 0–1 origin from an element, using layout viewport (not visualViewport). */
 function originFromElement(el: HTMLElement): { x: number; y: number } {
@@ -147,10 +137,9 @@ export function playVipNumbersSound() {
  */
 export function fireVipConfetti(origin?: { x: number; y: number }) {
   if (typeof window === 'undefined') return
-  scrubLegacyCanvases()
 
-  const primary = resolvePrimary()
-  const colors = [primary, '#ffffff', '#fef3c7', '#fde68a', '#fbbf24', '#f87171']
+  // Lumen tokens: brand primary + white + warm golds + soft red.
+  const colors = tokenColors(['--primary', '--colors-base-white', '--colors-amber-100', '--colors-amber-200', '--colors-amber-400', '--colors-red-400'])
   const o = origin ?? { x: 0.75, y: 0.45 }
 
   try {
@@ -210,11 +199,9 @@ export function celebrateVipClaim(button?: HTMLElement | null) {
  */
 export function fireJoinWelcomeConfetti() {
   if (typeof window === 'undefined') return
-  scrubLegacyCanvases()
   playVipClaimSound()
 
-  const primary = resolvePrimary()
-  const colors = [primary, '#ffffff', '#ffb3b3', '#ff7a7a']
+  const colors = tokenColors(['--primary', '--colors-base-white', '--colors-rose-300', '--colors-red-400'])
   const zIndex = 500
 
   try {

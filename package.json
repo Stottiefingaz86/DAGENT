@@ -17,10 +17,17 @@
     "prebuild": "node scripts/sync-tokens.mjs",
     "tokens:sync": "node scripts/sync-tokens.mjs",
     "tokens:lint": "node scripts/lint-tokens.mjs",
+    "lumen:watch": "node scripts/lumen-watch.mjs",
+    "skills:check": "node scripts/skills.mjs check",
+    "skills:sync": "node scripts/skills.mjs sync",
+    "skills:list": "node scripts/skills.mjs list",
+    "studio": "npm --prefix apps/studio start",
+    "verify": "node scripts/skills.mjs check && node scripts/lint-tokens.mjs apps/live-site/app/prototype && node --check apps/studio/server.mjs",
     "storybook": "storybook dev -p 6006 --no-open",
     "storybook:build": "storybook build -o storybook-static",
     "live-site:sync": "node scripts/sync-tokens.mjs && node scripts/sync-live-site-theme.mjs",
-    "live-site:dev": "npm run live-site:sync && npm --prefix apps/live-site run dev"
+    "live-site:dev": "npm run live-site:sync && npm --prefix apps/live-site run dev",
+    "research:watch": "node scripts/research-watch.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.2",

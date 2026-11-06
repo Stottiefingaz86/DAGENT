@@ -3,7 +3,7 @@ import { Slot } from '@radix-ui/react-slot'
 import { cn } from '@/lib/utils'
 
 const SHAPE = {
-  xxs: 'text-[10px] leading-[14px]',
+  xxs: 'text-size-xxs leading-[14px]',
   xs: 'text-xs leading-4',
   small: 'text-sm leading-5',
   paragraph: 'text-base leading-6',

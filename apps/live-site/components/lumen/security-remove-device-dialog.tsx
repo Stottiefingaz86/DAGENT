@@ -53,7 +53,7 @@ export function SecurityRemoveDeviceDialog({
         aria-labelledby="remove-device-title"
         aria-describedby="remove-device-desc"
         className={cn(
-          'flex w-full max-w-[500px] flex-col gap-4 rounded-[10px] border border-border bg-popover p-6 shadow-lg',
+          'flex w-full max-w-[500px] flex-col gap-4 rounded-lg border border-border bg-popover p-6 shadow-lg',
         )}
         onClick={(event) => event.stopPropagation()}
       >

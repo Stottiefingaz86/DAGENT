@@ -43,7 +43,7 @@ export function VipTierProgressCard({
       type={onClick ? 'button' : undefined}
       onClick={onClick}
       className={cn(
-        'w-full rounded-[10px] border border-white/20 bg-white/[0.08] text-left backdrop-blur-md transition-colors',
+        'w-full rounded-lg border border-white/20 bg-white/[0.08] text-left backdrop-blur-md transition-colors',
         compact ? 'p-2.5' : 'p-3.5',
         onClick && 'hover:border-white/30 hover:bg-white/[0.12]',
         className,
@@ -68,7 +68,7 @@ export function VipTierProgressCard({
             <span
               className={cn(
                 'shrink-0 font-medium tabular-nums text-white/70',
-                compact ? 'text-[10px]' : 'text-xs',
+                compact ? 'text-size-xxs' : 'text-xs',
               )}
             >
               <NumberFlow value={Math.round(animatedPercent)} />%
@@ -96,7 +96,7 @@ export function VipTierProgressCard({
             </div>
           </div>
           {!compact ? (
-            <p className="mt-2 text-[10px] leading-tight text-white/45">{updatedLabel}</p>
+            <p className="mt-2 text-size-xxs leading-tight text-white/45">{updatedLabel}</p>
           ) : null}
         </div>
       </div>

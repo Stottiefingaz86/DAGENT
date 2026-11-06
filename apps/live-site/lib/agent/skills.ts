@@ -69,12 +69,12 @@ async function skillSources(): Promise<{
   idBase: 'repo' | 'kit'
 }> {
   const root = repoRoot()
-  const cursorSkills = path.join(root, '.cursor', 'skills')
+  const cursorSkills = path.join(root, '.claude', 'skills')
   if (await dirHasEntries(cursorSkills)) {
     return {
       skillsDir: cursorSkills,
-      strategyDir: path.join(root, '.cursor', 'knowledge', 'product-strategy'),
-      tasteDir: path.join(root, '.cursor', 'knowledge', 'chris-taste'),
+      strategyDir: path.join(root, 'knowledge', 'product-strategy'),
+      tasteDir: path.join(root, 'knowledge', 'chris-taste'),
       rulesDir: path.join(root, '.cursor', 'rules'),
       constitutionFile: path.join(root, '.specify', 'memory', 'constitution.md'),
       idBase: 'repo',
@@ -394,7 +394,7 @@ export async function createAgentSkill(input: {
   if (!name) throw new Error('Name is required')
 
   const idSlug = slugify(name)
-  const dir = path.join(repoRoot(), '.cursor', 'skills', idSlug)
+  const dir = path.join(repoRoot(), '.claude', 'skills', idSlug)
   await fs.mkdir(dir, { recursive: true })
   const skillFile = path.join(dir, 'SKILL.md')
   try {

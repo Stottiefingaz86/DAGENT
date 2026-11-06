@@ -22,7 +22,7 @@ export function ContestsLobbySkeleton({ className }: { className?: string }) {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 9 }, (_, i) => (
-          <Skeleton key={i} className="h-[238px] w-full rounded-[14px]" />
+          <Skeleton key={i} className="h-[238px] w-full rounded-xl" />
         ))}
       </div>
     </div>

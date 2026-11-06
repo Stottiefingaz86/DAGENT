@@ -167,14 +167,14 @@ function arcPose(offset: number, compact: boolean, progress: number) {
 
 function CardBack({ title, frameOnly = false }: { title: string; frameOnly?: boolean }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-[color-mix(in_oklch,var(--vip-rewards)_65%,#ceac33)] bg-[#1a1a1a] shadow-[0_10px_60px_rgba(0,0,0,0.85)]">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-[color-mix(in_oklch,var(--vip-rewards)_65%,#ceac33)] bg-[var(--brand-grey-950)] shadow-[0_10px_60px_rgba(0,0,0,0.85)]">
       <Image src="/vip/flip-cards/card-back.png" alt="" fill className="object-cover" sizes="240px" />
       {!frameOnly ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-6">
           <div className="relative h-[56px] w-[96px] shrink-0">
             <Image src="/vip/flip-cards/bol-mark.svg" alt="" fill className="object-contain" sizes="96px" />
           </div>
-          <p className="max-w-[168px] whitespace-pre-line break-words text-center text-[18px] font-bold uppercase leading-[1.05] tracking-wide text-white">
+          <p className="max-w-[168px] whitespace-pre-line break-words text-center text-size-lg font-bold uppercase leading-[1.05] tracking-wide text-white">
             {title}
           </p>
         </div>
@@ -223,28 +223,28 @@ function CardFront({ card, compact = false }: { card: FlipCard; compact?: boolea
         ) : null}
         <h3
           className={cn(
-            'break-words text-[#2d2e2c]',
+            'break-words text-[var(--brand-tigercharcoal-900)]',
             compact ? 'max-w-[180px]' : 'max-w-[160px]',
             card.heroImage
               ? cn(
                   'whitespace-pre-line font-black uppercase tracking-tight',
                   compact ? 'text-[28px] leading-[0.92]' : 'text-[26px] leading-[0.95]',
                 )
-              : 'text-[16px] font-bold leading-snug',
+              : 'text-size-base font-bold leading-snug',
           )}
         >
           {card.title}
         </h3>
         <p
           className={cn(
-            'text-[#2d2e2c]/70',
-            compact ? 'max-w-[188px] text-[12px] leading-[1.35]' : 'max-w-[168px] text-[11px] leading-snug',
+            'text-[var(--brand-tigercharcoal-900)]/70',
+            compact ? 'max-w-[188px] text-size-xs leading-[1.35]' : 'max-w-[168px] text-[11px] leading-snug',
           )}
         >
           {card.description}
         </p>
         {card.unlockTier ? (
-          <span className="mt-0.5 inline-flex items-center gap-1.5 rounded-md bg-[#1c1d1c] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white">
+          <span className="mt-0.5 inline-flex items-center gap-1.5 rounded-md bg-[#1c1d1c] px-2.5 py-1.5 text-size-xxs font-bold uppercase tracking-wider text-white">
             <IconLock className="size-3.5" strokeWidth={2} aria-hidden />
             {card.unlockTier}
           </span>

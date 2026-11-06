@@ -15,8 +15,13 @@
 
 ## Continue Playing (casino + home)
 
-- **Logged out:** hide the game carousel. Keep section title + subtext **Login or Join to launch last game.** + Login / Join.
-- **Logged in:** only real last-played tile(s) + Play Random — never seed Chicken/Diamonds/etc.
+- **Logged out:** remove the whole section (no gate, no carousel).
+- **Logged in:** demo **last 10** rail (`CONTINUE_PLAYING`) + Play Random. Do not shrink to a single tile.
+
+## Launch with $0 balance
+
+- Logged in + balance ≤ 0 + tap a game → **open wallet (cashier)**. Do not launch.
+- Exception: free-spins Play (welcome / Daily Spin spins) still launches.
 
 ## Lobby banners
 
@@ -27,3 +32,8 @@
 - **Logged out:** empty grid + no-content icon + **Login** / **Join**.
 - **Logged in, none saved:** empty + “Heart a game to save it here.”
 - Never fill Favourites with seeded lobby tiles when empty / logged out.
+
+## Churn rescue (“Tough run?”)
+
+- Game picks = **wallpaper grid** (3-up Originals), not a side-scroll shelf.
+- Don’t clip tile hover (favorite glass / play) — tiles `overflow-visible`; image keeps the radius.

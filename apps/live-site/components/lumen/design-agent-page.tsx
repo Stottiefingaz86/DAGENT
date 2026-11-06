@@ -171,7 +171,7 @@ const FIGMA_LUMEN_DS =
   'https://www.figma.com/design/vCPe93hNKDWWcpu49Vo0kU/Lumen_Desing-System'
 
 const FIELD =
-  'h-10 w-full rounded-lg border border-[#333] bg-[#141414] px-3 text-sm text-[#f5f5f5] placeholder:text-[#9a9a9a] outline-none focus:border-[#ff2d95]'
+  'h-10 w-full rounded-lg border border-[var(--vip-rewards-silver-a200)] bg-[#141414] px-3 text-sm text-[var(--brand-grey-100)] placeholder:text-[#9a9a9a] outline-none focus:border-[#ff2d95]'
 
 const LOGO = '/shell/design-agent/logo-mark.png'
 
@@ -966,7 +966,7 @@ function Badge({ children }: { children: ReactNode }) {
         padding: '0 5px',
         borderRadius: 99,
         background: C.pink,
-        color: '#fff',
+        color: 'var(--colors-base-white)',
         fontSize: 10,
         fontWeight: 700,
         display: 'inline-flex',
@@ -1001,7 +1001,7 @@ function PinkButton({
         border: 0,
         borderRadius: 8,
         background: C.pink,
-        color: '#fff',
+        color: 'var(--colors-base-white)',
         fontSize: 13,
         fontWeight: 600,
         cursor: disabled ? 'default' : 'pointer',
@@ -1852,7 +1852,7 @@ function DashboardOverview({
               borderRadius: 8,
               border: 0,
               background: C.pink,
-              color: '#fff',
+              color: 'var(--colors-base-white)',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
@@ -2225,7 +2225,7 @@ function JobWorkspace({
                   borderRadius: 8,
                   border: `1px solid ${C.pink}`,
                   background: C.pink,
-                  color: '#fff',
+                  color: 'var(--colors-base-white)',
                   cursor: busy ? 'default' : 'pointer',
                   fontSize: 13,
                   fontWeight: 600,
@@ -2963,11 +2963,11 @@ function StageStrip({
 function DesignWorkingLoader() {
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (customElements.get('betonline-loader')) return
+    if (customElements.get('site-loader')) return
     const existing = document.querySelector('script[data-da-bol-loader]')
     if (existing) return
     const s = document.createElement('script')
-    s.src = '/betonline-loader.js'
+    s.src = '/site-loader.js'
     s.dataset.daBolLoader = '1'
     document.head.appendChild(s)
   }, [])
@@ -2981,7 +2981,7 @@ function DesignWorkingLoader() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 16,
-        background: '#1a1a1a',
+        background: 'var(--brand-grey-950)',
         borderRadius: 12,
         border: `1px solid ${C.line}`,
       }}
@@ -2991,7 +2991,7 @@ function DesignWorkingLoader() {
       <div
         dangerouslySetInnerHTML={{
           __html:
-            '<betonline-loader duration="2400" style="--loader-width:min(280px,70vw)"></betonline-loader>',
+            '<site-loader duration="2400" style="--loader-width:min(280px,70vw)"></site-loader>',
         }}
       />
       <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>Design working…</div>
@@ -3402,7 +3402,7 @@ function ChatDock({
                     border: 0,
                     borderRadius: 6,
                     background: 'rgba(0,0,0,0.7)',
-                    color: '#fff',
+                    color: 'var(--colors-base-white)',
                     cursor: 'pointer',
                     display: 'grid',
                     placeItems: 'center',

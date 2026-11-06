@@ -197,7 +197,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: 'list row pattern',
     code: `<button className="flex w-full items-center gap-3 rounded-lg px-3 py-2 hover:!bg-surface-muted-3">…</button>`,
     render: () => (
-      <div className="max-w-sm overflow-hidden rounded-[10px] border border-border bg-card">
+      <div className="max-w-sm overflow-hidden rounded-lg border border-border bg-card">
         {['Rakeback', 'Weekly Boost', 'Refer a Friend'].map((label) => (
           <button
             key={label}
@@ -220,7 +220,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: 'overlay scrim',
     code: `<div className="fixed inset-0 bg-black/80 backdrop-blur-sm" />`,
     render: () => (
-      <div className="relative h-40 overflow-hidden rounded-[10px] border border-border">
+      <div className="relative h-40 overflow-hidden rounded-lg border border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-card" />
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <p className="text-sm text-white">Sheet / dialog scrim</p>
@@ -251,7 +251,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: '#shell-scroll',
     code: `<div id="shell-scroll" className="shell-scroll overflow-y-auto">…</div>`,
     render: () => (
-      <div className="shell-scroll h-40 overflow-y-auto rounded-[10px] border border-border bg-card p-3">
+      <div className="shell-scroll h-40 overflow-y-auto rounded-lg border border-border bg-card p-3">
         {Array.from({ length: 12 }).map((_, i) => (
           <p key={i} className="py-1 text-sm text-muted-foreground">
             Scroll row {i + 1}
@@ -303,12 +303,12 @@ export const ATOM_STORIES: LumenStory[] = [
     title: 'Skeleton',
     group: 'Utilities',
     importPath: '@/components/ui/skeleton',
-    code: `<Skeleton className="h-[207px] w-[152px] rounded-[10px]" />`,
+    code: `<Skeleton className="h-[207px] w-[152px] rounded-lg" />`,
     render: () => (
       <div className="flex gap-3">
-        <Skeleton className="h-[207px] w-[152px] shrink-0 rounded-[10px]" />
+        <Skeleton className="h-[207px] w-[152px] shrink-0 rounded-lg" />
         <div className="space-y-2">
-          <Skeleton className="h-7 w-40 rounded-[10px]" />
+          <Skeleton className="h-7 w-40 rounded-lg" />
           <Skeleton className="h-4 w-56 rounded-md" />
           <Skeleton className="h-4 w-44 rounded-md" />
         </div>
@@ -378,7 +378,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: '@/components/ui/input',
     code: `<Input className="rounded-lg border border-input bg-popover" />`,
     render: () => (
-      <div className="max-w-sm space-y-3 rounded-[10px] border border-border bg-card p-4">
+      <div className="max-w-sm space-y-3 rounded-lg border border-border bg-card p-4">
         <div className="space-y-1.5">
           <Label htmlFor="lg-email">Email</Label>
           <Input id="lg-email" className={FIELD} placeholder="you@email.com" />
@@ -405,7 +405,7 @@ export const ATOM_STORIES: LumenStory[] = [
     title: 'Checkbox',
     group: 'Inputs',
     importPath: '@/components/ui/checkbox',
-    code: `<Checkbox className="size-[18px] rounded-[4px] border-input" />`,
+    code: `<Checkbox className="size-[18px] rounded-xs border-input" />`,
     render: () => {
       const Demo = () => {
         const [on, setOn] = useState(true)
@@ -414,7 +414,7 @@ export const ATOM_STORIES: LumenStory[] = [
             <Checkbox
               checked={on}
               onCheckedChange={(v) => setOn(v === true)}
-              className="size-[18px] rounded-[4px] border-input"
+              className="size-[18px] rounded-xs border-input"
             />
             <span className="text-sm">I acknowledge that I am over 18</span>
           </label>
@@ -655,7 +655,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: 'dialog confirm',
     code: `/* Prefer controlled Sheet/Dialog with primary + outline Cancel */`,
     render: () => (
-      <div className="max-w-sm space-y-4 rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="max-w-sm space-y-4 rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <p className="text-sm font-semibold">Remove this device?</p>
         <p className="text-sm text-muted-foreground">
           You’ll need to sign in again on that device.
@@ -674,7 +674,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: 'calendar',
     code: `/* Contests / schedules — month grid */`,
     render: () => (
-      <div className="grid max-w-xs grid-cols-7 gap-1 rounded-[10px] border border-border bg-card p-3 text-center text-xs">
+      <div className="grid max-w-xs grid-cols-7 gap-1 rounded-lg border border-border bg-card p-3 text-center text-xs">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
           <span key={d} className="py-1 text-muted-foreground">
             {d}
@@ -863,7 +863,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: '@/components/ui/card',
     code: `import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'`,
     render: () => (
-      <Card className="max-w-sm rounded-[10px] border-border shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <Card className="max-w-sm rounded-lg border-border shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <CardHeader>
           <CardTitle>VIP Rewards</CardTitle>
           <CardDescription>Climb every VIP rank from Bronze to Obsidian</CardDescription>
@@ -916,7 +916,7 @@ export const ATOM_STORIES: LumenStory[] = [
       const Demo = () => {
         const [open, setOpen] = useState(false)
         return (
-          <div className="max-w-md rounded-[10px] border border-border">
+          <div className="max-w-md rounded-lg border border-border">
             <button
               type="button"
               className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
@@ -946,7 +946,7 @@ export const ATOM_STORIES: LumenStory[] = [
     code: `/* Join / Login fields in AuthModal */`,
     render: () => (
       <form
-        className="max-w-sm space-y-3 rounded-[10px] border border-border bg-card p-4"
+        className="max-w-sm space-y-3 rounded-lg border border-border bg-card p-4"
         onSubmit={(e) => e.preventDefault()}
       >
         <div className="space-y-1.5">
@@ -983,11 +983,11 @@ export const ATOM_STORIES: LumenStory[] = [
               >
                 {i + 1}
               </div>
-              <span className="text-[10px] text-muted-foreground">{s}</span>
+              <span className="text-size-xxs text-muted-foreground">{s}</span>
             </div>
           ))}
         </div>
-        <div className="rounded-[10px] border border-border bg-card p-4 text-sm text-muted-foreground">
+        <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
           Step 1 content
         </div>
       </div>
@@ -1066,7 +1066,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: '@/components/ui/table',
     code: `import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'`,
     render: () => (
-      <div className="overflow-hidden rounded-[10px] border border-border">
+      <div className="overflow-hidden rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -1294,7 +1294,7 @@ export const ATOM_STORIES: LumenStory[] = [
     importPath: 'misc',
     code: `/* Empty / edge utilities */`,
     render: () => (
-      <div className="rounded-[10px] border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
         Misc tokens & helpers — prefer named foundations above.
       </div>
     ),

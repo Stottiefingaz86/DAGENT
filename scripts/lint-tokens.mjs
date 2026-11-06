@@ -60,6 +60,25 @@ async function* walk(dir) {
   }
 }
 
+// Files that ARE the design system (generated token CSS, token data) are the source of truth, not violations.
+const SOURCE_OF_TRUTH = /(?:^|[\\/])(?:app[\\/]lumen\.css|lib[\\/]agent[\\/]designSystem\.ts)$/;
+// Runtime/component custom properties (set inline or by a library) are not colour/size tokens.
+const RUNTIME_VAR = /^--(?:radix-|font-figtree$|tw-)/;
+// Custom properties declared inside the scanned code (component-scoped vars like --spot-x, --skeleton).
+const localVars = new Set();
+async function collectLocalVars(abs) {
+  for await (const file of abs.isDir ? walk(abs.p) : [abs.p]) {
+    const text = await readFile(file, 'utf8');
+    for (const m of text.matchAll(/(?:^|[\s{;'"(,])(--[a-z0-9-]+)['"]?\s*:/gim)) localVars.add(m[1]);
+  }
+}
+for (const d of dirs) {
+  const p = path.resolve(d);
+  const st = await stat(p).catch(() => null);
+  if (st) await collectLocalVars({ p, isDir: st.isDirectory() });
+}
+const knownVar = (name) => allowed.has(name) || localVars.has(name) || RUNTIME_VAR.test(name);
+
 const violations = [];
 let files = 0;
 
@@ -71,6 +90,7 @@ for (const d of dirs) {
     continue;
   }
   for await (const file of s.isDirectory() ? walk(abs) : [abs]) {
+    if (SOURCE_OF_TRUTH.test(file)) continue;
     files++;
     const text = await readFile(file, 'utf8');
     const lines = text.split('\n');
@@ -84,6 +104,13 @@ for (const d of dirs) {
         while ((m = rule.re.exec(line))) {
           // #fff inside a URL fragment or id selector like `#root` → only flag hex-looking tokens
           if (rule.id === 'raw-hex' && /^#[0-9a-f]+$/i.test(m[0]) && /(href|url\(|#\w+-)/.test(line.slice(Math.max(0, m.index - 12), m.index))) continue;
+          // Arbitrary value that is only a known token, e.g. bg-[var(--surface-muted-5)], is token use, not a raw value.
+          if (rule.id === 'arbitrary') {
+            const inner = /\[([^\]]+)\]$/.exec(m[0])?.[1] ?? '';
+            const vars = [...inner.matchAll(/var\(\s*(--[a-z0-9-]+)/gi)].map((x) => x[1]);
+            const rest = inner.replace(/var\(\s*--[a-z0-9-]+\s*(?:,[^)]*)?\)/gi, '').replace(/^(?:length|color):/, '');
+            if (vars.length && vars.every(knownVar) && !/[0-9#]|rgb|hsl/i.test(rest)) continue;
+          }
           violations.push({ file, line: i + 1, rule: rule.id, msg: rule.msg, found: m[0] });
         }
       }
@@ -91,7 +118,7 @@ for (const d of dirs) {
       const varRe = /var\(\s*(--[a-z0-9-]+)/gi;
       let v;
       while ((v = varRe.exec(line))) {
-        if (!allowed.has(v[1])) violations.push({ file, line: i + 1, rule: 'unknown-var', msg: 'token not in Lumen manifest', found: v[1] });
+        if (!knownVar(v[1])) violations.push({ file, line: i + 1, rule: 'unknown-var', msg: 'token not in Lumen manifest', found: v[1] });
       }
     });
   }

@@ -19,7 +19,7 @@ You are extending **`apps/live-site`** — a Next.js shell that already owns chr
 
 1. Read existing neighbors first: `components/site/shell-*.tsx`, `components/lumen/*-page.tsx`, `lib/lumen/*`, `app/lumen.css`.
 2. If Figma is linked: load **figma-design-to-code**, `create_session`, then `get_design_context` + screenshot. Download assets locally — never leave MCP temp URLs in code.
-3. **Competitor UX (Mobbin + research)** — when inventing or refining a flow Chris has compared to peers (join / verify, rewards chrome, live wins, cashier, lobby discovery), pull patterns **before** coding. See **Competitor patterns via Mobbin** below and `.cursor/knowledge/product-strategy/COMPETITOR_RESEARCH.md`.
+3. **Competitor UX (Mobbin + research)** — when inventing or refining a flow Chris has compared to peers (join / verify, rewards chrome, live wins, cashier, lobby discovery), pull patterns **before** coding. See **Competitor patterns via Mobbin** below and `knowledge/product-strategy/COMPETITOR_RESEARCH.md`.
 4. Map UI to **tokens** (`bg-card`, `bg-popover`, `border-input`, `text-muted-foreground`, `primary`, `success`, `warning`) — not hard-coded greys.
 5. Wire demos into **shared shell state** (`useShell`) when the same fact exists elsewhere (claims, balance, login, launch).
 
@@ -82,6 +82,13 @@ Detail catalog: [patterns.md](patterns.md).
 - Colored marks keep baked fills (`#EE3536` primary). Mono marks may `dark:invert`.
 - Crypto: use circular cashier coin assets (green `$`, orange BTC, etc.).
 
+### Polish: celebration, sound, glass, motion (Chris, Nov 2026 — read `knowledge/chris-taste/POLISH.md`)
+- **Rewards are a moment:** every real claim/win runs the shell beat — claiming state (1.4s) → `celebrateVipClaim(button)` = redeem sound + confetti from the button → `VipClaimToast` → balance **NumberFlow** roll-up → crown wobble. Use `claimVipReward` / `claimMissionReward`; never your own confetti, toast or sound.
+- **Scale it:** small actions = Sonner toast only; rewards = full beat; jackpots = layered `fireConfetti` + jackpot sounds.
+- **Sound:** `playSound()` from `lib/sounds.ts`, files in `public/sound/`, volumes < 1, only on rewards/wins/reveals — never on nav, hover or ordinary buttons.
+- **Slight glass on chrome only:** sub-nav `data-glass="true"` (container 72% + `blur(24px) saturate(1.2)`), glass edge chevrons on desktop pointer only, frost auth modal. Content cards stay solid.
+- **One motion family:** ease `cubic-bezier(0.22,1,0.36,1)`, 180–350ms UI, springs `260/28/0.85` (panels) and `420/28` (pops), press `active:scale-[0.97]`, numbers via NumberFlow, shimmer skeletons, `prefers-reduced-motion` respected.
+
 ### Hover, motion, live feeds
 - Row hover: whisper `hover:!bg-surface-muted-3` (not heavy stripes).
 - Live activity: busy cadence (~900ms), **pause while pointer is over the table**, resume on leave; play icon = live, pause icon = paused (status, not “click to…” convention).
@@ -93,7 +100,7 @@ Detail catalog: [patterns.md](patterns.md).
 - After auth: **Join** → welcome modal (“You’re in”) → Let’s Go → `completeJoin` + cashier Activate; **Login** → `completeLogin` + Daily Spin (never the join welcome).
 - **Login = returning player:** Daily Spin only — **no** Laura Intercom first-deposit pitch, no welcome offer, no auto cashier. Login social (“sign in with”) uses `completeLogin`, never `completeJoin`.
 - **Join = new player:** Join & Play **and** “sign up with” social → welcome modal → `completeJoin` → **cashier Activate**, **no** Daily Spin. Intercom welcome only after empty wallet close. Birthday DOB in VIP Hub as **MM / DD / YY**.
-- **Daily Spin:** login-only post-auth popup (`.cursor/knowledge/chris-taste/DAILY_SPIN.md`). Auth-sized — left “Your daily spin is ready” art, right wheel. `variant="daily-spin"` (no wipe) + sounds; outcomes = **cash / free spins / nothing** only.
+- **Daily Spin:** login-only post-auth popup (`knowledge/chris-taste/DAILY_SPIN.md`). Auth-sized — left “Your daily spin is ready” art, right wheel. `variant="daily-spin"` (no wipe) + sounds; outcomes = **cash / free spins / nothing** only.
 
 ### Claims, toasts, balance
 - One source of truth: **`claimVipReward(id, button)`** in shell context. Page claim and VIP Hub claim must sync.
@@ -127,13 +134,20 @@ Detail catalog: [patterns.md](patterns.md).
 - [ ] Sticky sidebars on the flex item; offset under 68px header (~76px)
 - [ ] Soft-nav + tile spinner if leaving via in-page tiles
 - [ ] Hover/close accents unified; no rounded-full icon buttons for sheet close
+- [ ] Rewards celebrate via the shell beat (confetti + sound + toast + NumberFlow); motion uses the house ease; glass only on chrome; reduced-motion respected
 ```
 
 ## Anti-patterns
 
 | Don't | Do |
 |-------|-----|
+| `<img src="/logos/<brand>/…svg">` or a redrawn logo SVG (exports used `preserveAspectRatio="none"` → stretched mark, Nov 2026) | Real shell header, or `<ShellLogo />` / `<ShellLettermark />` from `components/site/shell-icons.tsx` |
+| Hand-drawn HTML/SVG recreation of the shell, logo or components for a proposal (stretched fake logo, Nov 2026) | Draft on the real shell at `/prototype/<slug>` with real components (`ShellLogo`, `ShellIcon`), then screenshot it |
 | New one-off toast/claim | `claimVipReward` + existing toast host |
+| Claim/reward with no celebration, or confetti + sound on ordinary actions (save, copy, filter) | Full shell beat for rewards only (`POLISH.md`) |
+| Calling `canvas-confetti` or `new Audio()` directly in a component | `celebrateVipClaim` / `fireConfetti` / `playSound` |
+| Opaque or heavily blurred sub-nav, glass on content cards | Sub-nav `data-glass` recipe; cards stay `bg-card` |
+| Linear easing, snapping balance/counts, motion that ignores reduced-motion | House ease `0.22,1,0.36,1`, NumberFlow, `useReducedMotion` |
 | `bg-card` inputs on dark cards | `bg-popover` + `border-input` |
 | Sticky inside short wrapper | Sticky on tall flex sibling / item |
 | Fill Continue Playing to 10 | 5 + Play Random |

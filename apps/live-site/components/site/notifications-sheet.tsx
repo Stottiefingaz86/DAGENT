@@ -583,7 +583,7 @@ function MobileNotifications({ open, onClose }: { open: boolean; onClose: () => 
         data-state={open ? 'open' : 'closed'}
         data-dragging={dragging ? 'true' : undefined}
         {...bind}
-        className="dark absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-72px)] flex-col overflow-hidden rounded-t-[10px] bg-background text-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="dark absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-72px)] flex-col overflow-hidden rounded-t-lg bg-background text-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]"
         style={offset > 0 ? { transform: `translateY(${offset}px)`, transition: 'none' } : undefined}
       >
         <div

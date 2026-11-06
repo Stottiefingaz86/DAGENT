@@ -38,7 +38,7 @@ Companion to [SKILL.md](SKILL.md). Open when implementing a specific surface.
 - PropShopX soccer: `MobileOddsCarousel` = swipe strip; `EventOddsRail` arrows only when fine pointer.
 
 ### Live Wins carousel (casino lobby)
-- Full taste note: `.cursor/knowledge/chris-taste/LIVE_WINS_CAROUSEL.md`.
+- Full taste note: `knowledge/chris-taste/LIVE_WINS_CAROUSEL.md`.
 - Shelf-style **h4 title**; play/pause **beside** the title; live dot = **`primary` red**.
 - Hover/pause icon follows Activity status convention (play=live, pause=paused).
 - Card hover = **`CasinoGameTile` spring lift** (`scale 1.04`, `y: -6`) — do **not** only zoom the image.
@@ -55,7 +55,7 @@ window.setTimeout(() => {
 
 ## Confirmation / success screens
 
-Full note: `.cursor/knowledge/chris-taste/CONFIRMATION_STATES.md`.
+Full note: `knowledge/chris-taste/CONFIRMATION_STATES.md`.
 
 - Glyph = join welcome: **primary filled disc** + bold white `IconCheck` (`stroke={3}`), spring in. Never a thin green tick.
 - Copy names the outcome (**Bets placed** / **Your selections are live**) — not vague **You’re in** in the body.
@@ -125,7 +125,7 @@ Legacy `body > div` rules force `position: relative` and kill stacking. **Every*
 
 Tailwind `z-[240]` alone is **not enough** — without the carve-out the portal paints under VIP Hub / cashier / drawer / soccer betslip. Chris has hit this repeatedly (profile gate Oct 2026); do not relearn it.
 
-**Daily Spin** = ship the BOL `JackpotWheelBonus` component (`components/lumen/jackpot/jackpot-wheel-bonus.tsx`) + sounds (`lib/sounds.ts`, `/public/sound/`) + wordmarks (`/WHEEL_LOGO/`). Do not redraw the wheel. See `.cursor/knowledge/chris-taste/DAILY_SPIN.md` + `COPY.md`.
+**Daily Spin** = ship the BOL `JackpotWheelBonus` component (`components/lumen/jackpot/jackpot-wheel-bonus.tsx`) + sounds (`lib/sounds.ts`, `/public/sound/`) + wordmarks (`/WHEEL_LOGO/`). Do not redraw the wheel. See `knowledge/chris-taste/DAILY_SPIN.md` + `COPY.md`.
 
 ## Sticky sidebar
 

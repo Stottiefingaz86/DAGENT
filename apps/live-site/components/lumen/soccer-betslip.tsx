@@ -405,7 +405,7 @@ export function SoccerBetslip({
                 /* Mobile: flush bottom drawer. Desktop: 375 card. */
                 'dark pointer-events-auto absolute inset-x-0 bottom-0 flex w-full flex-col',
                 'mx-auto max-w-none lg:max-w-[375px]',
-                'max-h-[min(85dvh,640px)] overflow-hidden rounded-t-[10px]',
+                'max-h-[min(85dvh,640px)] overflow-hidden rounded-t-lg',
                 'border border-border border-b-0 bg-popover text-popover-foreground',
                 'shadow-[0_8px_40px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.06)]',
               )}
@@ -428,7 +428,7 @@ export function SoccerBetslip({
                 {confirmed ? null : (
                   <span
                     data-betslip-fly-target=""
-                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[12px] font-medium leading-4 text-primary-foreground"
+                    className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-size-xs font-medium leading-4 text-primary-foreground"
                   >
                     {picks.length}
                   </span>
@@ -562,7 +562,7 @@ export function SoccerBetslip({
                             aria-label={`Play ${game.title}`}
                             onClick={(e) => launchGame(game, e.currentTarget)}
                             className={cn(
-                              'relative z-0 h-[92px] w-[68px] shrink-0 overflow-hidden rounded-[10px]',
+                              'relative z-0 h-[92px] w-[68px] shrink-0 overflow-hidden rounded-lg',
                               'border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]',
                               'transition-transform duration-200',
                               '[@media(hover:hover)_and_(pointer:fine)]:hover:z-10 [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-1',
@@ -767,7 +767,7 @@ export function SoccerBetslip({
         >
           <span
             className={cn(
-              'dark flex w-full items-center gap-2 rounded-[10px] border border-border bg-popover px-4 py-3',
+              'dark flex w-full items-center gap-2 rounded-lg border border-border bg-popover px-4 py-3',
               'shadow-[0_8px_32px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.06)]',
             )}
           >

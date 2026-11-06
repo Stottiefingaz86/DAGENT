@@ -84,10 +84,10 @@ export function ShellProductChips({ className }: { className?: string }) {
                   'inline-flex min-w-[60px] items-center justify-center gap-1.5 border-b-2 px-[14px] py-1.5 text-sm leading-5 transition-colors duration-150 ease-in-out',
                   'active:opacity-80',
                   active
-                    ? 'border-primary font-semibold text-[rgba(255,255,255,0.87)]'
+                    ? 'border-primary font-semibold text-[var(--opacity-white-900)]'
                     : loading
-                      ? 'border-primary/60 font-medium text-[rgba(255,255,255,0.87)]'
-                      : 'border-transparent font-medium text-[rgba(255,255,255,0.6)] hover:text-[rgba(255,255,255,0.87)]',
+                      ? 'border-primary/60 font-medium text-[var(--opacity-white-900)]'
+                      : 'border-transparent font-medium text-[var(--opacity-white-800)] hover:text-[var(--opacity-white-900)]',
                 )}
               >
                 {loading ? <ChipSpinner /> : null}

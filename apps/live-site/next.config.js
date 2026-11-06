@@ -5,6 +5,8 @@ const nextConfig = {
   distDir: process.env.PROTOTYPE_LANE === '1' ? '.next-prototype' : '.next',
   experimental: {
     serverComponentsExternalPackages: ['@cursor/sdk'],
+    /* Ship the agent kit (skills, taste, strategy) inside the serverless functions so /designagent lists every skill on Vercel. */
+    outputFileTracingIncludes: { '/**': ['./.agent-kit/**/*'] },
   },
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },

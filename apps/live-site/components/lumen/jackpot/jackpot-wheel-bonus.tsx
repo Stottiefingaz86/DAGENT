@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
-import { fireConfetti } from '@/lib/confetti'
+import { fireConfetti, tokenColors } from '@/lib/confetti'
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion'
 import {
   JACKPOT_FINAL_SEGMENT_MAX_MS,
@@ -436,7 +436,8 @@ function IntroConfetti({ active }: { active: boolean }) {
     if (!active || firedRef.current) return
     firedRef.current = true
 
-    const colors = ['#FFD700', '#FFDF00', '#F5E6A3', '#D4AF37', '#FFF8DC', '#ffffff', '#FFA500', '#E8C547']
+    // Jackpot gold from Lumen brand tokens (resolved at fire time — canvas can't read CSS vars).
+    const colors = tokenColors(['--brand-superyellow-500', '--brand-gaminggold-100', '--brand-highgold-500', '--brand-sbyellow-50', '--colors-base-white', '--brand-lowyellow-500', '--brand-gaminggold-400'])
     const defaults = {
       ticks: 220,
       gravity: 0.72,

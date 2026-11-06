@@ -4,7 +4,7 @@ function Block({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={cn('lm-shimmer rounded-[10px] bg-[var(--skeleton)]', className)}
+      className={cn('lm-shimmer rounded-lg bg-[var(--skeleton)]', className)}
     />
   )
 }

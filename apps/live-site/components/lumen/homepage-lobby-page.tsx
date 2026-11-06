@@ -153,7 +153,7 @@ function TileSpinnerOverlay({ loading }: { loading: boolean }) {
     <>
       <div
         className={cn(
-          'absolute inset-0 z-20 rounded-[10px] bg-black/55 transition-opacity duration-200 ease-out',
+          'absolute inset-0 z-20 rounded-lg bg-black/55 transition-opacity duration-200 ease-out',
           loading ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
         aria-hidden
@@ -188,7 +188,7 @@ function TopMarketTile({
       aria-label={loading ? `Loading ${name}` : name}
       aria-busy={loading}
       className={cn(
-        'group relative flex size-[112px] flex-col items-center justify-center gap-2 rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)] transition-[border-color,background-color,transform] duration-200 md:size-[128px]',
+        'group relative flex size-[112px] flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)] transition-[border-color,background-color,transform] duration-200 md:size-[128px]',
         loading
           ? 'pointer-events-none'
           : 'hover:-translate-y-0.5 hover:border-foreground/25 hover:bg-muted',
@@ -304,7 +304,7 @@ function TrendingSportTile({
         {/* Recessed card well */}
         <div
           className={cn(
-            'relative z-[1] aspect-[2.5/3.5] overflow-hidden rounded-[4px] bg-zinc-950',
+            'relative z-[1] aspect-[2.5/3.5] overflow-hidden rounded-xs bg-zinc-950',
             'shadow-[inset_0_2px_6px_rgba(0,0,0,0.45)] ring-1 ring-black/25',
             loading && 'opacity-50',
           )}
