@@ -2,7 +2,7 @@
 # Pushes this folder to github.com/Stottiefingaz86/DAGENT using YOUR git login on this Mac.
 # Secrets (.env, API keys, studio passwords), installed packages and build files are never pushed (.gitignore).
 cd "$(dirname "$0")" || exit 1
-REMOTE="git@github.com:Stottiefingaz86/DAGENT.git"
+REMOTE="https://github.com/Stottiefingaz86/DAGENT.git"
 echo ""
 echo "  Push the design repo to GitHub (DAGENT)"
 echo ""
@@ -10,7 +10,7 @@ if [ ! -d .git ]; then
   git init -q -b main
   git remote add origin "$REMOTE"
 fi
-git remote get-url origin >/dev/null 2>&1 || git remote add origin "$REMOTE"
+git remote get-url origin >/dev/null 2>&1 && git remote set-url origin "$REMOTE" || git remote add origin "$REMOTE"
 
 read -r -p "  Is DAGENT set to PRIVATE on GitHub? (y/n) " PRIV
 mkdir -p .git/info
@@ -33,6 +33,10 @@ echo "  Pushing…"
 if git push -u origin main; then
   echo ""; echo "  Done → https://github.com/Stottiefingaz86/DAGENT"
 else
-  echo ""; echo "  Push failed. If it says 'Permission denied (publickey)', run once:  gh auth login  (or set up an SSH key), then double-click this again."
+  echo ""
+  echo "  Push failed. GitHub needs you to sign in once:"
+  echo "   • If a GitHub sign-in window or browser opened, finish it and double-click this again."
+  echo "   • If it asked for a password: use a token, not your password — github.com → Settings → Developer settings → Personal access tokens → Fine-grained → access to DAGENT, Contents: Read and write. Paste it as the password."
+  echo "   • Or open GitHub Desktop → File → Add local repository → this folder → Publish/Push."
 fi
 read -r -p "  Press Enter to close."
