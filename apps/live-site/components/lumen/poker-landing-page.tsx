@@ -85,7 +85,7 @@ function DownloadChip({
     >
       <DownloadChipIcon id={id} />
       <span className="flex flex-col items-start leading-none">
-        <span className="text-[10px] leading-[14px] text-muted-foreground">Download for</span>
+        <span className="text-size-xxs leading-[14px] text-muted-foreground">Download for</span>
         <span className="text-sm font-semibold leading-5">{label}</span>
       </span>
     </button>
@@ -97,7 +97,7 @@ function PokerHeroArt() {
   return (
     <div
       data-name="poker-hero-art"
-      className="relative min-h-[280px] w-full flex-1 self-stretch overflow-hidden rounded-[10px] bg-primary md:min-h-[470px] md:min-w-0 md:w-auto"
+      className="relative min-h-[280px] w-full flex-1 self-stretch overflow-hidden rounded-lg bg-primary md:min-h-[470px] md:min-w-0 md:w-auto"
     >
       <img
         src="/poker/hero-art.png"
@@ -125,7 +125,7 @@ function PokerHero() {
               as="h1"
               shape="h1"
               weight="bold"
-              className="text-[40px] leading-none text-foreground md:text-[48px]"
+              className="text-[40px] leading-none text-foreground md:text-size-5xl"
             >
               The BetOnline
               <br />
@@ -191,7 +191,7 @@ function PokerFeatures() {
               whileTap={{ scale: 1.01, y: -2 }}
               transition={TILE_SPRING}
               className={cn(
-                'group relative z-0 cursor-pointer overflow-hidden rounded-[10px] border border-border bg-card',
+                'group relative z-0 cursor-pointer overflow-hidden rounded-lg border border-border bg-card',
                 'shadow-[0_0_16px_0_rgba(0,0,0,0.06)]',
                 'transition-[border-color] duration-150 hover:border-white/25',
                 'motion-reduce:!transform-none',
@@ -251,7 +251,7 @@ function PokerGettingStarted() {
           {POKER_STEPS.map((item, index) => (
             <div
               key={item.step}
-              className="flex w-full items-start gap-6 rounded-[10px] border border-border bg-card p-6"
+              className="flex w-full items-start gap-6 rounded-lg border border-border bg-card p-6"
             >
               <div className="flex w-[37px] shrink-0 flex-col items-center gap-1 self-stretch">
                 <span className="grid size-[38px] place-items-center rounded-full bg-primary text-lg font-medium text-primary-foreground">

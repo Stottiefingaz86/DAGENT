@@ -76,16 +76,16 @@ function BalanceButton({ onClick, open = false }: { onClick: () => void; open?: 
       onClick={onTap}
       aria-expanded={open}
       aria-label={open ? 'Close wallet' : 'Open wallet'}
-      className="shell-chrome-btn flex h-9 items-center overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(250,250,250,0.05)] pl-1.5 transition-colors duration-200 ease-in-out hover:bg-white/10 active:bg-white/15"
+      className="shell-chrome-btn flex h-9 items-center overflow-hidden rounded-lg border border-[var(--opacity-white-100)] bg-[var(--opacity-white-50)] pl-1.5 transition-colors duration-200 ease-in-out hover:bg-white/10 active:bg-white/15"
     >
-      <span className="px-1 text-xs font-medium leading-4 text-[rgba(255,255,255,0.87)]">
+      <span className="px-1 text-xs font-medium leading-4 text-[var(--opacity-white-900)]">
         $
         <NumberFlow
           value={displayBalance}
           format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}
         />
       </span>
-      <span className="flex h-9 items-center bg-[rgba(255,255,255,0.1)] px-2.5">
+      <span className="flex h-9 items-center bg-[var(--opacity-white-200)] px-2.5">
         <ShellIcon name="wallet" className="size-4" />
       </span>
     </button>
@@ -140,7 +140,7 @@ export function VipButton({
         /* Match Login / Join h-9 (36px) — not size-11. */
         'shell-chrome-btn relative inline-flex size-9 items-center justify-center rounded-lg transition-[background-color,border-color,opacity] duration-200 ease-in-out',
         loggedOut
-          ? 'border border-[rgba(255,255,255,0.08)] bg-[rgba(250,250,250,0.05)] hover:bg-white/10 active:bg-white/15'
+          ? 'border border-[var(--opacity-white-100)] bg-[var(--opacity-white-50)] hover:bg-white/10 active:bg-white/15'
           : 'border border-[rgba(227,158,61,0.55)] bg-[rgba(227,158,61,0.18)] opacity-80 hover:border-[rgba(227,158,61,0.95)] hover:bg-[rgba(227,158,61,0.42)] hover:opacity-100 active:opacity-100',
         needsAttention && !loggedOut && 'opacity-100',
       )}
@@ -152,7 +152,7 @@ export function VipButton({
         <ShellIcon name="crownGold" className="size-4 opacity-100" />
       )}
       {needsAttention && !loggedOut ? (
-        <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-white">
+        <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-size-xxs font-semibold leading-none text-white">
           {vipClaimCount > 9 ? '9+' : vipClaimCount}
         </span>
       ) : null}
@@ -174,7 +174,7 @@ function AccountButton({ onClick, open = false }: { onClick: () => void; open?: 
           ? `Account, ${unreadNotificationCount} unread notification${unreadNotificationCount === 1 ? '' : 's'}`
           : 'Account'
       }
-      className="shell-chrome-btn relative inline-flex size-9 items-center justify-center rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(250,250,250,0.05)] transition-colors duration-200 ease-in-out hover:bg-white/10 active:bg-white/15"
+      className="shell-chrome-btn relative inline-flex size-9 items-center justify-center rounded-lg border border-[var(--opacity-white-100)] bg-[var(--opacity-white-50)] transition-colors duration-200 ease-in-out hover:bg-white/10 active:bg-white/15"
     >
       <ShellIcon name="account" className="size-4" />
       {hasUnread ? (
@@ -289,7 +289,7 @@ function MobileUbc({ open, onClose }: { open: boolean; onClose: () => void }) {
         data-state={open ? 'open' : 'closed'}
         data-dragging={dragging ? 'true' : undefined}
         {...bind}
-        className="absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-t-[10px] bg-background shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="absolute inset-x-0 bottom-0 flex max-h-[calc(100svh-112px)] flex-col overflow-hidden rounded-t-lg bg-background shadow-[0_0_16px_rgba(0,0,0,0.06)]"
         style={offset > 0 ? { transform: `translateY(${offset}px)`, transition: 'none' } : undefined}
       >
         <div
@@ -353,7 +353,7 @@ export function UbcPanel({
           <ThemeToggleButton />
         </div>
 
-        <div className="flex flex-col gap-2 rounded-[10px] border border-border bg-card px-6 py-5">
+        <div className="flex flex-col gap-2 rounded-lg border border-border bg-card px-6 py-5">
           <Row
             label="Available Balance"
             value={`$${displayBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
@@ -511,7 +511,7 @@ function Row({ label, value, gold }: { label: string; value: string; gold?: bool
   return (
     <div className="flex items-center justify-between text-sm leading-5">
       <span className="font-medium text-muted-foreground">{label}</span>
-      <span className={cn('font-semibold', gold ? 'text-[#c4af3e]' : 'text-foreground')}>{value}</span>
+      <span className={cn('font-semibold', gold ? 'text-[var(--vip-rewards-gold-700)]' : 'text-foreground')}>{value}</span>
     </div>
   )
 }

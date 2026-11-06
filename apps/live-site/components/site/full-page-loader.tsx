@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BetOnlineLoader } from './betonline-loader'
+import { SiteLoader } from './site-loader'
 import { cn } from '@/lib/utils'
 
 /**
@@ -36,7 +36,7 @@ export function FullPageLoader({ open }: { open: boolean }) {
         'bg-[var(--background,#1a1a1a)]',
       )}
     >
-      <BetOnlineLoader width={320} duration={2400} className="px-6" />
+      <SiteLoader width={320} duration={2400} className="px-6" />
     </div>,
     document.body,
   )

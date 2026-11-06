@@ -246,7 +246,7 @@ export function SiteFooter() {
               )
             )}
             <div className="flex size-[30px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-border-inverted bg-[var(--surface-muted-2-inverted)]">
-              <span className="text-[10px] font-bold leading-[15px] text-foreground-inverted">18+</span>
+              <span className="text-size-xxs font-bold leading-[15px] text-foreground-inverted">18+</span>
             </div>
           </div>
           <div className="flex flex-col gap-0.5 text-left text-xs leading-4 text-muted-foreground-inverted lg:items-end lg:text-right">

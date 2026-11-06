@@ -47,7 +47,7 @@ function LocatorCard({
   )
 
   const className = cn(
-    'flex w-full items-center gap-4 rounded-[10px] border border-border bg-card p-4 text-left shadow-[0_0_16px_rgba(0,0,0,0.06)]',
+    'flex w-full items-center gap-4 rounded-lg border border-border bg-card p-4 text-left shadow-[0_0_16px_rgba(0,0,0,0.06)]',
     (onClick || href) && 'transition-colors hover:bg-accent/40',
   )
 

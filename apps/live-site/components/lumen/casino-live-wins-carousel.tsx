@@ -260,7 +260,7 @@ export function CasinoLiveWinsCarousel({ className }: { className?: string }) {
         >
           <Badge
             variant="secondary"
-            className="inline-flex shrink-0 items-center gap-1 border-border bg-secondary px-2 py-0.5 text-[10px] font-medium leading-[14px] text-muted-foreground"
+            className="inline-flex shrink-0 items-center gap-1 border-border bg-secondary px-2 py-0.5 text-size-xxs font-medium leading-[14px] text-muted-foreground"
           >
             Future Feature
             <IconInfoCircle className="size-3 shrink-0" stroke={1.75} aria-hidden />
@@ -314,7 +314,7 @@ export function CasinoLiveWinsCarousel({ className }: { className?: string }) {
                   aria-busy={launching}
                   aria-label={`Play ${win.game} — ${win.user} won ${formatWinAmount(win.payout)}`}
                   className={cn(
-                    'relative z-0 flex shrink-0 flex-col gap-1.5 rounded-[10px] border border-border bg-card p-1.5 text-left',
+                    'relative z-0 flex shrink-0 flex-col gap-1.5 rounded-lg border border-border bg-card p-1.5 text-left',
                     'shadow-[0_0_16px_rgba(0,0,0,0.06)]',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     'motion-reduce:!transform-none',

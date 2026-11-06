@@ -21,12 +21,17 @@ const BLOCKED = /\b(git\s+(commit|push|reset|checkout|rebase)|vercel|rm\s+-rf|np
 const SECRET = /(^|\/)(\.env(\.[^/]*)?|\.studio-(users|sessions)\.json|\.git\/|\.ssh\/|\.aws\/|\.npmrc|id_rsa|\.netrc)/
 const SECRET_WORDS = /\.env\b|\.env\.|studio-users|studio-sessions|\.ssh|\.aws|\.npmrc|\.netrc|id_rsa|\benv\b|printenv/
 
+const FIGMA_FILE = process.env.STUDIO_FIGMA_FILE || 'MYeELetKW9xye1shSpm8Fn'
 export function permission(repoRoot) {
   const inRepo = (p) => {
     const full = path.resolve(repoRoot, String(p || '.'))
     return (full === repoRoot || full.startsWith(repoRoot + path.sep)) && !SECRET.test(path.relative(repoRoot, full))
   }
   return async (toolName, input) => {
+    // Figma: read anything, but write only into the one Design Agent file (Chris: never edit existing files).
+    if (toolName.startsWith('mcp__figma') && /(use_figma|create_new_file|upload_assets|add_code_connect_map|send_code_connect|generate_figma_design|html_to_figma)/.test(toolName)) {
+      if (/create_new_file/.test(toolName) || (input?.fileKey && input.fileKey !== FIGMA_FILE)) return { behavior: 'deny', message: `Figma writes go only into the Design Agent file (${FIGMA_FILE}). Never edit or create other files.` }
+    }
     if (toolName.startsWith('mcp__studio__') || toolName.startsWith('mcp__mobbin') || toolName.startsWith('mcp__figma')) {
       return { behavior: 'allow', updatedInput: input }
     }
@@ -35,7 +40,7 @@ export function permission(repoRoot) {
       if (!inRepo(target) || SECRET.test(String(input.pattern || '')) || SECRET.test(String(input.glob || ''))) return { behavior: 'deny', message: 'Only non-secret files inside the design repo can be read.' }
       return { behavior: 'allow', updatedInput: input }
     }
-    if (['WebSearch', 'WebFetch', 'TodoWrite', 'Skill', 'Task'].includes(toolName)) {
+    if (['WebSearch', 'WebFetch', 'TodoWrite', 'Skill', 'Task', 'Agent'].includes(toolName)) {
       return { behavior: 'allow', updatedInput: input }
     }
     if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(toolName)) {
@@ -49,7 +54,7 @@ export function permission(repoRoot) {
       }
       const body = [input.content, input.new_string, ...(input.edits || []).map((e) => e.new_string)].filter(Boolean).join('\n')
       if (!/shell-icons\.tsx$/.test(p) && /(logos\/BetOnline|figma\/logos\/|id="BETONLINE"|id="Lettermark")/.test(body)) {
-        return { behavior: 'deny', message: 'Never place or redraw the BetOnline logo yourself. Render the real shell (ShellFrame) or use <ShellLogo /> / <ShellLettermark /> from components/site/shell-icons.tsx.' }
+        return { behavior: 'deny', message: 'Never place or redraw the brand logo yourself. Render the real shell (ShellFrame) or use <ShellLogo /> / <ShellLettermark /> from components/site/shell-icons.tsx.' }
       }
       return { behavior: 'allow', updatedInput: input }
     }
@@ -67,8 +72,8 @@ export function permission(repoRoot) {
   }
 }
 
-function studioServer(store, slug, origin, lane) {
-  const t = makeTools(store, slug)
+function studioServer(store, slug, origin, lane, taste) {
+  const t = makeTools(store, slug, taste)
   const ok = (text) => ({ content: [{ type: 'text', text }] })
   const { tool, createSdkMcpServer } = sdk
   return createSdkMcpServer({
@@ -88,7 +93,7 @@ function studioServer(store, slug, origin, lane) {
                 title: z.string().describe('The question itself, one sentence, max ~100 characters.'),
                 context: z.string().optional().describe('What you found that raises it, with sources (files, BRD, peers). Markdown ok, max ~400 characters.'),
                 why: z.string().optional().describe('What changes in the design depending on the answer. One sentence.'),
-                images: z.array(z.object({ src: z.string().describe('Repo path (specs/<slug>/refs/…png from capture_site, or .cursor/knowledge/product-strategy/competitors/…) or an https image URL (e.g. Mobbin image_url).'), caption: z.string().optional() })).max(4).optional().describe('Screenshots of what the question refers to: our site today (capture_site) and the peer pattern.'),
+                images: z.array(z.object({ src: z.string().describe('Repo path (specs/<slug>/refs/…png from capture_site, or knowledge/product-strategy/competitors/…) or an https image URL (e.g. Mobbin image_url).'), caption: z.string().optional() })).max(4).optional().describe('Screenshots of what the question refers to: our site today (capture_site) and the peer pattern.'),
                 options: z
                   .array(z.object({ label: z.string().describe('Short choice, max ~60 characters.'), detail: z.string().optional().describe('What this choice means for the design, one sentence.'), recommended: z.boolean().optional(), image: z.string().optional().describe('Optional repo path or https URL showing this option.') }))
                   .max(4)
@@ -102,7 +107,7 @@ function studioServer(store, slug, origin, lane) {
       ),
       tool(
         'capture_site',
-        'Screenshot a route of the local BetOnline live site (logged in by default) and save it under specs/<slug>/refs/. Use it to show what a question or proposal refers to. Returns the repo path to use in images.',
+        'Screenshot a route of the local live site (logged in by default) and save it under specs/<slug>/refs/. Use it to show what a question or proposal refers to. Returns the repo path to use in images.',
         {
           route: z.string().describe('Path on the site, e.g. "/", "/casino", "/promotions/my-bonus", "/prototype/<slug>".'),
           name: z.string().describe('File name without extension, e.g. "header-today".'),
@@ -166,22 +171,72 @@ function studioServer(store, slug, origin, lane) {
         },
         async (a) => ok(t.submit_prototype(a)),
       ),
-      tool('record_learning', 'Record a durable rule you just wrote into chris-taste or a skill.', { file: z.string(), rule: z.string() }, async (a) => ok(t.record_learning(a))),
+      tool(
+        'propose_rule',
+        'Learn a durable taste rule from feedback — what is GOOD (do) or BAD (don’t). It is written into knowledge/chris-taste/<file> at once and applies to every future project; Chris keeps or undoes it on the Taste page. Use reinforces when feedback repeats an existing rule.',
+        {
+          file: z.string().describe('Taste file name, e.g. "COPY.md", "POLISH.md", "CONFIRMATION_STATES.md", "MOBILE_CAROUSELS.md", "SURFACES.md", or a new TOPIC.md (e.g. "CASHIER.md").'),
+          polarity: z.enum(['do', 'dont']),
+          rule: z.string().describe('The rule in Chris’s voice, one sentence, specific enough to apply next time (name the component, value or string).'),
+          why: z.string().optional().describe('Short reason, from what Chris said.'),
+          quote: z.string().describe('Chris’s words (or the reaction) this comes from, verbatim.'),
+          reinforces: z.string().optional().describe('Id of an existing learned rule this feedback repeats.'),
+        },
+        async (a) => ok(t.propose_rule(a)),
+      ),
+      tool('record_learning', 'Record a durable rule you wrote by hand into a SKILL file (e.g. the lumen-build anti-patterns table). For taste rules use propose_rule.', { file: z.string(), rule: z.string() }, async (a) => ok(t.record_learning(a))),
+      tool(
+        'answer_dev_question',
+        'Answer a question the dev team sent about the handover. Give the source (file:line or Figma frame). needsDesign true when the handover does not cover it and Chris must decide (then also ask_questions).',
+        { id: z.string(), answer: z.string(), source: z.string().optional(), needsDesign: z.boolean().optional() },
+        async (a) => ok(t.answer_dev_question(a)),
+      ),
+      tool(
+        'submit_recommendations',
+        'Submit the recommended ideas (gap, strategy goal, impact, effort, mock screenshots, file). Ends your turn.',
+        {
+          summary: z.string(),
+          ideas: z.array(z.object({ id: z.string().optional(), title: z.string(), summary: z.string(), goal: z.string(), impact: z.string(), effort: z.string(), file: z.string(), screenshots: z.array(z.string()).optional() })),
+        },
+        async (a) => ok(t.submit_recommendations(a)),
+      ),
       tool('submit_handoff', 'Submit the dev handoff package. Ends your turn.', { file: z.string().optional(), summary: z.string() }, async (a) => ok(t.submit_handoff(a))),
     ],
   })
 }
 
+// The design reviewer: a separate agent that didn't build the work, so it doesn't grade its own homework.
+const REVIEWER = {
+  description: 'Independent design reviewer. Call it BEFORE submit_proposal and BEFORE submit_prototype, giving the job slug, the prototype route and the screenshot paths you captured. Returns VERDICT: PASS or FIX with must-fix issues.',
+  tools: ['Read', 'Glob', 'Grep'],
+  model: 'inherit',
+  prompt: `You are the design reviewer for the Design Agent. You did not build this work; judge it as Chris (Head of Design) would.
+Read first: knowledge/chris-taste/POLISH.md, COPY.md, CONFIRMATION_STATES.md, MOBILE_CAROUSELS.md, .claude/skills/lumen-build/SKILL.md (hard rules + anti-patterns),
+knowledge/learned-rules.json (status "new"/"kept" = rules to enforce; "undone" = ignore), and the newest entry of knowledge/lumen/CHANGELOG.md.
+Then Read EVERY screenshot you were given (they are PNGs under specs/<slug>/refs/) and the prototype source under apps/live-site/app/prototype/ and any components it changed.
+Check, strictly:
+1. Broken: error overlays, blank areas, overlapping or clipped text, wrapping labels, stretched or redrawn logo/icons, layout broken at 390.
+2. Lumen: no raw hex/rgb, no off-scale arbitrary values, no invented components, nothing removed in the Lumen changelog.
+3. Taste: reward moments use the shell celebration (confetti + sound + toast + NumberFlow); glass only on chrome; one motion family; restraint; copy rules; confirmation glyph; mobile carousels swipe-only.
+4. States: empty, loading/skeleton, error, success, logged in/out covered where relevant.
+5. Every learned rule that applies is respected.
+Answer exactly in this format:
+VERDICT: PASS | FIX
+MUST FIX (only if FIX): numbered, each with the evidence (screenshot or file:line) and the fix.
+NICE TO HAVE: at most 3.
+Never pass something you did not look at. Be brief.`,
+}
+
 function describeTool(name, input) {
   const p = (input && (input.file_path || input.path || input.pattern || input.command || input.query || input.url)) || ''
-  const short = String(p).replace(/^.*BetOnline_Claude_Handoff\//, '').slice(0, 120)
+  const short = String(p).replace(/^.*?\/(?=(?:apps|specs|knowledge|src|\.claude|scripts|docs|tokens)\/)/, '').slice(0, 120)
   if (name.startsWith('mcp__studio__')) return null
   if (name.startsWith('mcp__mobbin')) return `Mobbin · ${input?.query || name.split('__').pop()}`
   const verbs = { Read: 'Reading', Write: 'Writing', Edit: 'Editing', Glob: 'Finding', Grep: 'Searching', Bash: 'Running', WebSearch: 'Searching the web', WebFetch: 'Opening' }
   return `${verbs[name] || name} ${short}`.trim()
 }
 
-export function createClaudeRunner({ store, repoRoot, model, siteOrigin = 'http://127.0.0.1:3001', lane }) {
+export function createClaudeRunner({ store, repoRoot, model, siteOrigin = 'http://127.0.0.1:3001', lane, taste }) {
   return async function run(slug, prompt, signal) {
     await load()
     lane?.ensure() // warm the prototype lane while the agent reads
@@ -194,10 +249,15 @@ export function createClaudeRunner({ store, repoRoot, model, siteOrigin = 'http:
       resume: job.sessionId || undefined,
       systemPrompt: { type: 'preset', preset: 'claude_code', append: SYSTEM_APPEND },
       // Figma runs also load your own Claude Code settings, so a Figma MCP you connected in Claude Code is available here.
-      settingSources: /^FIGMA BUILD/.test(prompt) ? ['user', 'project'] : ['project'],
-      mcpServers: { studio: studioServer(store, slug, siteOrigin, lane), ...(/^FIGMA BUILD/.test(prompt) && process.env.STUDIO_FIGMA_MCP_URL ? { figma: { type: 'http', url: process.env.STUDIO_FIGMA_MCP_URL } } : {}) },
+      // 'user' so the Figma sign-in made with Connect Tools.command is found; Figma is needed for research, Figma builds and the handover.
+      settingSources: ['user', 'project'],
+      // Figma jobs get the official Figma MCP explicitly. Its sign-in is the one done once with "Connect Tools.command"
+      // (Claude Code keeps the token for the server named "figma" at this URL).
+      mcpServers: { studio: studioServer(store, slug, siteOrigin, lane, taste), figma: { type: 'http', url: process.env.STUDIO_FIGMA_MCP_URL || 'https://mcp.figma.com/mcp' }, mobbin: { type: 'http', url: process.env.STUDIO_MOBBIN_MCP_URL || 'https://api.mobbin.com/mcp' } },
       // studio tools + read-only tools never need approval; everything else goes through canUseTool below
-      allowedTools: ['submit_figma', 'set_title', 'set_stage', 'log', 'capture_site', 'ask_questions', 'submit_proposal', 'submit_prototype', 'record_learning', 'submit_handoff'].map((n) => `mcp__studio__${n}`),  // Read/Glob/Grep go through canUseTool so the secret guard applies
+      // An independent reviewer with a fresh context checks the work before Chris sees it (see REVIEWER below).
+      agents: { 'design-reviewer': REVIEWER },
+      allowedTools: ['propose_rule', 'submit_figma', 'set_title', 'set_stage', 'log', 'capture_site', 'ask_questions', 'submit_proposal', 'submit_prototype', 'record_learning', 'submit_handoff', 'answer_dev_question', 'submit_recommendations'].map((n) => `mcp__studio__${n}`),  // Read/Glob/Grep go through canUseTool so the secret guard applies
       canUseTool: permission(repoRoot),
       abortController,
     }

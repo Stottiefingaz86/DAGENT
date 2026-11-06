@@ -42,7 +42,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const CARD =
-  'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
+  'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
 const TILE_SPRING = { type: 'spring' as const, stiffness: 260, damping: 28, mass: 0.85 }
 
 /** Custom menu — portals to body so mobile sticky chrome never clips it. */
@@ -273,7 +273,7 @@ function LeagueQuickLinks({
                   transition={TILE_SPRING}
                   className={cn(
                     /* Same outer height as league chips (92); width keeps DVD 152/207. */
-                    'group relative z-0 h-[92px] w-[68px] shrink-0 overflow-hidden rounded-[10px]',
+                    'group relative z-0 h-[92px] w-[68px] shrink-0 overflow-hidden rounded-lg',
                     'border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]',
                     'outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0',
                     'motion-reduce:!transform-none',
@@ -313,7 +313,7 @@ function LeagueQuickLinks({
                 whileTap={{ scale: 1.01, y: -1 }}
                 transition={TILE_SPRING}
                 className={cn(
-                  'relative z-0 flex h-[92px] w-[80px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-[10px] border px-1.5 py-2.5 text-center',
+                  'relative z-0 flex h-[92px] w-[80px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border px-1.5 py-2.5 text-center',
                   'shadow-[0_0_16px_rgba(0,0,0,0.06)]',
                   'outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0',
                   'transition-[background-color,border-color,box-shadow] duration-150',
@@ -342,7 +342,7 @@ function LeagueQuickLinks({
                     />
                   )}
                 </span>
-                <span className="w-full px-0.5 text-center text-[10px] font-medium leading-[12px] text-foreground">
+                <span className="w-full px-0.5 text-center text-size-xxs font-medium leading-[12px] text-foreground">
                   {link.label}
                 </span>
               </motion.button>
@@ -380,7 +380,7 @@ function OddsButton({
     >
       <span
         className={cn(
-          'text-[10px] font-medium leading-3.5',
+          'text-size-xxs font-medium leading-3.5',
           selected ? 'text-primary-foreground/80' : 'text-muted-foreground',
         )}
       >

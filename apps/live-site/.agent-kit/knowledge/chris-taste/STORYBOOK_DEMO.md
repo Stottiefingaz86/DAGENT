@@ -14,7 +14,7 @@ Product surfaces in Storybook import from **`apps/live-site`** — same modules 
 
 ## Not demo
 
-`Lumen/Navigation/*` atoms (Nav Menu, Command, etc.) are design-system primitives — **not** BetOnline shell. The old fake Sidebar (Home/Casino/Sports lucide rail) was removed.
+`Lumen/Navigation/*` atoms (Nav Menu, Command, etc.) are design-system primitives — **not** the site shell. The old fake Sidebar (Home/Casino/Sports lucide rail) was removed.
 
 ## Static assets
 

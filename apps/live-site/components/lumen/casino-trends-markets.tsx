@@ -22,7 +22,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const CARD =
-  'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
+  'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
 
 /** Live step chart for top-5 Overall games — Kalshi-style board. */
 export function CasinoTrendsMarkets({ period }: { period: TrendsPeriod }) {
@@ -173,7 +173,7 @@ export function CasinoTrendsMarkets({ period }: { period: TrendsPeriod }) {
                 <text
                   x={m.l + pw + 8}
                   y={yy + 4}
-                  className="fill-muted-foreground text-[10px]"
+                  className="fill-muted-foreground text-size-xxs"
                 >
                   {formatMetric(metric, v).replace(/\.0(?=%|$)/, '')}
                 </text>
@@ -216,14 +216,14 @@ export function CasinoTrendsMarkets({ period }: { period: TrendsPeriod }) {
               strokeDasharray="3 3"
             />
           )}
-          <text x={m.l} y={H - 6} className="fill-muted-foreground text-[10px]">
+          <text x={m.l} y={H - 6} className="fill-muted-foreground text-size-xxs">
             {TRENDS_RANGES.find((r) => r.mins === range)?.label ?? ''} ago
           </text>
           <text
             x={m.l + pw}
             y={H - 6}
             textAnchor="end"
-            className="fill-muted-foreground text-[10px]"
+            className="fill-muted-foreground text-size-xxs"
           >
             Now
           </text>

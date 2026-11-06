@@ -31,7 +31,7 @@ async function copyDir(src, dest) {
 }
 
 async function main() {
-  const cursorSkills = path.join(repoRoot, '.cursor', 'skills')
+  const cursorSkills = path.join(repoRoot, '.claude', 'skills')
   if (!(await exists(cursorSkills))) {
     if (await exists(path.join(kit, 'skills'))) {
       console.log(
@@ -54,7 +54,7 @@ async function main() {
   }
   if (
     await copyDir(
-      path.join(repoRoot, '.cursor', 'knowledge', 'product-strategy'),
+      path.join(repoRoot, 'knowledge', 'product-strategy'),
       path.join(kit, 'knowledge', 'product-strategy'),
     )
   ) {
@@ -62,7 +62,7 @@ async function main() {
   }
   if (
     await copyDir(
-      path.join(repoRoot, '.cursor', 'knowledge', 'chris-taste'),
+      path.join(repoRoot, 'knowledge', 'chris-taste'),
       path.join(kit, 'knowledge', 'chris-taste'),
     )
   ) {

@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 function Block({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-[10px] bg-surface-muted-2', className)} />
+  return <div className={cn('animate-pulse rounded-lg bg-surface-muted-2', className)} />
 }
 
 export function ReferAFriendSkeleton({ className }: { className?: string }) {

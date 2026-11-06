@@ -27,7 +27,7 @@ export function MyAccountSkeleton({ className }: { className?: string }) {
         </span>
       </div>
 
-      <div className="rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
             <Skeleton className="size-8 shrink-0 rounded-md" />
@@ -55,7 +55,7 @@ export function MyAccountSkeleton({ className }: { className?: string }) {
         </div>
       </div>
 
-      <div className="rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-between gap-3">
           <Skeleton className="h-6 w-28 rounded-md" />
           <Skeleton className="h-9 w-[156px] rounded-lg" />

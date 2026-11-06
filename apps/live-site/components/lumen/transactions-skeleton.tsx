@@ -26,7 +26,7 @@ export function TransactionsSkeleton({ className }: { className?: string }) {
         <Skeleton className="h-8 w-[93px] rounded-full" />
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="hidden gap-3 border-b border-border bg-[var(--surface-muted-1,#f9fafb)] px-3 py-3 text-xs font-medium text-muted-foreground md:flex">
           <span className="w-[14%]">ID</span>
           <span className="w-[12%]">Date</span>

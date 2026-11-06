@@ -104,10 +104,10 @@ const DrawerContent = React.forwardRef<
         ref={ref}
         className={cn(
           "fixed z-[9999] flex flex-col border bg-background",
-          "[&[data-vaul-drawer-direction='right']]:inset-y-0 [&[data-vaul-drawer-direction='right']]:right-0 [&[data-vaul-drawer-direction='right']]:h-full [&[data-vaul-drawer-direction='right']]:w-3/4 [&[data-vaul-drawer-direction='right']]:sm:max-w-sm [&[data-vaul-drawer-direction='right']]:rounded-l-[10px] [&[data-vaul-drawer-direction='right']]:border-l",
-          "[&[data-vaul-drawer-direction='left']]:inset-y-0 [&[data-vaul-drawer-direction='left']]:left-0 [&[data-vaul-drawer-direction='left']]:h-full [&[data-vaul-drawer-direction='left']]:w-3/4 [&[data-vaul-drawer-direction='left']]:sm:max-w-sm [&[data-vaul-drawer-direction='left']]:rounded-r-[10px] [&[data-vaul-drawer-direction='left']]:border-r",
-          "[&[data-vaul-drawer-direction='top']]:inset-x-0 [&[data-vaul-drawer-direction='top']]:top-0 [&[data-vaul-drawer-direction='top']]:rounded-b-[10px] [&[data-vaul-drawer-direction='top']]:border-b [&[data-vaul-drawer-direction='top']]:h-auto",
-          "[&[data-vaul-drawer-direction='bottom']]:inset-x-0 [&[data-vaul-drawer-direction='bottom']]:bottom-0 [&[data-vaul-drawer-direction='bottom']]:rounded-t-[10px] [&[data-vaul-drawer-direction='bottom']]:border-t [&[data-vaul-drawer-direction='bottom']]:h-auto",
+          "[&[data-vaul-drawer-direction='right']]:inset-y-0 [&[data-vaul-drawer-direction='right']]:right-0 [&[data-vaul-drawer-direction='right']]:h-full [&[data-vaul-drawer-direction='right']]:w-3/4 [&[data-vaul-drawer-direction='right']]:sm:max-w-sm [&[data-vaul-drawer-direction='right']]:rounded-l-lg [&[data-vaul-drawer-direction='right']]:border-l",
+          "[&[data-vaul-drawer-direction='left']]:inset-y-0 [&[data-vaul-drawer-direction='left']]:left-0 [&[data-vaul-drawer-direction='left']]:h-full [&[data-vaul-drawer-direction='left']]:w-3/4 [&[data-vaul-drawer-direction='left']]:sm:max-w-sm [&[data-vaul-drawer-direction='left']]:rounded-r-lg [&[data-vaul-drawer-direction='left']]:border-r",
+          "[&[data-vaul-drawer-direction='top']]:inset-x-0 [&[data-vaul-drawer-direction='top']]:top-0 [&[data-vaul-drawer-direction='top']]:rounded-b-lg [&[data-vaul-drawer-direction='top']]:border-b [&[data-vaul-drawer-direction='top']]:h-auto",
+          "[&[data-vaul-drawer-direction='bottom']]:inset-x-0 [&[data-vaul-drawer-direction='bottom']]:bottom-0 [&[data-vaul-drawer-direction='bottom']]:rounded-t-lg [&[data-vaul-drawer-direction='bottom']]:border-t [&[data-vaul-drawer-direction='bottom']]:h-auto",
           className
         )}
         style={{

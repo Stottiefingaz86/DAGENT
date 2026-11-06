@@ -130,7 +130,7 @@ export function LoyaltyInfoTip({
               role="dialog"
               aria-label={title}
               data-vip-info-tip=""
-              className="flex w-[min(276px,calc(100vw-32px))] flex-col gap-2.5 rounded-[10px] p-5 shadow-[0_12px_32px_rgba(0,0,0,0.55)]"
+              className="flex w-[min(276px,calc(100vw-32px))] flex-col gap-2.5 rounded-lg p-5 shadow-[0_12px_32px_rgba(0,0,0,0.55)]"
               style={{
                 position: 'fixed',
                 top: coords.top,
@@ -144,7 +144,7 @@ export function LoyaltyInfoTip({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col gap-1.5">
-                <p className="text-sm font-medium leading-5" style={{ color: '#fff' }}>
+                <p className="text-sm font-medium leading-5" style={{ color: 'var(--colors-base-white)' }}>
                   {title}
                 </p>
                 <p className="text-sm leading-5" style={{ color: 'rgba(255,255,255,0.65)' }}>

@@ -309,7 +309,7 @@ function DailyFiguresCard({
   return (
     <div
       data-name="daily-figures-module"
-      className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+      className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]"
     >
       <div className="border-b border-border bg-[var(--surface-muted-1,#f9fafb)] px-5 pt-3">
         <div
@@ -474,7 +474,7 @@ function BetHistoryTable({
     <div
       data-name="table-bet-history"
       className={cn(
-        'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]',
+        'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]',
         /* Mobile Figma — Description | Status; no side scroll. */
         '[&>div]:overflow-x-hidden md:[&>div]:overflow-x-auto',
       )}
@@ -696,7 +696,7 @@ export function BetHistoryPage({ className }: { className?: string }) {
           <IconFilter className="size-3.5" stroke={2} aria-hidden />
           Filters
           {activeCount > 0 ? (
-            <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+            <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary text-size-xxs font-semibold text-primary-foreground">
               {activeCount}
             </span>
           ) : null}

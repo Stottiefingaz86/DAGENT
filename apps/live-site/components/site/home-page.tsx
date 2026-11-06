@@ -247,7 +247,7 @@ function LiveTile({
               ))
             : null}
           {type === 'blackjack' && seats ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-semibold text-white">
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-size-xxs font-semibold text-white">
               <IconUser className="size-3" />
               {seats.occupied}/{seats.total}
             </span>
@@ -308,7 +308,7 @@ export function HomePage() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
                   <div className="relative z-10 flex flex-1 flex-col justify-between p-3.5 pr-[42%]">
-                    <span className="flex size-5 items-center justify-center overflow-hidden rounded-[4px] bg-surface-muted-1">
+                    <span className="flex size-5 items-center justify-center overflow-hidden rounded-xs bg-surface-muted-1">
                       <Image src={s.icon} alt="" width={16} height={16} unoptimized />
                     </span>
                     <Typography as="h3" shape="small" weight="semibold">

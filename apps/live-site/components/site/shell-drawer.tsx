@@ -95,7 +95,7 @@ export function ShellDrawer() {
       <aside
         data-name="sidebar-drawer"
         className={cn(
-          'absolute inset-y-0 left-0 flex h-full w-[311px] max-w-[83vw] flex-col overflow-hidden rounded-r-2xl border-r border-[rgba(255,255,255,0.08)] bg-[var(--sidebar-inverted)] shadow-2xl transition-transform duration-300 ease-in-out',
+          'absolute inset-y-0 left-0 flex h-full w-[311px] max-w-[83vw] flex-col overflow-hidden rounded-r-2xl border-r border-[var(--opacity-white-100)] bg-[var(--sidebar-inverted)] shadow-2xl transition-transform duration-300 ease-in-out',
           navOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -114,7 +114,7 @@ export function ShellDrawer() {
               type="button"
               onClick={() => setNavOpen(false)}
               aria-label="Close menu"
-              className="inline-flex size-9 items-center justify-center rounded-lg text-[rgba(255,255,255,0.87)] transition-colors duration-200 ease-in-out hover:bg-[var(--surface-muted-1-inverted)]"
+              className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--opacity-white-900)] transition-colors duration-200 ease-in-out hover:bg-[var(--surface-muted-1-inverted)]"
             >
               <span className="text-lg leading-none">×</span>
             </button>
@@ -147,8 +147,8 @@ export function ShellDrawer() {
                   className={cn(
                     'inline-flex shrink-0 items-center justify-center border-b-2 px-3.5 py-1.5 text-sm leading-5 transition-colors duration-200 ease-in-out',
                     active
-                      ? 'border-primary font-semibold text-[rgba(255,255,255,0.87)]'
-                      : 'border-transparent font-medium text-[rgba(255,255,255,0.6)] hover:text-[rgba(255,255,255,0.87)]'
+                      ? 'border-primary font-semibold text-[var(--opacity-white-900)]'
+                      : 'border-transparent font-medium text-[var(--opacity-white-800)] hover:text-[var(--opacity-white-900)]'
                   )}
                 >
                   {item.label}
@@ -213,7 +213,7 @@ export function ShellDrawer() {
                         <span className="min-w-0 flex-1">
                           <span className="block truncate">{item.label}</span>
                           {item.subtitle ? (
-                            <span className="block truncate text-[10px] font-normal leading-[14px] opacity-80">
+                            <span className="block truncate text-size-xxs font-normal leading-[14px] opacity-80">
                               {item.subtitle}
                             </span>
                           ) : null}

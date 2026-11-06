@@ -6,7 +6,7 @@ export default function DesignAgentLoading() {
         position: 'fixed',
         inset: 0,
         zIndex: 200000,
-        background: '#0a0a0a',
+        background: 'var(--colors-neutral-950)',
       }}
       aria-busy
       aria-label="Loading"

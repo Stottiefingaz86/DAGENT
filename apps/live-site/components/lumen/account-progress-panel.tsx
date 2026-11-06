@@ -55,7 +55,7 @@ export function AccountProgressPanel() {
   return (
     <div
       data-name="account-progress"
-      className="rounded-[10px] border border-border bg-card p-3 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+      className="rounded-lg border border-border bg-card p-3 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -96,7 +96,7 @@ export function AccountProgressPanel() {
               >
                 <span
                   className={cn(
-                    'flex size-5 items-center justify-center rounded-full text-[10px] font-bold',
+                    'flex size-5 items-center justify-center rounded-full text-size-xxs font-bold',
                     done
                       ? 'bg-success text-success-foreground'
                       : current
@@ -108,7 +108,7 @@ export function AccountProgressPanel() {
                 </span>
                 <span
                   className={cn(
-                    'w-full truncate text-center text-[10px] font-medium',
+                    'w-full truncate text-center text-size-xxs font-medium',
                     done || current ? 'text-foreground' : 'text-muted-foreground',
                   )}
                 >

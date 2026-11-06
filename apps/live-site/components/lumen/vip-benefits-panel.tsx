@@ -69,7 +69,7 @@ export function VipBenefitsPanel({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]',
+        'overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]',
         className,
       )}
     >

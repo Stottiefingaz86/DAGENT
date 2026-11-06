@@ -184,7 +184,7 @@ export const SHELL = {
   mobileDrawer: {
     width: 311,
     node: 'Figma 🐚 Shell · casino 629:278650, sports 629:275619, poker 100:108640, promotions 100:143751',
-    chrome: 'rounded-r-2xl, BETONLINE wordmark + close, then a horizontally scrollable product tab strip (same CHIP_NAV as the header, active = primary underline)',
+    chrome: 'rounded-r-2xl, brand wordmark + close, then a horizontally scrollable product tab strip (same CHIP_NAV as the header, active = primary underline)',
     lists: 'Casino Home / Favorite / Play Random / Last Game Played + categories; Sports Home + leagues/A–Z; Poker Play Online / Download + Start; Promotions All Promotions + VIP Hub trailing icon + Telegram',
   },
   mobileDock: {
@@ -341,7 +341,7 @@ export function agentKnowledgeBrief(): string {
     `- Figma design (mockup): NEW Design file in the Lumen folder. create_session, get_libraries, search_design_system scoped to libraryKey ${FIGMA_WORKSPACE.libraryKey} (Lumen_Desing System only — ignore Kraken/MUI/Sportsbook). Assemble with use_figma instances + bound ☀️ Mode variables. Annotate happy path, errors, empty/loading, and the flow. Shell pages: ${FIGMA_WORKSPACE.shellPages.join(', ')}. Frame names follow FRAME_NAMING. Post the NEW file URL. No testing-ground until the human says build it.`,
     `- Figma journey: FigJam flowchart via generate_diagram (NOT mermaid journey — unsupported). planKey ${FIGMA_WORKSPACE.planKey}. Steps named after real Lumen surfaces (Shell, Casino lobby, Poker landing). Post the board URL.`,
     `- Figma implement defaults: Casino-Lumen ${REFERENCE_FILES.find((f) => f.id === 'casino')?.fileKey} node ${REFERENCE_FILES.find((f) => f.id === 'casino')?.nodeId}, Poker ${REFERENCE_FILES.find((f) => f.id === 'poker')?.fileKey} node ${REFERENCE_FILES.find((f) => f.id === 'poker')?.nodeId}, 🐚 Shell ${REFERENCE_FILES.find((f) => f.id === 'shell')?.fileKey}.`,
-    `- Chrome: import live-site ShellHeader + ShellSidebar. Never invent a BETONLINE wordmark header. Never use PrototypeMock filler (Register / View schedule / Players online). Hidden Sidebar = 96px collapsed rail.`,
+    `- Chrome: import live-site ShellHeader + ShellSidebar. Never invent a brand wordmark header. Never use PrototypeMock filler (Register / View schedule / Players online). Hidden Sidebar = 96px collapsed rail.`,
     tasteBrief(),
   ]
     .filter(Boolean)

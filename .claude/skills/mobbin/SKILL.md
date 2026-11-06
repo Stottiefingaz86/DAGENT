@@ -13,7 +13,7 @@ description: >-
 
 MCP server: `https://api.mobbin.com/mcp` (Streamable HTTP). Config copy: `.claude/mcp/mobbin/mcp.json`. Docs: https://docs.mobbin.com/mcp
 
-**Paid Mobbin plan required.** If the MCP returns a plan/auth error: say so once, then fall back to `.cursor/knowledge/product-strategy/COMPETITOR_RESEARCH.md` + `competitors/` screenshots. Do not invent fake peer UI.
+**Paid Mobbin plan required.** If the MCP returns a plan/auth error: say so once, then fall back to `knowledge/product-strategy/COMPETITOR_RESEARCH.md` + `competitors/` screenshots. Do not invent fake peer UI.
 
 ## Tools (typical)
 

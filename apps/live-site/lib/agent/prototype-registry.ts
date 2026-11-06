@@ -21,6 +21,11 @@ const REGISTRY: Record<string, PrototypeEntry> = {
     livePath: '/',
     label: 'Shell side-nav refresh',
   },
+  'screenshot-1793980274344-0': {
+    /* Casino lobby banner row → expanding accordion (desktop hover, mobile swipe). */
+    livePath: '/casino',
+    label: 'Casino expanding hover banners',
+  },
 }
 
 function isHostedDeploy(): boolean {

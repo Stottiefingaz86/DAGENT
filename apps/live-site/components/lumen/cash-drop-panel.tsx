@@ -9,7 +9,7 @@ import { useShell } from '@/components/site/shell-context'
 import { cn } from '@/lib/utils'
 
 const CARD =
-  'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
+  'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
 
 /** Cashier-style field on dark cards. */
 const FIELD =

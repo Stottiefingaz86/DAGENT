@@ -21,7 +21,7 @@ export function MyAccountSectionStub({ title }: { title: string }) {
           </button>
         </LumenTooltip>
       </div>
-      <div className="rounded-[10px] border border-border bg-card p-6 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="rounded-lg border border-border bg-card p-6 shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <p className="text-sm font-medium leading-5 text-muted-foreground">
           This section is next in the My Account Figma set. Home is live now.
         </p>

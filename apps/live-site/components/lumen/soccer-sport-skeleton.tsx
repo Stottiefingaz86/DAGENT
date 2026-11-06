@@ -17,7 +17,7 @@ export function SoccerSportSkeleton({ className }: { className?: string }) {
       </div>
       <div className={cn(PULSE, 'mb-4 h-12 w-[280px] rounded-full')} />
       <div className={cn(PULSE, 'mb-2 h-5 w-36')} />
-      <div className={cn(PULSE, 'h-[420px] w-full rounded-[10px]')} />
+      <div className={cn(PULSE, 'h-[420px] w-full rounded-lg')} />
     </div>
   )
 }

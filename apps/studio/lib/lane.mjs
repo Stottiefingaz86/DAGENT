@@ -1,4 +1,4 @@
-// The prototype lane: the local copy of the BetOnline site (apps/live-site, port 3001) where the
+// The prototype lane: the local copy of the live site (apps/live-site, port 3001) where the
 // agent builds drafts and prototypes and where the chat's live prototype runs.
 // The studio starts it itself (installing the site's packages the first time) so nobody has to.
 import { spawn } from 'node:child_process'

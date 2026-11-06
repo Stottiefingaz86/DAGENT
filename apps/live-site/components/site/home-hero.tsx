@@ -87,7 +87,7 @@ function HeroUspBar() {
               <p className="text-xs font-semibold uppercase leading-4 text-white min-[1000px]:truncate">
                 {item.title}
               </p>
-              <p className="text-[10px] font-normal leading-[14px] text-white/75 min-[1000px]:truncate">
+              <p className="text-size-xxs font-normal leading-[14px] text-white/75 min-[1000px]:truncate">
                 {item.subtitle}
               </p>
             </div>
@@ -107,7 +107,7 @@ function SportsBentoShelf() {
             key={tile.label}
             className={cn(
               'relative flex min-h-0 items-center justify-center overflow-hidden rounded-[5px] border border-border bg-secondary',
-              tile.span === 'lg' && 'col-span-2 rounded-[10px]',
+              tile.span === 'lg' && 'col-span-2 rounded-lg',
             )}
           >
             <Image
@@ -254,7 +254,7 @@ export function HomeHero() {
   const { loggedIn, setVipHubOpen, openAuth } = useShell()
 
   return (
-    <section className="relative overflow-clip rounded-[14px] bg-primary">
+    <section className="relative overflow-clip rounded-xl bg-primary">
       {/*
         <1000px: stack. ≥1000px: 44% copy / 52% cards / 4% gap — no max-width gutting the centre.
       */}
@@ -286,7 +286,7 @@ export function HomeHero() {
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 min-[1000px]:justify-start">
               {/* Lumen radius 10px — not pills */}
               <Button
-                className="h-11 rounded-[10px] bg-white px-6 text-[15px] font-semibold text-[#1a1a1a] hover:bg-white/90 sm:h-[48px] sm:px-7 sm:text-base"
+                className="h-11 rounded-lg bg-white px-6 text-[15px] font-semibold text-[var(--brand-grey-950)] hover:bg-white/90 sm:h-[48px] sm:px-7 sm:text-base"
                 onClick={() => openAuth('join')}
               >
                 Register
@@ -294,7 +294,7 @@ export function HomeHero() {
               </Button>
               <Button
                 variant="outline"
-                className="h-11 w-fit rounded-[10px] border border-white/80 bg-transparent px-4 text-[15px] font-semibold text-white hover:bg-white/10 hover:text-white sm:h-[48px] sm:px-5 sm:text-base"
+                className="h-11 w-fit rounded-lg border border-white/80 bg-transparent px-4 text-[15px] font-semibold text-white hover:bg-white/10 hover:text-white sm:h-[48px] sm:px-5 sm:text-base"
                 onClick={() => openAuth('login')}
               >
                 Log in
@@ -303,7 +303,7 @@ export function HomeHero() {
           )}
 
           <div className="mt-4 flex w-full flex-col items-center gap-1 min-[1000px]:items-start">
-            <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-white/70">
+            <p className="font-sans text-size-xxs font-semibold uppercase tracking-[0.18em] text-white/70">
               Official Partners
             </p>
             <div className="flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-1.5 min-[1000px]:justify-start">

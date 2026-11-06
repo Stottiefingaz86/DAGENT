@@ -18,14 +18,14 @@ export function PokerLandingSkeleton({ className }: { className?: string }) {
         <Skeleton className="mx-auto mb-11 h-10 w-72" />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} className="h-[280px] w-full rounded-[10px]" />
+            <Skeleton key={i} className="h-[280px] w-full rounded-lg" />
           ))}
         </div>
       </div>
       <div className="bg-surface-muted-1 px-8 py-14">
         <div className="mx-auto flex max-w-[740px] flex-col gap-3">
           {Array.from({ length: 5 }, (_, i) => (
-            <Skeleton key={i} className="h-[120px] w-full rounded-[10px]" />
+            <Skeleton key={i} className="h-[120px] w-full rounded-lg" />
           ))}
         </div>
       </div>

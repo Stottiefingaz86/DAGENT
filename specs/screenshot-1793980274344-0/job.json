@@ -1,0 +1,443 @@
+{
+  "slug": "screenshot-1793980274344-0",
+  "title": "Casino expanding hover banners",
+  "surface": "Casino",
+  "source": "dashboard",
+  "requester": "CH",
+  "createdAt": "2026-11-06T15:51:45.591Z",
+  "updatedAt": "2026-11-06T16:35:26.545Z",
+  "status": "ready_for_dev",
+  "stage": "handoff",
+  "running": false,
+  "sessionId": "af007110-a758-4ab6-b3af-c2d0bec50ac5",
+  "questions": [
+    {
+      "id": "q1-widgets",
+      "title": "Should VIP Progress and Daily Race join the expanding row?",
+      "text": "Should VIP Progress and Daily Race join the expanding row?",
+      "context": "Our banner row mixes two player widgets (VIP Progress, $25k Daily Race) with promo banners in one carousel (casino-lobby-banners.tsx:445\u2013459). The BRD says \"banners\", and the peer row in your screenshot is promos only.",
+      "why": "It decides whether the widgets need their own expanded detail and how much width is left for the promos at 1440.",
+      "options": [
+        {
+          "label": "Widgets join the accordion (recommended)",
+          "detail": "Every card expands on hover; VIP shows next reward and Race shows the top 3, so all of the row gets \"more info\".",
+          "recommended": true
+        },
+        {
+          "label": "Widgets stay fixed on the left",
+          "detail": "VIP and Race keep today's 288px cards and only the promos to their right expand."
+        },
+        {
+          "label": "Promos only, widgets move out",
+          "detail": "The row becomes promos only and VIP/Race move to a separate strip below it."
+        }
+      ],
+      "images": [
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/casino-banners-today-desktop.png",
+          "caption": "Our casino banner row today"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/attachments/mw55jyyi-screenshot-1793980274344-0.png",
+          "caption": "Peer row from the BRD"
+        }
+      ],
+      "answer": "Widgets join the accordion (recommended)",
+      "answeredBy": "CH",
+      "answeredAt": "2026-11-06T15:56:13.294Z",
+      "agent": "design"
+    },
+    {
+      "id": "q2-height",
+      "title": "Keep the 164px banner height, or make the row taller like the peer?",
+      "text": "Keep the 164px banner height, or make the row taller like the peer?",
+      "context": "Today's banners are 164px (Figma 69-47911, casino-lobby-banners.tsx:284), so the expanded body copy gets clipped. The peer row is roughly 2.4\u00d7 taller. A taller row pushes Continue Playing down, and the target is to cut time to first casino bet from about 8 minutes to under 2 (BRIEF.md).",
+      "why": "It sets how much the expanded card can show and whether game shelves stay above the fold at 1440\u00d7900.",
+      "options": [
+        {
+          "label": "Grow to ~240px (recommended)",
+          "detail": "Room for full body copy and CTA while Continue Playing still starts above the fold.",
+          "recommended": true
+        },
+        {
+          "label": "Keep 164px",
+          "detail": "The row only widens on hover, the body stays at 3 lines, and shelves don't move."
+        },
+        {
+          "label": "Hero height ~380px like the peer",
+          "detail": "Big art moment, but Continue Playing drops below the fold at 1440\u00d7900."
+        }
+      ],
+      "images": [
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/casino-lobby-today-desktop.png",
+          "caption": "Our lobby at 1440 today"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/attachments/mw55jyyi-screenshot-1793980274344-0.png",
+          "caption": "Peer row from the BRD"
+        }
+      ],
+      "answer": "Grow to ~240px (recommended)",
+      "answeredBy": "CH",
+      "answeredAt": "2026-11-06T15:56:13.294Z",
+      "agent": "design"
+    }
+  ],
+  "previewUrl": "http://127.0.0.1:3001/prototype/screenshot-1793980274344-0",
+  "proposalSummary": "In the casino lobby banner row, one card is open at a time and the rest collapse to narrow strips. Hover or Tab opens a card, so all 6 cards fit at 1440 and nothing hides behind a chevron (today 2 of 4 promos are off-screen and the copy gets clipped). Following your answers, VIP Progress and Daily Race now expand too (next-level note, top 3 of the race), the row is 240px tall, and on mobile it stays a swipe rail with full info on every card.",
+  "learnings": [],
+  "round": 0,
+  "costUsd": 32.58343400000001,
+  "lastPrompt": "FIGMA BUILD for screenshot-1793980274344-0. Chris wants the approved screens built in Figma.\n1. Read .claude/skills/figma-plugin/figma-use/SKILL.md and .claude/skills/figma-plugin/figma-generate-design/SKILL.md and follow them exactly.\n2. If no Figma write tool (use_figma) is available to you, do NOT improvise: log one short line saying Figma isn't connected to the studio worker, and end your turn.\nFigma rules (HARD \u2014 Chris, Nov 2026):\n- Use ONLY the Lumen design system (\"Lumen_Desing System\"). Ignore every MUI library (MUI Agnostic, MUI for Figma / Joy UI) and every other library in the org.\n- NEVER edit existing Figma files or folders \u2014 not the Lumen library file, not any team file. Read them only.\n- All agent work goes in ONE file: \"Design Agent\", fileKey MYeELetKW9xye1shSpm8Fn (https://www.figma.com/design/MYeELetKW9xye1shSpm8Fn), in the Lumen folder (project 625743109). Never create other files. Each project gets its own page in that file, named after the project.\n3. Build in a new page named \"Casino expanding hover banners\" of the Design Agent file using ONLY instances and variables from the Lumen library (\"Lumen_Desing System\", file vCPe93hNKDWWcpu49Vo0kU). Always pass includeLibraryKeys: [\"lk-40fae532f4d55afe9d90d03a1d23bb174e778ffbae07cd2f0474fa95b2d2d722c963aac1e23b5574fcef93bdd232629e4ba24792340aae1653726545bb15ac8f\"] to search_design_system \u2014 the BetOnline org also has MUI Agnostic, Kraken, Sportsbook UI Kit, Sportbook 26 and Lumen | Shell | News libraries; never use them. The Lumen file's \"\u2726 Screens\" page shows existing shell screens to match. No detached instances, no raw hex, no local styles. If a component is missing, leave a labelled placeholder frame and list it as a gap.\n4. One frame per screen from the prototype at 1440 and 390, plus key states. Name frames \"<Screen> \u00b7 1440\" etc. Match the prototype screenshots in specs/screenshot-1793980274344-0/refs/.\n5. Take a get_screenshot of each frame, compare with the prototype screenshot, fix differences.\n6. Call submit_figma with the file/page URL, the frames you made and any gaps. Keep the chat message to one sentence.",
+  "messages": [],
+  "screens": [],
+  "artifacts": {
+    "packageFiles": [
+      "specs/screenshot-1793980274344-0/dev-delivery.md",
+      "specs/screenshot-1793980274344-0/lumen-map.md",
+      "specs/screenshot-1793980274344-0/brd.md",
+      "specs/screenshot-1793980274344-0/spec.md",
+      "specs/screenshot-1793980274344-0/feedback.md",
+      "specs/screenshot-1793980274344-0/job.json"
+    ],
+    "devDeliveryPath": "specs/screenshot-1793980274344-0/dev-delivery.md",
+    "previewUrl": "http://127.0.0.1:3001/prototype/screenshot-1793980274344-0"
+  },
+  "proposal": {
+    "summary": "In the casino lobby banner row, one card is open at a time and the rest collapse to narrow strips. Hover or Tab opens a card, so all 6 cards fit at 1440 and nothing hides behind a chevron (today 2 of 4 promos are off-screen and the copy gets clipped). Following your answers, VIP Progress and Daily Race now expand too (next-level note, top 3 of the race), the row is 240px tall, and on mobile it stays a swipe rail with full info on every card.",
+    "strategy": "Discover \u00b7 06 Personalised Casino Discovery (27\u201331) + \"rewards in the lobby\" (Now) \u00b7 time to first casino bet ~8 min \u2192 <2 min (BRIEF.md)",
+    "journey": [
+      {
+        "step": "Land on /casino",
+        "detail": "The row loads with the first promo open and every other card visible as a strip."
+      },
+      {
+        "step": "Hover or Tab a card",
+        "detail": "It widens in 300ms with the house ease while the last open card closes. Content fades in after it settles; reduced motion makes it instant."
+      },
+      {
+        "step": "Read more",
+        "detail": "Promos show full body copy and the CTA. VIP shows level, % and what unlocks next. Race shows Position, Wagered, Prize and the top 3."
+      },
+      {
+        "step": "Click the card or CTA",
+        "detail": "Same actions as today (launch game, category soft-nav, cashier, VIP Hub) with the existing 2.2s launch spinner."
+      },
+      {
+        "step": "Mobile 390",
+        "detail": "Swipe-only rail of 300\u00d7200 cards in their open layout. No tap-to-open, no chevrons."
+      }
+    ],
+    "current": [
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/casino-lobby-today-desktop.png",
+        "caption": "Casino lobby today, 1440"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/casino-banners-today-desktop.png",
+        "caption": "Banner row today: 2 promos off-screen, copy clipped"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/casino-lobby-today-mobile-390.png",
+        "caption": "Lobby today, 390"
+      }
+    ],
+    "proposed": [
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-promo-open.png",
+        "caption": "1440, Chicken Fire open at rest"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-race-open.png",
+        "caption": "Hover Daily Race: stats + top 3"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-vip-open.png",
+        "caption": "Hover VIP Progress"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-mobile-390.png",
+        "caption": "390: swipe rail, full info"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-logged-out.png",
+        "caption": "Logged out: promos only"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-loading.png",
+        "caption": "Loading shimmer in row shape"
+      },
+      {
+        "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-image-error.png",
+        "caption": "Art failed: falls back to card surface"
+      }
+    ],
+    "reuse": [
+      {
+        "component": "CasinoLobbyBannerRow / PromoLobbyBanner",
+        "path": "apps/live-site/components/lumen/casino-lobby-banners.tsx",
+        "note": "Draft lives beside it and becomes an opt-in expandOnHover mode on Merge."
+      },
+      {
+        "component": "CASINO_LOBBY_PROMO_BANNERS",
+        "path": "apps/live-site/lib/lumen/casino-lobby-promos.ts",
+        "note": "Same art, tags, copy and CTAs."
+      },
+      {
+        "component": "VipProgressCrown / VipProgressBarFill + useVipLevelUpCeremony",
+        "path": "apps/live-site/components/lumen/vip-progress-crown.tsx"
+      },
+      {
+        "component": "DAILY_RACE_STATUS / DAILY_RACE_LEADERBOARD",
+        "path": "apps/live-site/lib/lumen/daily-races.ts"
+      },
+      {
+        "component": "CasinoLobby (new optional bannerRow prop)",
+        "path": "apps/live-site/components/lumen/casino-lobby-page.tsx"
+      },
+      {
+        "component": "Button, ShellIcon, useShell, lm-shimmer",
+        "path": "components/ui/button.tsx \u00b7 components/site/* \u00b7 app/globals.css"
+      }
+    ],
+    "gaps": [
+      "No new Lumen primitive needed. The accordion is a behaviour on the existing banner row, using flex-grow with the house ease.",
+      "The VIP line 'Rakeback and weekly boost unlock at Silver' is placeholder copy and needs the real tier perks from VIP Hub data before handoff."
+    ],
+    "peers": [
+      {
+        "name": "Peer row from the BRD screenshot",
+        "take": "One open card beside collapsed strips with tag and headline, so every banner is visible in one row.",
+        "avoid": "Autoplay dots, partner and brand marks, hero-height row that pushes games below the fold.",
+        "image": "specs/screenshot-1793980274344-0/attachments/mw55jyyi-screenshot-1793980274344-0.png"
+      },
+      {
+        "name": "Winna (named in BRD)",
+        "take": "Hover reveals more info in place, without opening a page.",
+        "avoid": "Mobbin isn't authorised in this session, so no live Winna screens were checked and nothing here is described from memory."
+      }
+    ],
+    "at": "2026-11-06T15:59:44.290Z"
+  },
+  "proposals": [
+    {
+      "summary": "In the casino lobby banner row, one card is open at a time and the rest collapse to narrow strips. Hover or Tab opens a card, so all 6 cards fit at 1440 and nothing hides behind a chevron (today 2 of 4 promos are off-screen and the copy gets clipped). Following your answers, VIP Progress and Daily Race now expand too (next-level note, top 3 of the race), the row is 240px tall, and on mobile it stays a swipe rail with full info on every card.",
+      "strategy": "Discover \u00b7 06 Personalised Casino Discovery (27\u201331) + \"rewards in the lobby\" (Now) \u00b7 time to first casino bet ~8 min \u2192 <2 min (BRIEF.md)",
+      "journey": [
+        {
+          "step": "Land on /casino",
+          "detail": "The row loads with the first promo open and every other card visible as a strip."
+        },
+        {
+          "step": "Hover or Tab a card",
+          "detail": "It widens in 300ms with the house ease while the last open card closes. Content fades in after it settles; reduced motion makes it instant."
+        },
+        {
+          "step": "Read more",
+          "detail": "Promos show full body copy and the CTA. VIP shows level, % and what unlocks next. Race shows Position, Wagered, Prize and the top 3."
+        },
+        {
+          "step": "Click the card or CTA",
+          "detail": "Same actions as today (launch game, category soft-nav, cashier, VIP Hub) with the existing 2.2s launch spinner."
+        },
+        {
+          "step": "Mobile 390",
+          "detail": "Swipe-only rail of 300\u00d7200 cards in their open layout. No tap-to-open, no chevrons."
+        }
+      ],
+      "current": [
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/casino-lobby-today-desktop.png",
+          "caption": "Casino lobby today, 1440"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/casino-banners-today-desktop.png",
+          "caption": "Banner row today: 2 promos off-screen, copy clipped"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/casino-lobby-today-mobile-390.png",
+          "caption": "Lobby today, 390"
+        }
+      ],
+      "proposed": [
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-promo-open.png",
+          "caption": "1440, Chicken Fire open at rest"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-race-open.png",
+          "caption": "Hover Daily Race: stats + top 3"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-vip-open.png",
+          "caption": "Hover VIP Progress"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-mobile-390.png",
+          "caption": "390: swipe rail, full info"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-logged-out.png",
+          "caption": "Logged out: promos only"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-loading.png",
+          "caption": "Loading shimmer in row shape"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proposed-desktop-image-error.png",
+          "caption": "Art failed: falls back to card surface"
+        }
+      ],
+      "reuse": [
+        {
+          "component": "CasinoLobbyBannerRow / PromoLobbyBanner",
+          "path": "apps/live-site/components/lumen/casino-lobby-banners.tsx",
+          "note": "Draft lives beside it and becomes an opt-in expandOnHover mode on Merge."
+        },
+        {
+          "component": "CASINO_LOBBY_PROMO_BANNERS",
+          "path": "apps/live-site/lib/lumen/casino-lobby-promos.ts",
+          "note": "Same art, tags, copy and CTAs."
+        },
+        {
+          "component": "VipProgressCrown / VipProgressBarFill + useVipLevelUpCeremony",
+          "path": "apps/live-site/components/lumen/vip-progress-crown.tsx"
+        },
+        {
+          "component": "DAILY_RACE_STATUS / DAILY_RACE_LEADERBOARD",
+          "path": "apps/live-site/lib/lumen/daily-races.ts"
+        },
+        {
+          "component": "CasinoLobby (new optional bannerRow prop)",
+          "path": "apps/live-site/components/lumen/casino-lobby-page.tsx"
+        },
+        {
+          "component": "Button, ShellIcon, useShell, lm-shimmer",
+          "path": "components/ui/button.tsx \u00b7 components/site/* \u00b7 app/globals.css"
+        }
+      ],
+      "gaps": [
+        "No new Lumen primitive needed. The accordion is a behaviour on the existing banner row, using flex-grow with the house ease.",
+        "The VIP line 'Rakeback and weekly boost unlock at Silver' is placeholder copy and needs the real tier perks from VIP Hub data before handoff."
+      ],
+      "peers": [
+        {
+          "name": "Peer row from the BRD screenshot",
+          "take": "One open card beside collapsed strips with tag and headline, so every banner is visible in one row.",
+          "avoid": "Autoplay dots, partner and brand marks, hero-height row that pushes games below the fold.",
+          "image": "specs/screenshot-1793980274344-0/attachments/mw55jyyi-screenshot-1793980274344-0.png"
+        },
+        {
+          "name": "Winna (named in BRD)",
+          "take": "Hover reveals more info in place, without opening a page.",
+          "avoid": "Mobbin isn't authorised in this session, so no live Winna screens were checked and nothing here is described from memory."
+        }
+      ],
+      "at": "2026-11-06T15:59:44.290Z"
+    }
+  ],
+  "prototypeSummary": "On desktop the casino lobby banner row is now a 240px accordion: hover or Tab opens a card while the rest stay visible as strips. On mobile it stays a swipe rail with full info on every card.",
+  "prototypes": [
+    {
+      "previewUrl": "http://127.0.0.1:3001/prototype/screenshot-1793980274344-0",
+      "summary": "On desktop the casino lobby banner row is now a 240px accordion: hover or Tab opens a card while the rest stay visible as strips. On mobile it stays a swipe rail with full info on every card.",
+      "changes": [
+        "Replaced the placeholder VIP copy with real Silver data: Weekly Boost + $25 Level Up Bonus (vip-hub.ts).",
+        "If banner art fails to load, the card falls back to the plain card surface and the copy switches to surface colours.",
+        "Clicking the CTA now shows the same 2.2s launch spinner as clicking the card.",
+        "Added a visible keyboard focus ring and press scale on the CTA.",
+        "Mobile cards are 288\u00d7208 with a stronger scrim so the copy reads over the art.",
+        "All sizes moved to Lumen scale tokens: token lint passes with 0 violations, and the type-check shows no new errors."
+      ],
+      "screens": [
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-desktop.png",
+          "caption": "1440, first promo open"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-desktop-race-open.png",
+          "caption": "Hover Daily Race"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-desktop-vip-open.png",
+          "caption": "Hover VIP Progress"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-desktop-spins-open.png",
+          "caption": "Hover last promo"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-mobile-390.png",
+          "caption": "390 logged in"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-mobile-logged-out-390.png",
+          "caption": "390 logged out"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-desktop-loading.png",
+          "caption": "Loading"
+        },
+        {
+          "src": "specs/screenshot-1793980274344-0/refs/proto-desktop-image-error.png",
+          "caption": "Art failed"
+        }
+      ],
+      "states": [
+        {
+          "label": "Default",
+          "url": "/prototype/screenshot-1793980274344-0"
+        },
+        {
+          "label": "VIP open",
+          "url": "/prototype/screenshot-1793980274344-0?open=vip"
+        },
+        {
+          "label": "Race open",
+          "url": "/prototype/screenshot-1793980274344-0?open=race"
+        },
+        {
+          "label": "Loading",
+          "url": "/prototype/screenshot-1793980274344-0?state=loading"
+        },
+        {
+          "label": "Image error",
+          "url": "/prototype/screenshot-1793980274344-0?state=error&open=halloween"
+        },
+        {
+          "label": "Single promo",
+          "url": "/prototype/screenshot-1793980274344-0?state=single"
+        }
+      ],
+      "at": "2026-11-06T16:04:48.571Z"
+    }
+  ],
+  "prevStatus": null,
+  "signedOffBy": "CH",
+  "signedOffAt": "2026-11-06T16:06:07.000Z",
+  "deliveryFile": "specs/screenshot-1793980274344-0/dev-delivery.md",
+  "figma": {
+    "url": "https://www.figma.com/design/MYeELetKW9xye1shSpm8Fn?node-id=23-157",
+    "frames": [
+      "Default \u00b7 logged in \u00b7 1440",
+      "VIP open \u00b7 hover \u00b7 1440",
+      "Race open \u00b7 hover \u00b7 1440",
+      "Logged out \u00b7 1440",
+      "Loading skeleton \u00b7 1440",
+      "Image failed \u00b7 1440",
+      "Promos API failed \u00b7 1440",
+      "VIP data failed \u00b7 1440",
+      "Whole row failed \u00b7 1440",
+      "Single promo \u00b7 1440",
+      "Empty \u00b7 1440",
+      "Default \u00b7 logged in \u00b7 390",
+      "Loading \u00b7 390",
+      "Logged out \u00b7 390",
+      "Promos API failed \u00b7 390"
+    ],
+    "gaps": [],
+    "at": "2026-11-06T19:51:58.415343Z"
+  }
+}

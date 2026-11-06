@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const CARD =
-  'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
+  'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
 
 /** Content-width claim — hub height/radius, never flex-1 full bleed. */
 const CTA = 'h-9 w-auto shrink-0 rounded-lg px-4 disabled:opacity-100'
@@ -109,7 +109,7 @@ function MissionCard({
     <article className={cn(CARD, 'overflow-hidden')} data-name={`mission-${mission.id}`}>
       <div className="flex gap-3.5 p-4">
         <div
-          className="relative shrink-0 overflow-hidden rounded-[10px] bg-secondary shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+          className="relative shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_0_16px_rgba(0,0,0,0.06)]"
           style={{ width: TILE_W, height: TILE_H }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -121,7 +121,7 @@ function MissionCard({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-0.5">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-size-xxs font-medium uppercase tracking-wide text-muted-foreground">
             {mission.category === 'sports' ? 'Sports' : 'Casino'}
           </p>
           <Typography as="h3" shape="h4" weight="semibold" className="text-[15px] leading-5">

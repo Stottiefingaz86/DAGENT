@@ -50,6 +50,17 @@ You **MUST** consider the user input before proceeding (if not empty).
     ```
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
+## Product context (load before the Outline)
+
+Every spec in this repo serves the 2026–2028 product strategy. Before writing or clarifying anything, read:
+
+1. `knowledge/product-strategy/BRIEF.md` — north star, core bets (Activate, Reward), enablers (Convert, Discover, Trust), needles, phasing, the 50 features / 10 initiatives
+2. `knowledge/product-strategy/COMPETITOR_RESEARCH.md` — Chris-liked peer patterns + journey audit numbers
+3. `knowledge/product-strategy/research/Journey_Audits_2026.pdf` when the feature touches join, fund, first bet or discovery
+4. `.specify/memory/constitution.md` (Lumen Only) and the relevant `knowledge/chris-taste/*.md`
+
+Then fill the spec's **Strategy alignment** section: which bet / enabler / initiative and feature # it serves, which needle it should move (with the baseline number from BRIEF or the audits), the competitor pattern it learns from, and what is out of scope per the strategy. Answer questions from these sources first and cite them; only ask the user what they cannot answer. A BRD that serves no bet or needle is flagged to Chris, not specced silently.
+
 ## Outline
 
 The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `$ARGUMENTS` appears literally below. Do not ask the user to repeat it unless they provided an empty command.

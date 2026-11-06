@@ -69,14 +69,14 @@ export function LoyaltyRewardCard({
       onMouseLeave={handleMouseLeave}
       style={spotlightSurfaceStyle}
       className={cn(
-        'group relative flex w-full cursor-default select-none items-center gap-2.5 rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]',
+        'group relative flex w-full cursor-default select-none items-center gap-2.5 rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]',
         /* overflow-hidden clips the fixed tip in some WebKit stacks — keep visible when open */
         tipOpen ? 'z-30 overflow-visible' : 'overflow-hidden',
         className,
       )}
     >
       {/* BOL SHAD animation only — cursor red glow */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[10px]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
         <SpotlightOverlay mixPercent={22} />
       </div>
 

@@ -25,7 +25,7 @@ export function SecurityCentralSkeleton({ className }: { className?: string }) {
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+            className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
           >
             <Skeleton className="size-8 shrink-0 rounded-lg" />
             <Skeleton className="h-[46px] min-w-0 flex-1 rounded-lg" />

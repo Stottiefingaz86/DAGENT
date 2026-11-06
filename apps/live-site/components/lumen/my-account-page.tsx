@@ -90,7 +90,7 @@ export function MyAccountPage() {
 
       <div
         data-name="module-home"
-        className="rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <div className="flex flex-col gap-4">
           {/* User row — desktop: actions on the right; mobile: actions below stats */}

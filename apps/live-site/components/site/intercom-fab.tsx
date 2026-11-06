@@ -328,7 +328,7 @@ export function IntercomFab() {
                 )}
               >
                 <header className="relative flex shrink-0 items-center justify-center border-b border-zinc-100 px-4 py-3.5">
-                  <h2 className="text-[16px] font-bold tracking-tight">Messages</h2>
+                  <h2 className="text-size-base font-bold tracking-tight">Messages</h2>
                   <button
                     type="button"
                     aria-label="Close"
@@ -351,7 +351,7 @@ export function IntercomFab() {
                       </p>
                       <button
                         type="button"
-                        className="mt-8 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground shadow-[0_8px_20px_rgba(238,53,53,0.35)]"
+                        className="mt-8 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-size-sm font-semibold text-primary-foreground shadow-[0_8px_20px_rgba(238,53,53,0.35)]"
                       >
                         Send us a message
                         <IconSend className="size-4" strokeWidth={2.25} />
@@ -424,7 +424,7 @@ export function IntercomFab() {
               intercomLevelUpPending ||
               intercomVipMatchPending) &&
             !intercomOpen ? (
-              <span className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-white text-[10px] font-bold text-primary ring-2 ring-[#1a1a1a]">
+              <span className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-white text-size-xxs font-bold text-primary ring-2 ring-[var(--brand-grey-950)]">
                 1
               </span>
             ) : null}

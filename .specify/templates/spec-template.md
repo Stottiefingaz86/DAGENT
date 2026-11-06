@@ -5,9 +5,9 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
-## Strategy alignment *(mandatory — BetOnline)*
+## Strategy alignment *(mandatory)*
 
-<!-- Fill from .cursor/knowledge/product-strategy/BRIEF.md, COMPETITOR_RESEARCH.md and the journey audits. Cite the source for every number. -->
+<!-- Fill from knowledge/product-strategy/BRIEF.md, COMPETITOR_RESEARCH.md and the journey audits. Cite the source for every number. -->
 
 - **Core bet / enabler**: [Activate | Reward | Convert | Discover | Trust]
 - **Initiative + feature #**: [e.g. 01 Frictionless Join & Welcome · #3 Fast Registration]

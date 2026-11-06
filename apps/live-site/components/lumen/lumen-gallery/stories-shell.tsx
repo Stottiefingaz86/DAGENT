@@ -53,20 +53,20 @@ function MainNavPreview() {
   return (
     <nav
       aria-label="Main product nav"
-      className="flex flex-wrap items-center gap-1 rounded-[10px] border border-border bg-[var(--header-inverted,#1a1a1a)] px-3 py-2"
+      className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-[var(--header-inverted,#1a1a1a)] px-3 py-2"
     >
       {HEADER_NAV.map((item) => (
         <span
           key={item.label}
           className={cn(
-            'rounded-md px-3 py-2 text-sm font-semibold text-[rgba(255,255,255,0.6)]',
+            'rounded-md px-3 py-2 text-sm font-semibold text-[var(--opacity-white-800)]',
             item.label === 'Casino' && 'text-primary',
           )}
         >
           {item.label}
         </span>
       ))}
-      <span className="ml-1 rounded-md px-3 py-2 text-sm font-medium text-[rgba(255,255,255,0.6)]">
+      <span className="ml-1 rounded-md px-3 py-2 text-sm font-medium text-[var(--opacity-white-800)]">
         Other ▾
       </span>
     </nav>
@@ -160,7 +160,7 @@ function StickyChromeMotionDemo() {
                 Keep scrolling, then scroll back up to watch them reveal.
               </p>
               {Array.from({ length: 18 }).map((_, i) => (
-                <div key={i} className="h-16 rounded-[10px] border border-border bg-card" />
+                <div key={i} className="h-16 rounded-lg border border-border bg-card" />
               ))}
             </div>
           </div>
@@ -229,7 +229,7 @@ import { ShellHeader } from '@/components/site/shell-header'
     render: () => (
       <div className="space-y-4">
         <MainNavPreview />
-        <div className="rounded-[10px] border border-border bg-card p-3">
+        <div className="rounded-lg border border-border bg-card p-3">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Other menu
           </p>
@@ -262,7 +262,7 @@ import { CHIP_NAV } from '@/components/site/shell-nav'
 <ShellProductChips />`,
     demoHref: '/',
     render: () => (
-      <div className="space-y-4 overflow-hidden rounded-[10px] border border-border">
+      <div className="space-y-4 overflow-hidden rounded-lg border border-border">
         <FreezeNav>
           <ShellProductChips className="!block lg:!block" />
         </FreezeNav>
@@ -295,7 +295,7 @@ import { CHIP_NAV } from '@/components/site/shell-nav'
 <CasinoSubNav glass sticky />`,
     render: () => (
       <FreezeNav>
-        <div className="overflow-hidden rounded-[10px] border border-border">
+        <div className="overflow-hidden rounded-lg border border-border">
           <CasinoSubNav glass sticky={false} />
         </div>
       </FreezeNav>
@@ -311,7 +311,7 @@ import { CHIP_NAV } from '@/components/site/shell-nav'
 <SportsSubNav />`,
     render: () => (
       <FreezeNav>
-        <div className="overflow-hidden rounded-[10px] border border-border">
+        <div className="overflow-hidden rounded-lg border border-border">
           <SportsSubNav />
         </div>
       </FreezeNav>
@@ -328,7 +328,7 @@ import { CHIP_NAV } from '@/components/site/shell-nav'
 <AccountSubNav />`,
     render: () => (
       <FreezeNav>
-        <div className="max-w-lg overflow-hidden rounded-[10px] border border-border">
+        <div className="max-w-lg overflow-hidden rounded-lg border border-border">
           <AccountSubNav />
         </div>
       </FreezeNav>
@@ -345,7 +345,7 @@ import { CHIP_NAV } from '@/components/site/shell-nav'
       <FreezeNav>
         <div
           className={cn(
-            'relative h-[520px] overflow-hidden rounded-[10px] border border-border bg-[#121212]',
+            'relative h-[520px] overflow-hidden rounded-lg border border-border bg-[#121212]',
             /* Unstick fixed + show below lg so the gallery can preview the rail */
             '[&_aside[data-name=sidebar-container]]:!relative [&_aside[data-name=sidebar-container]]:!inset-auto',
             '[&_aside[data-name=sidebar-container]]:!flex [&_aside[data-name=sidebar-container]]:!h-full',

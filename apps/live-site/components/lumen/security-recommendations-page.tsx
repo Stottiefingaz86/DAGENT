@@ -65,7 +65,7 @@ export function SecurityRecommendationsPage({ className }: { className?: string 
 
       <div
         data-name="section-header-navigation"
-        className="rounded-[10px] border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="rounded-lg border border-border bg-card p-4 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <div className="flex items-center gap-1 lg:gap-4">
           <Link
@@ -92,7 +92,7 @@ export function SecurityRecommendationsPage({ className }: { className?: string 
 
       <div
         data-name="module-security-recommendations"
-        className="rounded-[10px] border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
+        className="rounded-lg border border-border bg-card p-5 shadow-[0_0_16px_rgba(0,0,0,0.06)]"
       >
         <ul className="flex flex-col gap-4">
           {items.map((item, index) => (

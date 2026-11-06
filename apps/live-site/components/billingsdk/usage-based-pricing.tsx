@@ -419,7 +419,7 @@ export function UsageBasedPricing({
             </div>
           </div>
 
-            <div className={cn("text-gray-600 flex justify-between px-1", isMobile ? "text-[10px] mt-2" : "text-xs mt-8")}>
+            <div className={cn("text-gray-600 flex justify-between px-1", isMobile ? "text-size-xxs mt-2" : "text-xs mt-8")}>
               <span>{startLabel}</span>
               <span>{endLabel}</span>
             </div>

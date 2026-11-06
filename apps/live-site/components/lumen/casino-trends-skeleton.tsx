@@ -4,7 +4,7 @@ function Block({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={cn('lm-shimmer rounded-[10px] bg-[var(--skeleton)]', className)}
+      className={cn('lm-shimmer rounded-lg bg-[var(--skeleton)]', className)}
     />
   )
 }
@@ -28,7 +28,7 @@ export function CasinoTrendsSkeleton() {
       <div className="mt-4 flex gap-4 overflow-hidden pl-4 sm:pl-6">
         {Array.from({ length: 5 }, (_, i) => (
           <div key={i} className="flex shrink-0 flex-col" style={{ width: i === 9 ? 284 : 224 }}>
-            <Block className="h-[207px] w-full rounded-[10px]" />
+            <Block className="h-[207px] w-full rounded-lg" />
             <Block className="mt-2 ml-[72px] h-4 w-28" />
             <Block className="mt-1 ml-[72px] h-3 w-24" />
           </div>

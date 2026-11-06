@@ -248,7 +248,7 @@ export function ContestCardView({ card }: { card: ContestCard }) {
       whileTap={{ scale: 1.01, y: -1 }}
       transition={TILE_SPRING}
       className={cn(
-        'group relative z-0 flex h-[238px] min-w-0 cursor-pointer flex-col overflow-hidden rounded-[10px] border bg-card py-4 pl-4 pr-[18px]',
+        'group relative z-0 flex h-[238px] min-w-0 cursor-pointer flex-col overflow-hidden rounded-lg border bg-card py-4 pl-4 pr-[18px]',
         'shadow-[0_1px_3px_rgba(0,0,0,0.1),0_1px_2px_-1px_rgba(0,0,0,0.1)]',
         'transition-[border-color,box-shadow] duration-150 hover:shadow-[0_0_20px_rgba(0,0,0,0.12)]',
         'motion-reduce:!transform-none',

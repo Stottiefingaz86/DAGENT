@@ -1,6 +1,6 @@
 # Competitor research — Chris-liked patterns
 
-**Purpose:** When writing a BRD or debating UX, cross-check **strategy** (`BRIEF.md`) + **journey audits** (`research/Journey_Audits_2026.pdf`) + **these patterns**. Research only — do not copy brand/visuals; translate into Lumen + BetOnline shell.
+**Purpose:** When writing a BRD or debating UX, cross-check **strategy** (`BRIEF.md`) + **journey audits** (`research/Journey_Audits_2026.pdf`) + **these patterns**. Research only — do not copy brand/visuals; translate into Lumen + the site shell.
 
 **Peers covered here:** Rainbet, Winna (also audited: Whale.io, Stake, MyBookie).
 
@@ -88,10 +88,10 @@ Use these numbers in BRDs when arguing friction cuts (Activate needle: &lt;2 min
 
 1. Search Mobbin (web first for casino peers) for the screen/flow.
 2. Compare hits to **Ideas Chris likes** above + `competitors/` screenshots.
-3. Translate into Lumen + BetOnline shell — never clone.
+3. Translate into Lumen + the site shell — never clone.
 4. If MCP returns paid-plan / auth errors: fall back to this file + local screenshots and say Mobbin is blocked.
 
-Wired into `.cursor/skills/lumen-build/SKILL.md` so every live-site build can pull peer UX before inventing.
+Wired into `.claude/skills/lumen-build/SKILL.md` so every live-site build can pull peer UX before inventing.
 
 ## BRD checklist (agents)
 

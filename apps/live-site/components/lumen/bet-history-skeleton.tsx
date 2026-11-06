@@ -24,7 +24,7 @@ export function BetHistorySkeleton({ className }: { className?: string }) {
         </span>
       </div>
 
-      <div className="mb-4 overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="flex gap-2 border-b border-border bg-[var(--surface-muted-1,#f9fafb)] px-5 pt-3">
           <span className="relative -mb-px border-b-2 border-primary pb-2 text-sm font-medium text-foreground">
             This Week
@@ -57,7 +57,7 @@ export function BetHistorySkeleton({ className }: { className?: string }) {
         <Skeleton className="h-8 w-[93px] rounded-full" />
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]">
         <div className="hidden gap-3 border-b border-border bg-[var(--surface-muted-1,#f9fafb)] px-3 py-3 text-xs font-medium text-muted-foreground md:flex">
           <span className="w-[120px]">Date</span>
           <span className="min-w-0 flex-1">Description</span>

@@ -157,7 +157,7 @@ function PreviewSandbox({
       >
         <div
           className={cn(
-            'overflow-hidden rounded-[10px] border border-border bg-background',
+            'overflow-hidden rounded-lg border border-border bg-background',
             device === 'mobile' ? 'p-0 min-h-[640px]' : 'p-4 sm:p-5',
             device === 'tablet' && 'min-h-[500px]',
           )}
@@ -283,7 +283,7 @@ function StoryCanvas({
             </p>
             <CopyButton text={story.code} />
           </div>
-          <pre className="overflow-x-auto rounded-[10px] border border-border bg-card p-4 text-[12px] leading-relaxed text-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]">
+          <pre className="overflow-x-auto rounded-lg border border-border bg-card p-4 text-size-xs leading-relaxed text-foreground shadow-[0_0_16px_rgba(0,0,0,0.06)]">
             <code>{story.code}</code>
           </pre>
         </section>

@@ -19,6 +19,6 @@ Odds rails, league quick-link strips, casino shelves, any horizontal market/pick
 
 ## Code anchors
 
-- Skill hard rule: `.cursor/skills/lumen-build/SKILL.md` → “Mobile carousels — HARD RULE”
-- Patterns: `.cursor/skills/lumen-build/patterns.md` → “Horizontal carousels / odds rails”
+- Skill hard rule: `.claude/skills/lumen-build/SKILL.md` → “Mobile carousels — HARD RULE”
+- Patterns: `.claude/skills/lumen-build/patterns.md` → “Horizontal carousels / odds rails”
 - Soccer: `MobileOddsCarousel` (no arrows); `EventOddsRail` arrows gated by fine pointer

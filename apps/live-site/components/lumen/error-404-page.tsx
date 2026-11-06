@@ -103,7 +103,7 @@ export function Error404Page() {
 
           <button
             type="button"
-            className="inline-flex items-center gap-2 text-[10px] leading-[14px] text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-2 text-size-xxs leading-[14px] text-muted-foreground transition-colors hover:text-foreground"
             onClick={() => {
               document.querySelector<HTMLButtonElement>('[aria-label="Open live chat"]')?.click()
             }}

@@ -57,7 +57,7 @@ import { TRANSACTION_ROWS } from '@/lib/lumen/transactions'
 import { cn } from '@/lib/utils'
 
 const CARD =
-  'rounded-[10px] border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
+  'rounded-lg border border-border bg-card shadow-[0_0_16px_rgba(0,0,0,0.06)]'
 
 const ROW_HOVER = 'hover:!bg-surface-muted-3'
 
@@ -493,7 +493,7 @@ function MiniRow({
         </p>
         {statusStyle ? (
           <span
-            className="mt-0.5 inline-flex rounded border px-1.5 py-px text-[10px] font-medium leading-4"
+            className="mt-0.5 inline-flex rounded border px-1.5 py-px text-size-xxs font-medium leading-4"
             style={statusStyle}
           >
             {status}

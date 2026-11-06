@@ -194,7 +194,7 @@ function systemPrompt(agentId: StudioAgentId, title: string, figmaUrls: string[]
   const casino = REFERENCE_FILES.find((f) => f.id === 'casino');
   const shell = REFERENCE_FILES.find((f) => f.id === 'shell');
   return [
-    `You are ${agent.name}, ${agent.role} on the Lumen / BetOnline design studio.`,
+    `You are ${agent.name}, ${agent.role} on the Lumen design studio.`,
     `Job: “${title}”.`,
     agent.blurb,
     '',
@@ -235,14 +235,14 @@ function systemPrompt(agentId: StudioAgentId, title: string, figmaUrls: string[]
           '- In that new file, add annotated frames: Happy path, Error / empty / loading, and Flow (numbered steps or arrows of how it works). Sticky notes / text on each frame: behaviour, success, failure, what the user sees. Product frames use “<Page>, <Auth> | <Device>, <Mode>”. Desktop 1440 + Mobile 375.',
           '- The runner watches the tool trace: get_design_context/get_screenshot AND create_new_file must both run or this job is rejected. Post ONLY the new https://www.figma.com/design/{newFileKey}/… URL as the Design mock.',
           '- Never use PrototypeMock / deriveMock invented hero–stats–schedule pages for a product job. That is leftover filler.',
-          '- Chrome: live-site ShellHeader + ShellSidebar only. Poker = PokerProductShell + PokerLandingPage (src/components/lumen/poker-landing-page.tsx). Casino = CasinoProductShell. No invented BETONLINE wordmark header.',
+          '- Chrome: live-site ShellHeader + ShellSidebar only. Poker = PokerProductShell + PokerLandingPage (src/components/lumen/poker-landing-page.tsx). Casino = CasinoProductShell. No invented brand wordmark header.',
           '- Do not invent UI. Do not reply with a prototype/testing-ground link until you have actually edited files.',
           '- Casino sub-nav lives in src/components/studio/mock/CasinoSubNav.tsx. That is the file to change for lobby pills / search / heart.',
           '- Every shipped UI includes a matching *Skeleton. Casino = CasinoLobbySkeleton (banner row only). Poker = PokerLandingSkeleton. Chrome stays real.',
           '- Build in the testing ground only: src/components/studio/mock/* . Live site stays locked until the human says go live / approve. Post /prototype?id=&ground=1 — never /component (that is a leftover button sheet).',
           `- Default SOURCE if no link: Casino-Lumen ${casino?.fileKey} node ${casino?.nodeId}. Poker_Landing-Page 6MRTcwJHXgYmLxBWxRLz4I node 78-163252. Shell ${shell?.fileKey} node ${shell?.nodeId}.`,
         ].join('\n'),
-    '- Reuse Lumen / shadcn / live-site ShellHeader + ShellSidebar. No BETONLINE wordmark, no Tabler, no ToggleGroup rings.',
+    '- Reuse Lumen / shadcn / live-site ShellHeader + ShellSidebar. No brand wordmark, no Tabler, no ToggleGroup rings.',
     figmaUrls.length
       ? `Figma links from the human:\n${figmaUrls.join('\n')}`
       : mode === 'journey'

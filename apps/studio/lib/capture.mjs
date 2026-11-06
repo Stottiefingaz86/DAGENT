@@ -54,3 +54,26 @@ export async function captureSite({ origin, route = '/', viewport = 'desktop', s
     await browser.close()
   }
 }
+
+// Draw numbered comment pins onto a screenshot, so the agent sees exactly where each comment points.
+// Uses the same local Chrome as captureSite. pins: [{ n, x, y }] with x/y as 0–1 of the image.
+export async function renderAnnotated({ src, pins, outFile }) {
+  const data = fs.readFileSync(src)
+  const ext = path.extname(src).slice(1).toLowerCase().replace('jpg', 'jpeg')
+  const browser = await chromium()
+  try {
+    const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 })
+    const html = `<!doctype html><html><body style="margin:0;background:#000">
+      <div id="w" style="position:relative;display:inline-block">
+        <img id="i" src="data:image/${ext};base64,${data.toString('base64')}" style="display:block;max-width:1600px">
+        ${pins.map((p) => `<div style="position:absolute;left:${(p.x * 100).toFixed(3)}%;top:${(p.y * 100).toFixed(3)}%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:#ff2d95;color:#fff;font:700 16px/34px system-ui,sans-serif;text-align:center;border:3px solid #fff;box-shadow:0 0 0 3px #ff2d95,0 6px 18px rgba(0,0,0,.6)">${p.n}</div>`).join('')}
+      </div></body></html>`
+    await page.setContent(html)
+    await page.waitForFunction(() => document.getElementById('i').complete)
+    fs.mkdirSync(path.dirname(outFile), { recursive: true })
+    await page.locator('#w').screenshot({ path: outFile })
+  } finally {
+    await browser.close()
+  }
+  return outFile
+}

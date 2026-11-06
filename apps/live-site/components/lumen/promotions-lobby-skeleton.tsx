@@ -17,7 +17,7 @@ export function PromotionsLobbySkeleton({ className }: { className?: string }) {
       {/* Banner carousel — 340×164 cards */}
       <div className="flex gap-3 overflow-hidden pl-6" aria-hidden>
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-[164px] w-[340px] shrink-0 rounded-[10px]" />
+          <Skeleton key={i} className="h-[164px] w-[340px] shrink-0 rounded-lg" />
         ))}
       </div>
 
@@ -27,7 +27,7 @@ export function PromotionsLobbySkeleton({ className }: { className?: string }) {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 12 }, (_, i) => (
-            <Skeleton key={i} className="aspect-[280/220] w-full rounded-[10px]" />
+            <Skeleton key={i} className="aspect-[280/220] w-full rounded-lg" />
           ))}
         </div>
       </div>

@@ -24,7 +24,7 @@ Every visual decision resolves to Lumen.
 - `scripts/sync-tokens.mjs` generates `tokens/dist/**`. Generated files are never
   hand-edited. A token change is a Figma change first, then a re-sync.
 - Brands render via `[data-brand='<brand>']` (+ `.dark`). The pretend live site runs
-  brand `betonline` unless the brief says otherwise.
+  the default brand theme (`PUBLIC_LIVE_SITE_BRAND`) unless the brief says otherwise.
 
 ### III. Components Before Features
 - A feature may only import components that are **approved in Storybook**.
@@ -50,6 +50,13 @@ Every visual decision resolves to Lumen.
 - Agents may ask clarifying questions in the brief's channel at any stage; unanswered
   questions block work rather than being assumed.
 
+### VI. Strategy First
+- Every spec maps to the 2026–2028 strategy (`knowledge/product-strategy/BRIEF.md`):
+  a core bet or enabler, an initiative / feature #, and a needle with its baseline.
+- Competitor and journey-audit evidence (`COMPETITOR_RESEARCH.md`, `research/`, Mobbin) is cited when
+  the feature touches join, fund, first bet, rewards or discovery. Peers inspire; never clone.
+- The 50-feature backlog is context, not a to-do list: only the feature the BRD asks for is designed.
+
 ## Technology & Targets
 - Studio app: Astro 6 + React 19 + Pixi 8 + Tailwind 4 (`src/`).
 - Prototypes: static builds published under `PUBLIC_PROTOTYPE_BASE_URL/<slug>/`,
@@ -72,9 +79,9 @@ Every visual decision resolves to Lumen.
 
 ## Governance
 This constitution supersedes any other practice, prompt or template in the repo.
-Reviews verify compliance with Principles I–V before approving. Complexity or any
+Reviews verify compliance with Principles I–VI before approving. Complexity or any
 deviation must be justified in the plan's Complexity Tracking table and approved by a
-human reviewer. Runtime guidance for agents lives in `.cursor/skills/speckit-*` and
+human reviewer. Runtime guidance for agents lives in `.claude/skills/speckit-*` and
 `src/lib/studio/pipeline.ts` (the gate list).
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-10-13
+**Version**: 1.1.0 | **Ratified**: 2026-10-13 | **Last Amended**: 2026-11-06
