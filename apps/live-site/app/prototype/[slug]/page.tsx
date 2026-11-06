@@ -1,7 +1,6 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { DailyRacesPage } from '@/components/lumen/daily-races-page'
 import {
@@ -69,35 +68,9 @@ export default function PrototypePage() {
     )
   })()
 
-  const deskHref = '/designagent'
-
+  // No lane bar above the shell (Chris, Nov 2026): the prototype must look exactly like the real site.
   return (
     <div data-prototype-lane="" className="min-h-svh bg-background">
-      <div
-        className="sticky top-0 z-[60] flex flex-wrap items-center justify-between gap-2 border-b border-border bg-[#121212] px-4 py-2 text-xs text-muted-foreground"
-        data-name="prototype-chrome"
-      >
-        <span>
-          <span className="font-semibold text-foreground">Prototype</span>
-          {' · '}
-          {entry?.label ?? prototypeLabel(slug)}
-          {' · '}
-          design lane — not demo nav
-        </span>
-        <div className="flex items-center gap-3">
-          <Link
-            href={deskHref}
-            className="text-foreground underline-offset-2 hover:underline"
-          >
-            Design agent
-          </Link>
-          {entry?.livePath ? (
-            <span className="tabular-nums opacity-70">
-              Merge to demo later: {entry.livePath}
-            </span>
-          ) : null}
-        </div>
-      </div>
       {slug === SHELL_NAV_REFRESH_SLUG ? (
         <ShellNavRefreshPrototype />
       ) : (

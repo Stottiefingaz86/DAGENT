@@ -34,21 +34,24 @@ The full contract between this repo and its neighbours is in **[docs/PIPELINE.md
 
 ---
 
-## Quick start (about 5 minutes)
+## Quick start: the setup wizard (about 5 minutes)
 
-**You need:** macOS or Linux, Node 22+, Google Chrome (used for the agent's screenshots), and an Anthropic API key.
+**You need:** a Mac (or Linux/Windows with a terminal), [Node.js 22+](https://nodejs.org), [Google Chrome](https://www.google.com/chrome), and an Anthropic API key ([console.anthropic.com](https://console.anthropic.com/settings/keys)).
 
-```bash
-git clone https://github.com/Stottiefingaz86/DAGENT.git && cd DAGENT
-npm --prefix apps/studio install
-npm run studio              # → http://localhost:4100
-```
+1. **Get the repo:** `git clone https://github.com/Stottiefingaz86/DAGENT.git`, or download the ZIP from GitHub and unzip it.
+2. **Run the wizard:** on a Mac, double-click **`Setup.command`**. Anywhere else: `npm run setup` in the repo folder.
+   It checks your computer, installs the studio and the prototype site, creates the settings file with a private token for other repos, offers to connect Figma, checks the skills, and opens the studio.
+3. **Finish in the browser** (the Home screen shows a checklist until it's done):
+   - create the **Owner** account (you);
+   - **Settings → API keys:** paste your Anthropic key;
+   - **Settings → Figma research folder:** paste a read-only Figma token (see [docs/CONNECTORS.md](docs/CONNECTORS.md));
+   - connect **Figma and Mobbin** to the agent with **`Connect Tools.command`** (Mobbin needs a paid plan);
+   - **Home → Check again.** The agent stays **off** until the key, Figma, Mobbin, the research token and Chrome all work. BRDs that arrive earlier wait.
+   - **Settings → People:** add your team.
 
-On macOS you can instead double-click **`Start Design Studio.command`**.
+**Hosting it for the team** (a server, not Vercel): see [docs/SETUP.md → Hosting the studio](docs/SETUP.md#hosting-the-studio-for-the-team).
 
-1. **Create the Owner account.** The first time you open the studio, you set up the Owner. Owners approve directions, give sign-off and add the team in **Settings → People**.
-2. **Add your Anthropic API key** in **Settings → API keys**. It stays on that machine and is never committed.
-3. **Start a project:** click **New BRD**, then paste a brief or attach a PDF. The studio starts the prototype site by itself; the first start installs it, which takes a few minutes.
+After that, start it with **`Start Design Studio.command`** (or `npm run studio`). Keys never go in the repo: they stay on the machine running the studio.
 
 More detail is in **[docs/SETUP.md](docs/SETUP.md)**.
 

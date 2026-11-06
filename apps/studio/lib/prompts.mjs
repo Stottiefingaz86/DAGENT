@@ -243,7 +243,7 @@ Maintenance — job ${job.slug}: tidy the taste notes so the agent stays sharp.
 export function figmaPrompt(job) {
   return `
 FIGMA BUILD for ${job.slug}. Build the approved prototype "/prototype/${job.slug}" in Figma.
-If no Figma write tool (use_figma) is available to you, do NOT improvise: log one short line saying Figma isn't connected to the studio worker (run "Connect Figma.command"), and end your turn.
+If no Figma write tool (use_figma) is available to you, do NOT improvise: log one short line saying Figma isn't connected to the studio worker (run "Connect Tools.command"), and end your turn.
 
 ${FIGMA_RULES}
 

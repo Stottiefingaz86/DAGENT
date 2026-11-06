@@ -58,3 +58,4 @@ Any time the player **gets something** (cash claim, rakeback, mission, free spin
 - Confetti or sound on ordinary actions (save, copy, navigate, filter).
 - Opaque sub-navs, heavy blur (> 32px), glass on content cards, glass chevrons on mobile.
 - Linear easing, bouncy springs on chrome, animations over ~500ms outside a reward moment, snapping balances.
+- **Don't (Chris, Nov 2026): text that jumps size after a token change.** Banner copy and game-tile tags went oversized and overlapping when `text-size-*` was dropped by `cn()`. After any typography/token change, screenshot the homepage banners and casino tiles (desktop + mobile) before calling it done.

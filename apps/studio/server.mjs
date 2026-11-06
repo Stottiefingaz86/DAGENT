@@ -14,11 +14,28 @@ import { createAuth } from './lib/auth.mjs'
 import { createTaste } from './lib/taste.mjs'
 import { createComments } from './lib/comments.mjs'
 import { renderAnnotated } from './lib/capture.mjs'
+import { createNotify } from './lib/notify.mjs'
 import crypto from 'node:crypto'
 import * as P from './lib/prompts.mjs'
 import { execFile } from 'node:child_process'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
+// If the studio's code changes while it runs, the page shows "Restart the studio" (new code only loads on restart).
+const BOOTED = Date.now()
+// A small log next to the studio (git-ignored) so problems can be diagnosed without the Terminal window.
+const studioLog = (line) => {
+  try {
+    fs.appendFileSync(path.join(here, 'studio.log'), `${new Date().toISOString()} ${line}\n`)
+  } catch {}
+}
+studioLog('studio started')
+const codeChanged = () => {
+  try {
+    return [path.join(here, 'server.mjs'), ...fs.readdirSync(path.join(here, 'lib')).map((f) => path.join(here, 'lib', f))].some((f) => fs.statSync(f).mtimeMs > BOOTED)
+  } catch {
+    return false
+  }
+}
 
 // --- env (.env next to this file; no dependency) ---
 for (const f of [path.join(here, '.env'), path.join(here, '.env.local')]) {
@@ -41,9 +58,25 @@ const LINKS = {
   lumen: process.env.STUDIO_LUMEN_URL || 'https://design-request-app-one.vercel.app/lumen',
   figma: process.env.STUDIO_FIGMA_URL || 'https://www.figma.com/design/vCPe93hNKDWWcpu49Vo0kU',
   prototypeOrigin: process.env.STUDIO_PROTOTYPE_ORIGIN || 'http://127.0.0.1:3001',
+  designAgentFile: 'https://www.figma.com/design/' + (process.env.STUDIO_FIGMA_FILE || 'MYeELetKW9xye1shSpm8Fn'),
+  research: process.env.STUDIO_RESEARCH_URL || 'https://www.figma.com/files/1304356510223900444/folder/653184570',
+  repo: process.env.STUDIO_REPO_URL || 'https://github.com/Stottiefingaz86/DAGENT',
 }
 
 const store = new Store(REPO_ROOT)
+// Chat notifications (Slack / Mattermost / Teams / webhook). STUDIO_PUBLIC_URL = the address people open (for links in messages).
+const notify = createNotify({ dir: here, publicUrl: () => (process.env.STUDIO_PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, '') })
+store.on('change', (msg) => {
+  try {
+    if (msg.type === 'notify') notify.send(msg.status === 'error' ? 'error' : 'needs_you', { slug: msg.slug, title: msg.title, text: msg.gate })
+    if (msg.type === 'event' && msg.event?.text) {
+      const t = msg.event.text
+      const job = store.get(msg.slug)
+      if (/^Dev handoff package ready/.test(t)) notify.send('handover', { slug: msg.slug, title: job?.title, text: 'Handover ready for dev.' })
+      if (/^Dev question needs design/.test(t)) notify.send('dev_question', { slug: msg.slug, title: job?.title, text: t.replace(/^Dev question needs design:\s*/, 'Dev asked: ') })
+    }
+  } catch {}
+})
 const auth = createAuth(here)
 const taste = createTaste(REPO_ROOT)
 const comments = createComments(store)
@@ -61,6 +94,9 @@ const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.e
 // No key → no run. Never a stand-in agent.
 async function runner(slug, prompt, signal) {
   if (!connected()) throw new Error('The design agent isn’t connected. Add your Anthropic API key on the studio home screen, then Retry.')
+  // Belt and braces: even a queued run stops here if setup is incomplete.
+  const nr = notReady()
+  if (nr) throw new Error(nr.error)
   return claude(slug, prompt, signal)
 }
 const orch = createOrchestrator({ store, runner, taste })
@@ -101,7 +137,6 @@ for (const j of store.list()) {
   }
 }
 
-watchInbox({ store, repoRoot: REPO_ROOT, onJob: (slug) => orch.start(slug) })
 
 // --- Lumen watch: re-check the design system on start and every 6 hours ---
 let lumen = { checkedAt: null, changed: false, latest: '', latestDate: '' }
@@ -133,7 +168,12 @@ setInterval(lumenWatch, 6 * 3600e3).unref()
 // Research: the competitor/market research Figma folder (knowledge/product-strategy/RESEARCH_SOURCES.md).
 // scripts/research-watch.mjs lists it with FIGMA_TOKEN and records new/updated files in knowledge/research/CHANGELOG.md.
 let research = { checkedAt: null, changed: false, error: null, files: 0 }
-function researchWatch() {
+// The Figma research token is pasted in Settings and kept on this computer only (git-ignored, owner-read only).
+const FIGMA_TOKEN_FILE = path.join(here, '.studio-figma-token')
+try {
+  if (!process.env.FIGMA_TOKEN && fs.existsSync(FIGMA_TOKEN_FILE)) process.env.FIGMA_TOKEN = fs.readFileSync(FIGMA_TOKEN_FILE, 'utf8').trim()
+} catch {}
+function researchWatch(done) {
   execFile(process.execPath, [path.join(REPO_ROOT, 'scripts', 'research-watch.mjs'), '--json'], { cwd: REPO_ROOT, timeout: 120000, env: process.env }, (err, out) => {
     let summary = null
     try {
@@ -141,28 +181,117 @@ function researchWatch() {
     } catch {}
     research = { checkedAt: new Date().toISOString(), changed: !!summary?.changed, files: summary?.files || 0, updated: summary?.updated || [], error: summary?.error || (err && !summary ? String(err.message).slice(0, 200) : null) }
     if (summary?.changed) store.emit('change', { type: 'research', research })
+    if (typeof afterCheck === 'function' && tools) afterCheck()
+    store.emit('change', { type: 'research', research })
+    if (typeof done === 'function') done()
   })
 }
 researchWatch()
 setInterval(researchWatch, 6 * 3600e3).unref()
 
-// Is the design agent signed in to Figma? (Connect Figma.command does the one-time sign-in.)
-let figmaStatus = { connected: null, checkedAt: null, detail: '' }
-function figmaCheck() {
-  const sdkDir = path.join(here, "node_modules", "@anthropic-ai")
-  let cli = ''
+// ---- Setup gate (Chris, Nov 2026): nothing runs until the full setup is in place. ----
+// Required by default: Anthropic key, Figma + Mobbin connected to the agent, the Figma research token, and Chrome.
+// STUDIO_SETUP_REQUIRED (comma list) can change the list on a machine where the team agreed to; leave it unset normally.
+const REQUIRED = (process.env.STUDIO_SETUP_REQUIRED || 'apiKey,figma,mobbin,research,chrome').split(',').map((x) => x.trim()).filter(Boolean)
+let tools = { figma: { connected: null, detail: '' }, mobbin: { connected: null, detail: '' }, checkedAt: null }
+let figmaStatus = tools.figma // kept for the handover card
+const chromeFound = () =>
+  !!(process.env.STUDIO_CHROME_PATH ? fs.existsSync(process.env.STUDIO_CHROME_PATH) : ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/opt/google/chrome/chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe'].some((p) => fs.existsSync(p)))
+function claudeCli() {
+  const sdkDir = path.join(here, 'node_modules', '@anthropic-ai')
   try {
     const d = fs.readdirSync(sdkDir).find((n) => n.startsWith('claude-agent-sdk-') && fs.existsSync(path.join(sdkDir, n, 'claude')))
-    if (d) cli = path.join(sdkDir, d, 'claude')
-  } catch {}
-  if (!cli) return (figmaStatus = { connected: null, checkedAt: new Date().toISOString(), detail: 'Claude Code program not found yet (start the studio once).' })
-  execFile(cli, ['mcp', 'list'], { timeout: 60000, env: process.env }, (err, out) => {
-    const line = String(out || '').split('\n').find((l) => /figma/i.test(l)) || ''
-    figmaStatus = { connected: /✓|connected/i.test(line) && !/✗|failed|needs auth/i.test(line), checkedAt: new Date().toISOString(), detail: line.trim() || 'Figma not added — run Connect Figma.command.' }
+    return d ? path.join(sdkDir, d, 'claude') : ''
+  } catch {
+    return ''
+  }
+}
+function toolsCheck() {
+  return new Promise((resolve) => {
+    const cli = claudeCli()
+    if (!cli) {
+      tools = { figma: { connected: false, detail: 'Claude Code program not found (run Setup).' }, mobbin: { connected: false, detail: 'Claude Code program not found (run Setup).' }, checkedAt: new Date().toISOString() }
+      figmaStatus = tools.figma
+      return resolve(tools)
+    }
+    execFile(cli, ['mcp', 'list'], { cwd: REPO_ROOT, timeout: 90000, env: process.env }, (err, out) => {
+      const lines = String(out || '').split('\n')
+      const one = (name) => {
+        const line = lines.find((l) => new RegExp(`^\\s*${name}\\b`, 'i').test(l)) || ''
+        return { connected: /✓|connected/i.test(line) && !/✗|failed|needs auth|not connected/i.test(line), detail: line.trim() || `${name} not added — run Connect Tools.command.` }
+      }
+      tools = { figma: one('figma'), mobbin: one('mobbin'), checkedAt: new Date().toISOString() }
+      figmaStatus = tools.figma
+      resolve(tools)
+    })
   })
 }
-figmaCheck()
-setInterval(figmaCheck, 30 * 60e3).unref()
+function setupState() {
+  const items = {
+    apiKey: { ok: connected(), label: 'Anthropic API key', how: 'Settings → API keys' },
+    figma: { ok: tools.figma.connected === true, label: 'Figma connected to the agent', how: 'Run Connect Tools.command (Figma → Authenticate), then Check again', detail: tools.figma.detail },
+    mobbin: { ok: tools.mobbin.connected === true, label: 'Mobbin connected to the agent', how: 'Run Connect Tools.command (Mobbin → Authenticate; needs a paid Mobbin plan), then Check again', detail: tools.mobbin.detail },
+    research: { ok: !!process.env.FIGMA_TOKEN && !research.error && !!research.checkedAt, label: 'Figma research folder', how: 'Settings → Figma research folder (read-only token)', detail: research.error || '' },
+    chrome: { ok: chromeFound(), label: 'Google Chrome (screenshots)', how: 'Install Google Chrome on this machine, or set STUDIO_CHROME_PATH' },
+  }
+  const missing = REQUIRED.filter((k) => items[k] && !items[k].ok)
+  return { ready: missing.length === 0, missing, required: REQUIRED, items, checkedAt: tools.checkedAt }
+}
+const pendingStarts = new Set() // BRDs that arrived before setup was finished
+let wasReady = false
+let firstCheck = true // don't announce the state the studio boots in
+function afterCheck() {
+  const st = setupState()
+  if (st.ready !== wasReady && tools.checkedAt && !firstCheck) notify.send('setup', { text: st.ready ? 'Setup complete: the design agent is on.' : `Setup broke: ${st.missing.map((k) => st.items[k].label).join(', ')}. The agent is off until it's fixed.` })
+  if (st.ready && !wasReady) {
+    console.log('  Setup complete — the design agent is enabled.')
+    lane.ensure()
+    for (const slug of pendingStarts) {
+      store.event(slug, 'system', 'Setup finished — starting.')
+      orch.start(slug)
+    }
+    pendingStarts.clear()
+  }
+  wasReady = st.ready
+  if (tools.checkedAt) firstCheck = false
+  store.emit('change', { type: 'setup', setup: st })
+}
+// Re-check by itself: every 15 seconds while setup is incomplete (so items turn green on their own once you finish
+// a sign-in), every 30 minutes once everything works (so an expired sign-in switches the agent off again).
+let checking = false
+let lastCheck = 0
+async function autoCheck() {
+  if (checking) return
+  const ready = setupState().ready
+  if (ready && Date.now() - lastCheck < 30 * 60e3) return
+  checking = true
+  try {
+    await toolsCheck()
+    // A failing research check is retried every 2 minutes (not every 15 seconds, to stay under Figma's rate limit).
+    if (!ready && process.env.FIGMA_TOKEN && research.error && Date.now() - (Date.parse(research.checkedAt) || 0) > 120e3) researchWatch()
+    afterCheck()
+  } finally {
+    lastCheck = Date.now()
+    checking = false
+  }
+}
+autoCheck()
+setInterval(autoCheck, 15e3).unref()
+const notReady = () => {
+  const st = setupState()
+  return st.ready ? null : { error: `Setup isn’t finished: ${st.missing.map((k) => st.items[k].label).join(', ')}. Nothing runs until it is.`, setup: st }
+}
+
+watchInbox({
+  store,
+  repoRoot: REPO_ROOT,
+  onJob: (slug) => {
+    if (notReady()) {
+      pendingStarts.add(slug)
+      store.event(slug, 'system', 'Waiting for setup to finish before the agent starts.')
+    } else orch.start(slug)
+  },
+})
 
 // --- live updates (Server-Sent Events) ---
 const clients = new Set()
@@ -272,6 +401,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Frame-Options', 'DENY')
+  if (req.method === 'POST') studioLog(`POST ${p}`)
   try {
     req.user = auth.userFor(req)
     if (req.method !== 'GET' && req.method !== 'HEAD' && !sameOrigin(req)) return send(res, 403, { error: 'Cross-site request refused.' })
@@ -293,6 +423,40 @@ const server = http.createServer(async (req, res) => {
       auth.logout(req, res)
       return send(res, 200, { ok: true })
     }
+    // ---- Talk to the agent from chat: Mattermost outgoing webhook / Slack slash command / any JSON POST ----
+    // Message format: "<project> <your message>"  ·  "list" shows what needs you.  Token: the one on Settings → Notifications.
+    if (p === '/api/notify/inbound' && req.method === 'POST') {
+      const raw = await new Promise((ok) => {
+        let b = ''
+        req.on('data', (c) => (b += c).length > 1e5 && req.destroy())
+        req.on('end', () => ok(b))
+      })
+      let body = {}
+      try {
+        body = /json/.test(req.headers['content-type'] || '') ? JSON.parse(raw || '{}') : Object.fromEntries(new URLSearchParams(raw))
+      } catch {}
+      const token = body.token || url.searchParams.get('token') || (req.headers.authorization || '').replace(/^Bearer /, '')
+      if (!notify.tokenOk(token)) return send(res, 401, { text: 'Wrong token. Copy it from Studio → Settings → Notifications.' })
+      const reply = (text) => send(res, 200, { text, response_type: 'ephemeral' })
+      let text = String(body.text || '').trim()
+      if (body.trigger_word) text = text.slice(String(body.trigger_word).length).trim()
+      const who = String(body.user_name || body.user || 'chat').slice(0, 40)
+      const jobs = store.list().filter((j) => !['maintenance', 'recommendation'].includes(j.source))
+      if (!text || /^(list|help)$/i.test(text)) {
+        const open = jobs.filter((j) => STATUSES[j.status]?.gate)
+        return reply(`${open.length ? open.map((j) => `• ${j.slug} — ${j.title}: ${STATUSES[j.status].gate}`).join('\n') : 'Nothing needs you right now.'}\nReply with: <project> <message>`)
+      }
+      const [ref, ...rest] = text.split(/\s+/)
+      const msgText = rest.join(' ').trim()
+      const r = ref.toLowerCase()
+      const job = jobs.find((j) => j.slug === r) || jobs.find((j) => j.slug.startsWith(r)) || jobs.find((j) => j.title.toLowerCase().includes(r))
+      if (!job) return reply(`I couldn't find a project called "${ref}". Send "list" to see them.`)
+      if (!msgText) return reply(`${job.title}: ${STATUSES[job.status]?.label || job.status}. Add a message after the project name to send feedback.`)
+      const nr = notReady()
+      if (nr) return reply(nr.error)
+      orch.message(job.slug, `${msgText}\n\n(from ${who} in chat)`, [], who)
+      return reply(`Sent to ${job.title}. The agent picks it up now.`)
+    }
     // ---- Dev agents (other repos): handover download + design questions. Intake token, or a signed-in person, or this computer. ----
     const dv = /^\/api\/jobs\/([a-z0-9-]+)\/(dev-questions|handover|handover\.tar\.gz)$/.exec(p)
     if (dv) {
@@ -306,6 +470,7 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'GET') return send(res, 200, (job.devQuestions || []).map(({ id, text, status, answer, source, askedAt, answeredAt }) => ({ id, text, status, answer, source, askedAt, answeredAt })))
         if (req.method !== 'POST') return send(res, 405, { error: 'GET or POST' })
         if (!connected()) return send(res, 503, { error: 'The design agent is not connected right now.' })
+        { const nr = notReady(); if (nr) return send(res, 423, nr) }
         const b = await readJson(req)
         const qs = (Array.isArray(b.questions) ? b.questions : [b.question || b.text]).filter(Boolean).slice(0, 20)
         if (!qs.length) return send(res, 400, { error: 'Send { "from": "dev-repo", "questions": [{ "text": "…", "context": "…" }] }' })
@@ -329,10 +494,53 @@ const server = http.createServer(async (req, res) => {
       return
     }
     // Everything else needs a login (BRDs from other repos use the intake token instead).
-    const isApi = p.startsWith('/api/') && p !== '/api/intake'
+    const isApi = p.startsWith('/api/') && p !== '/api/intake' && p !== '/api/notify/inbound'
     const publicAsset = p === '/files/apps/live-site/public/shell/design-agent/logo-mark.png' // sign-in screen logo
     if ((isApi || (p.startsWith('/files/') && !publicAsset)) && !req.user) return send(res, 401, { error: 'Sign in to the studio.', signin: true })
 
+    // ---- Notifications settings (Owner) ----
+    if (p === '/api/notify') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can change notifications.' })
+      if (req.method === 'POST') {
+        const b = await readJson(req)
+        try {
+          if (b.action === 'add') notify.add(b)
+          else if (b.action === 'remove') notify.remove(String(b.id))
+          else if (b.action === 'events') notify.setEvents(String(b.id), b.events || [])
+          else if (b.action === 'rotate') notify.rotateToken()
+          else if (b.action === 'test') {
+            const r = await notify.test(String(b.id))
+            if (!r.ok) return send(res, 400, { error: `The channel answered ${r.status}. Check the webhook URL.`, ...notify.public() })
+          }
+        } catch (e) {
+          return send(res, 400, { error: e.message })
+        }
+      }
+      return send(res, 200, { ...notify.public(), inboundUrl: `${(process.env.STUDIO_PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, '')}/api/notify/inbound` })
+    }
+    // ---- Setup helpers: do the step for the Owner where the machine allows it ----
+    if (p === '/api/setup/run' && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can run setup steps.' })
+      const b = await readJson(req)
+      if (b.item === 'tools') {
+        // Opens Connect Tools.command in Terminal on the Mac that runs the studio (only when you're on that Mac).
+        if (process.platform !== 'darwin' || !isLocal(req)) return send(res, 400, { error: 'Open a terminal on the machine that runs the studio and run "Connect Tools.command" (see docs/SETUP.md).' })
+        execFile('open', ['-a', 'Terminal', path.join(REPO_ROOT, 'Connect Tools.command')], () => {})
+        return send(res, 200, { ok: true, message: 'Terminal opened with Connect Tools. Follow the steps there, then click Check again.' })
+      }
+      return send(res, 400, { error: 'Unknown setup step' })
+    }
+    // ---- Setup status (everyone) and re-check (Owner) ----
+    if (p === '/api/setup') {
+      if (req.method === 'POST') {
+        if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can run the check.' })
+        await toolsCheck()
+        researchWatch()
+        await new Promise((r) => setTimeout(r, 4000))
+        afterCheck()
+      }
+      return send(res, 200, setupState())
+    }
     // ---- people (Settings · Owner only) ----
     if (p.startsWith('/api/users')) {
       if (req.method === 'GET') return send(res, 200, auth.list())
@@ -358,7 +566,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
     if (p === '/api/config') {
-      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), lumen, research, figma: figmaStatus, me: req.user ? { id: req.user.id, color: colorFor(req.user.id) } : null, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
+      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), lumen, research, figma: figmaStatus, restartNeeded: codeChanged(), setup: { ...setupState(), figmaToken: !!process.env.FIGMA_TOKEN, people: auth.list().length }, me: req.user ? { id: req.user.id, color: colorFor(req.user.id) } : null, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
     }
     if (p === '/api/lane') {
       if (req.method === 'POST') lane.ensure()
@@ -410,8 +618,29 @@ const server = http.createServer(async (req, res) => {
       }
       return send(res, 200, { rules: taste.rules().reverse() })
     }
+    // ---- Figma research token (Settings · Owner) ----
+    if (p === '/api/figma-token') {
+      if (req.method === 'GET') return send(res, 200, { set: !!process.env.FIGMA_TOKEN, hint: process.env.FIGMA_TOKEN ? `figd_…${process.env.FIGMA_TOKEN.slice(-4)}` : '', research })
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can change the Figma token.' })
+      const b = await readJson(req)
+      const t = String(b.token || '').trim().replace(/^['"]|['"]$/g, '').replace(/\s+/g, '')
+      if (b.remove) {
+        delete process.env.FIGMA_TOKEN
+        try { fs.unlinkSync(FIGMA_TOKEN_FILE) } catch {}
+        return send(res, 200, { set: false })
+      }
+      if (!/^figd_[\w-]{20,}$/.test(t)) return send(res, 400, { error: 'That doesn’t look like a Figma personal access token (it starts with figd_).' })
+      fs.writeFileSync(FIGMA_TOKEN_FILE, t, { mode: 0o600 })
+      process.env.FIGMA_TOKEN = t
+      studioLog(`figma token saved (…${t.slice(-4)}), checking research folder`)
+      // Answer at once; the folder check result arrives a few seconds later (the page updates by itself).
+      research = { ...research, checkedAt: null, error: null }
+      researchWatch(() => studioLog(`research check: ${research.error || `${research.files} files`}`))
+      return send(res, 200, { set: true, hint: `figd_…${t.slice(-4)}`, research, checking: true })
+    }
     // ---- Recommendations: the agent looks for gaps against the strategy (Owner starts a run) ----
     if (p === '/api/recommend' && req.method === 'POST') {
+      { const nr = notReady(); if (nr) return send(res, 423, nr) }
       if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can start a recommendations run.' })
       if (!connected()) return send(res, 400, { error: 'Connect the design agent first (Settings → API keys).' })
       const b = await readJson(req)
@@ -424,6 +653,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, runs.map((j) => ({ slug: j.slug, title: j.title, status: j.status, running: orch.isRunning(j.slug), brief: j.brief, at: j.updatedAt, ideas: j.ideas || [] })))
     }
     if (p === '/api/ideas/promote' && req.method === 'POST') {
+      { const nr = notReady(); if (nr) return send(res, 423, nr) }
       if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can turn an idea into a project.' })
       const b = await readJson(req)
       const run = store.get(String(b.slug || ''))
@@ -438,6 +668,7 @@ const server = http.createServer(async (req, res) => {
     }
     // ---- Maintenance jobs the agent runs (Owner) ----
     if (p.startsWith('/api/maintenance/') && req.method === 'POST') {
+      { const nr = notReady(); if (nr) return send(res, 423, nr) }
       if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can start maintenance.' })
       if (!connected()) return send(res, 400, { error: 'Connect the design agent first (Settings → API keys).' })
       const kind = p.split('/').pop()
@@ -503,6 +734,7 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/jobs' && req.method === 'GET') return send(res, 200, store.list())
     if (p === '/api/skills') return send(res, 200, listKnowledge())
     if (p === '/api/jobs' && req.method === 'POST') {
+      { const nr = notReady(); if (nr) return send(res, 423, nr) }
       const body = await readJson(req)
       if (!body.title?.trim()) return send(res, 400, { error: 'Add a title' })
       if (!body.brief?.trim() && !(body.files || []).length) return send(res, 400, { error: 'Paste the BRD or attach a PDF' })
@@ -514,6 +746,7 @@ const server = http.createServer(async (req, res) => {
     }
     // External repos / CI: POST a BRD as JSON. Set STUDIO_INTAKE_TOKEN to require a bearer token.
     if (p === '/api/intake' && req.method === 'POST') {
+      { const nr = notReady(); if (nr) return send(res, 423, nr) }
       // Without a token only this computer may post BRDs; with one, the token must match.
       if (INTAKE_TOKEN ? req.headers.authorization !== `Bearer ${INTAKE_TOKEN}` : !isLocal(req)) return send(res, 401, { error: 'Bad or missing intake token (set STUDIO_INTAKE_TOKEN).' })
       const body = await readJson(req)
@@ -529,6 +762,8 @@ const server = http.createServer(async (req, res) => {
       if (!job) return send(res, 404, { error: 'No such job' })
       if (!action && req.method === 'GET') return send(res, 200, { ...job, events: store.events(slug), running: orch.isRunning(slug) })
       if (req.method !== 'POST') return send(res, 405, { error: 'POST only' })
+      // Setup gate: only deleting a project works before setup is finished.
+      if (action !== 'delete') { const nr = notReady(); if (nr) return send(res, 423, nr) }
       const body = await readJson(req)
       if (action === 'react') {
         const value = body.value === 'like' ? 'like' : 'dislike'
@@ -590,11 +825,18 @@ const server = http.createServer(async (req, res) => {
     send(res, 404, { error: 'Not found' })
   } catch (err) {
     console.error(err)
+    studioLog(`ERROR ${p}: ${err.stack || err.message}`)
     send(res, 500, { error: err.message })
   }
 })
 
+server.on('error', (e) => {
+  studioLog(`listen error: ${e.code || e.message}`)
+  if (e.code === 'EADDRINUSE') console.error(`\n  Port ${PORT} is already used by another (older) studio. Quit Terminal (Cmd+Q) and start again.\n`)
+  process.exit(1)
+})
 server.listen(PORT, HOST, () => {
+  studioLog(`listening on ${HOST}:${PORT}`)
   console.log(`\n  Design Studio  →  http://localhost:${PORT}`)
   console.log(`  Repo: ${REPO_ROOT}`)
   console.log(`  Access: ${HOST === '127.0.0.1' ? 'this computer only' : `network (${HOST}) — login required`}${auth.needsSetup() ? ' · first open: create the Owner account' : ''}`)

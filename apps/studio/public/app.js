@@ -112,23 +112,45 @@ function toast(title, text, onClick) {
   setTimeout(() => el.remove(), 7000)
 }
 let ac
-function chime() {
+// Sounds for "a project needs you" (chosen per person on Settings → Notifications; kept in this browser).
+const SOUNDS = {
+  chime: { label: 'Chime', notes: [[880, 0], [1320, 0.09]], type: 'sine' },
+  soft: { label: 'Soft', notes: [[523, 0], [659, 0.12], [784, 0.24]], type: 'sine' },
+  bell: { label: 'Bell', notes: [[1046, 0], [1568, 0.02]], type: 'triangle', long: true },
+  pop: { label: 'Pop', notes: [[660, 0]], type: 'square', short: true },
+}
+const pref = (k, d) => {
+  try {
+    return localStorage.getItem(k) ?? d
+  } catch {
+    return d
+  }
+}
+const setPref = (k, v) => {
+  try {
+    localStorage.setItem(k, v)
+  } catch {}
+}
+function chime(name) {
+  const key = name || pref('studio-sound', 'chime')
+  if (key === 'off') return
+  const snd = SOUNDS[key] || SOUNDS.chime
+  const vol = Number(pref('studio-volume', '0.07'))
   try {
     ac = ac || new AudioContext()
     const t = ac.currentTime
-    for (const [f, d] of [
-      [880, 0],
-      [1320, 0.09],
-    ]) {
+    for (const [f, d] of snd.notes) {
       const o = ac.createOscillator()
       const g = ac.createGain()
+      o.type = snd.type
       o.frequency.value = f
+      const len = snd.long ? 0.9 : snd.short ? 0.12 : 0.35
       g.gain.setValueAtTime(0.0001, t + d)
-      g.gain.exponentialRampToValueAtTime(0.07, t + d + 0.02)
-      g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.35)
+      g.gain.exponentialRampToValueAtTime(vol * (snd.type === 'square' ? 0.4 : 1), t + d + 0.02)
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d + len)
       o.connect(g).connect(ac.destination)
       o.start(t + d)
-      o.stop(t + d + 0.4)
+      o.stop(t + d + len + 0.05)
     }
   } catch {}
 }
@@ -148,6 +170,8 @@ function parse() {
   if (a === 'settings') return { view: 'settings' }
   if (a === 'taste') return { view: 'taste' }
   if (a === 'ideas') return { view: 'ideas' }
+  if (a === 'resources') return { view: 'resources' }
+  if (a === 'notifications') return { view: 'notifications' }
   return { view: 'home' }
 }
 async function route() {
@@ -161,6 +185,8 @@ async function route() {
   if (S.view === 'skills' && !S.skills) S.skills = await api('/api/skills')
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
+  if (S.view === 'notifications' && S.user?.role === 'owner') S.notify = await api('/api/notify').catch(() => null)
+  if (S.view === 'settings') S.figmaToken = await api('/api/figma-token').catch(() => ({}))
   if (S.view === 'settings') {
     S.keys = await api('/api/keys').catch((e) => ({ error: e.message, keys: [] }))
     S.people = await api('/api/users').catch(() => [])
@@ -193,9 +219,7 @@ async function doc(name) {
 // ---------------- sidebar ----------------
 function renderSide() {
   const L = S.config.links
-  $('#link-demo').href = L.demo
-  $('#link-lumen').href = L.lumen
-  $('#link-figma').href = L.figma
+  // Links to the demo site, Lumen and Figma live in the account menu (Resources).
   const u = me()
   $('#me-name').textContent = u.name
   $('#me-role').textContent = u.role === 'owner' ? 'Owner · signs off' : 'Requester'
@@ -613,7 +637,31 @@ function drawCursors() {
     .join('')
 }
 setInterval(() => R.open && drawCursors(), 2000)
+document.addEventListener('change', async (e) => {
+  if (e.target.name === 'nf-type') {
+    document.querySelectorAll('.nf-types .chip').forEach((c) => c.classList.toggle('on', c.contains(e.target)))
+    $('#nf-help').textContent = CH_HELP[e.target.value][1]
+  }
+  if (e.target.dataset?.nfVol != null) setPref('studio-volume', e.target.value), chime()
+  if (e.target.dataset?.nfEv) {
+    const id = e.target.dataset.nfEv
+    const events = [...document.querySelectorAll(`[data-nf-ev="${id}"]:checked`)].map((x) => x.value)
+    S.notify = await api('/api/notify', { action: 'events', id, events }).catch(() => S.notify)
+  }
+})
 document.addEventListener('submit', async (e) => {
+  if (e.target.id === 'nf-form') {
+    e.preventDefault()
+    try {
+      S.notify = await api('/api/notify', { action: 'add', type: document.querySelector('[name=nf-type]:checked').value, label: $('#nf-label').value, url: $('#nf-url').value })
+      toast('Channel added', 'Send a test to check it.')
+      renderAll(false)
+    } catch (x) {
+      $('#nf-err').hidden = false
+      $('#nf-err').textContent = x.message
+    }
+    return
+  }
   if (e.target.id !== 'ideas-form') return
   e.preventDefault()
   try {
@@ -783,12 +831,92 @@ function handoverCard(j, owner) {
     : owner ? `<button class="btn" data-act="figma">${F.connected === false ? 'Build in Figma (connect first)' : 'Build in Figma'}</button>` : ''
   return `<div class="card"><div class="card-head"><span class="card-icon">${ic.pack}</span><div><div class="card-title">Handover ready</div><div class="card-sub">Signed off${j.signedOffBy ? ` by ${esc(j.signedOffBy)}` : ''}. One package for the dev agent: spec, every screen and state, journeys, hover and motion, the prototype${j.figma?.url ? ' and Figma' : ''}.</div></div><button class="btn open" data-panel="handoff">Open handover</button></div>
     <div class="card-actions"><a class="btn primary" href="/api/jobs/${j.slug}/handover.tar.gz">Download package</a>${figma}${j.previewUrl ? `<a class="btn ghost" href="${esc(j.previewUrl)}" target="_blank" rel="noreferrer">Prototype</a>` : ''}${owner ? '<button class="btn ghost" data-act="back-to-refine">Back to refine</button>' : ''}</div>
-    ${F.connected === false && !j.figma?.url ? '<div class="card-sub" style="padding:0 16px 12px">Figma isn’t connected to the studio yet: run <b>Connect Figma.command</b> once, restart the studio, then Build in Figma.</div>' : ''}
+    ${F.connected === false && !j.figma?.url ? '<div class="card-sub" style="padding:0 16px 12px">Figma isn’t connected to the studio yet: run <b>Connect Tools.command</b> once, restart the studio, then Build in Figma.</div>' : ''}
     ${dq.length ? `<div class="card-body"><div class="card-sub"><b>Questions from dev · ${dq.length}${open.length ? ` · ${open.length} open` : ''}</b></div>${dq.map((q) => `<div class="dq"><span class="dot ${q.status === 'answered' ? 'ok' : 'gate'}"></span><div><b>${esc(q.text)}</b>${q.answer ? `<span class="card-sub">${esc(q.answer)}${q.source ? ` · ${esc(q.source)}` : ''}</span>` : '<span class="card-sub">The agent is checking the handover…</span>'}</div></div>`).join('')}</div>` : ''}
   </div>`
 }
 
 // Ideas: the agent looks for gaps against the product strategy and research, with a mock, scope and business case.
+// Notifications: desktop alerts and sounds (this browser) + chat channels and replying from chat (Owner).
+const CH_HELP = {
+  slack: ['Slack', 'In Slack: Apps → search "Incoming WebHooks" (or create an app at api.slack.com/apps → Incoming Webhooks → On) → Add New Webhook → pick the channel → copy the URL.'],
+  mattermost: ['Mattermost', 'In Mattermost: Product menu → Integrations → Incoming Webhooks → Add → pick the channel → copy the URL.'],
+  teams: ['Microsoft Teams', 'In Teams: the channel → ⋯ → Workflows → "Post to a channel when a webhook request is received" → copy the URL.'],
+  webhook: ['Webhook', 'Any https URL. The studio POSTs JSON: { event, project, title, text, url }.'],
+}
+function notificationsHTML() {
+  const owner = S.user?.role === 'owner'
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported'
+  const sound = pref('studio-sound', 'chime')
+  const N = S.notify
+  const evs = N?.events || {}
+  const desk =
+    perm === 'granted' ? 'On. You get a desktop alert when a project needs you and the studio is in the background.'
+    : perm === 'denied' ? 'Blocked by your browser for this page. To fix: click the icon left of the address bar → Notifications → Allow, then reload. On a Mac, also System Settings → Notifications → your browser → Allow.'
+    : perm === 'unsupported' ? 'This browser can’t show desktop alerts. Chrome can.'
+    : 'Off. Turn them on to get a desktop alert when a project needs you.'
+  const chans = (N?.channels || [])
+    .map((c) => `<div class="card"><div class="card-head"><div><div class="card-title">${esc(c.label)} · ${esc(CH_HELP[c.type]?.[0] || c.type)}</div><div class="card-sub"><code>${esc(c.hint)}</code>${c.last ? ` · last message ${c.last.ok ? 'delivered' : `failed (${esc(String(c.last.status))})`}` : ''}</div></div></div>
+      <div class="card-body nf-events">${Object.entries(evs).map(([k, d]) => `<label class="card-sub"><input type="checkbox" data-nf-ev="${c.id}" value="${k}" ${c.events.includes(k) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
+      <div class="card-actions"><button class="btn" data-nf-test="${c.id}">Send a test</button><button class="btn ghost" data-nf-remove="${c.id}">Remove</button></div></div>`)
+    .join('')
+  return `<div class="skills"><div><h2>Notifications</h2><p>How the studio tells you a project needs you, and how to answer the agent from chat.</p></div>
+    <div class="skill-group"><h3>In this browser</h3>
+      <div class="card" style="max-width:640px"><div class="card-head"><div><div class="card-title">Desktop alerts</div><div class="card-sub">${esc(desk)}</div></div></div>
+        <div class="card-actions">${perm === 'default' ? '<button class="btn primary" data-nf-desk>Turn on</button>' : perm === 'granted' ? '<button class="btn" data-nf-desk>Send a test</button>' : ''}</div></div>
+      <div class="card" style="max-width:640px"><div class="card-head"><div><div class="card-title">Sound</div><div class="card-sub">Plays when a project needs you while the studio is open.</div></div></div>
+        <div class="card-body nf-sounds">${[...Object.entries(SOUNDS).map(([k, v]) => [k, v.label]), ['off', 'Off']].map(([k, l]) => `<button class="chip${sound === k ? ' on' : ''}" data-nf-sound="${k}">${l}</button>`).join('')}
+        <label class="card-sub nf-vol">Volume <input type="range" min="0.01" max="0.2" step="0.01" value="${pref('studio-volume', '0.07')}" data-nf-vol></label></div></div>
+    </div>
+    ${owner ? `<div class="skill-group"><h3>Chat channels</h3><p class="card-sub" style="margin:-4px 0 10px">The studio posts to these when something happens. Pick what each channel hears.</p>
+      ${chans}
+      <form class="card" id="nf-form" style="max-width:640px"><div class="card-head"><div><div class="card-title">Add a channel</div><div class="card-sub" id="nf-help">${esc(CH_HELP.slack[1])}</div></div></div>
+        <div class="card-body"><div class="nf-types">${Object.entries(CH_HELP).map(([k, [l]], i) => `<label class="chip${i ? '' : ' on'}"><input type="radio" name="nf-type" value="${k}" ${i ? '' : 'checked'} hidden>${l}</label>`).join('')}</div>
+        <input class="field-in" id="nf-label" placeholder="Name, e.g. #design-agent" maxlength="40" aria-label="Channel name">
+        <input class="field-in" id="nf-url" type="password" autocomplete="off" placeholder="Webhook URL (https://…)" aria-label="Webhook URL"><div class="card-sub" id="nf-err" style="color:var(--err)" hidden></div></div>
+        <div class="card-actions"><button class="btn primary" type="submit">Add channel</button></div></form>
+    </div>
+    <div class="skill-group"><h3>Answer the agent from chat</h3>
+      <div class="card" style="max-width:640px"><div class="card-body">
+        <p>Send <code>&lt;project&gt; &lt;message&gt;</code> from chat and it reaches that project’s agent like feedback typed here. Send <code>list</code> to see what needs you.</p>
+        <p class="card-sub"><b>Mattermost:</b> Integrations → Outgoing Webhooks → Add → trigger word <code>design</code> → callback URL below → paste the token below as the webhook token (or add <code>?token=…</code> to the URL).<br>
+        <b>Slack:</b> create an app at api.slack.com/apps → Slash Commands → <code>/design</code> → request URL below with <code>?token=…</code>.<br>
+        Slack and Mattermost cloud must be able to reach the studio, so this works once the studio is hosted (see Resources → Setup & hosting; set <code>STUDIO_PUBLIC_URL</code>).</p>
+        <div class="nf-copy"><span class="card-sub">URL</span><code>${esc(N?.inboundUrl || '')}</code><button class="btn ghost" data-nf-copy="${esc(N?.inboundUrl || '')}">Copy</button></div>
+        <div class="nf-copy"><span class="card-sub">Token</span><code>${N ? '•'.repeat(12) + esc(N.inboundToken.slice(-4)) : ''}</code><button class="btn ghost" data-nf-copy="${esc(N?.inboundToken || '')}">Copy</button><button class="btn ghost" data-nf-rotate>New token</button></div>
+      </div></div></div>` : '<p class="card-sub">The Owner sets up chat channels.</p>'}
+  </div>`
+}
+
+// Resources: every link the team needs in one place (moved out of the sidebar, Chris Nov 2026).
+function resourcesHTML() {
+  const L = S.config.links || {}
+  const group = (title, items) => `<div class="skill-group"><h3>${title}</h3><div class="skill-grid">${items
+    .filter((i) => i[2])
+    .map(([t, d, h, ext]) => `<a class="skill" href="${esc(h)}"${ext === false ? '' : ' target="_blank" rel="noreferrer"'}><b>${esc(t)}</b><span>${esc(d)}</span></a>`)
+    .join('')}</div></div>`
+  return `<div class="skills"><div><h2>Resources</h2><p>Everything the team and the agent work from.</p></div>
+    ${group('Sites', [
+      ['Demo site', 'The live site on Vercel', L.demo],
+      ['Prototype site', 'Where the agent builds prototypes (this computer)', L.prototypeOrigin],
+      ['Lumen', 'The design system, components and tokens', L.lumen],
+    ])}
+    ${group('Figma', [
+      ['Design Agent file', 'Where the agent builds every project page', L.designAgentFile],
+      ['Lumen library', 'The only library the agent may use', L.figma],
+      ['Research folder', 'Competitor and market research (always updated)', L.research],
+    ])}
+    ${group('Repo & docs', [
+      ['GitHub repo', 'The design repo', L.repo],
+      ['How the pipeline works', 'docs/PIPELINE.md', '/files/docs/PIPELINE.md'],
+      ['Handover & dev questions', 'docs/HANDOVER.md', '/files/docs/HANDOVER.md'],
+      ['Setup & hosting', 'docs/SETUP.md', '/files/docs/SETUP.md'],
+      ['Connectors', 'docs/CONNECTORS.md', '/files/docs/CONNECTORS.md'],
+      ['Overview deck (PDF)', 'docs/Design_Agent_Overview.pdf', '/files/docs/Design_Agent_Overview.pdf'],
+    ])}
+  </div>`
+}
+
 function ideasHTML() {
   const owner = S.user?.role === 'owner'
   const runs = S.ideas || []
@@ -803,7 +931,62 @@ function ideasHTML() {
   </div>`
 }
 
+// Setup gate (Chris, Nov 2026): until every required connection works, nothing runs. Home shows this instead.
+const SETUP_HELP = {
+  apiKey: {
+    what: 'The key that lets the design agent use Claude. It stays on this computer.',
+    steps: ['Go to console.anthropic.com → Settings → API keys (sign in with your company account).', 'Click Create Key, name it "Design Studio", copy it.', 'Paste it in the box on this page (or Settings → API keys) and save.'],
+    action: ['Open Anthropic console', 'https://console.anthropic.com/settings/keys'],
+  },
+  figma: {
+    what: 'Lets the agent read the Lumen library and your research, and build the Figma page in every handover.',
+    steps: ['Click Connect now: a Terminal window opens.', 'Press Enter, then type /mcp and press Enter.', 'Choose figma → Authenticate. Your browser opens: sign in with the Figma account that sees Lumen, click Allow.', 'Do the same for mobbin, then type /exit.', 'Come back here and click Check again.'],
+    run: 'tools',
+  },
+  mobbin: {
+    what: 'Real competitor screens and flows for research. Needs a paid Mobbin plan.',
+    steps: ['Click Connect now: a Terminal window opens (same window as Figma).', 'Type /mcp → mobbin → Authenticate, sign in to Mobbin in the browser, click Allow.', 'Type /exit, come back here and click Check again.'],
+    run: 'tools',
+  },
+  research: {
+    what: 'A read-only Figma token so the studio sees new research files in your research folder by itself.',
+    steps: ['In Figma, go to the home screen (not inside a file).', 'Click your name top-left → Settings → Security → Personal access tokens → Generate new token.', 'Name it "Design Studio research". Scopes: Folders = Read only and File content = Read only. Pick the longest expiry. Generate and copy it.', 'Paste it below and click Save and check.'],
+    inline: 'research',
+  },
+  chrome: {
+    what: 'The agent takes screenshots of the prototype with Google Chrome.',
+    steps: ['Download and install Google Chrome on the machine that runs the studio.', 'Click Check again.'],
+    action: ['Download Chrome', 'https://www.google.com/chrome/'],
+  },
+}
+// Setup gate (Chris, Nov 2026): until every required connection works, nothing runs. Home shows this instead.
+function setupGateHTML() {
+  const st = S.config.setup || { items: {}, required: [], missing: [] }
+  const owner = S.user?.role === 'owner'
+  const open = S.setupOpen || st.missing?.[0]
+  const rows = (st.required || []).map((k) => {
+    const it = st.items[k] || {}
+    const h = SETUP_HELP[k] || {}
+    const expanded = owner && !it.ok && open === k
+    const body = expanded
+      ? `<div class="setup-help"><p>${esc(h.what || '')}</p><ol>${(h.steps || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+        ${it.detail ? `<p class="card-sub">Status: ${esc(it.detail)}</p>` : ''}
+        <div class="card-actions" style="padding:0">${h.run ? `<button class="btn primary" data-setup-run="${h.run}">Connect now</button>` : ''}${h.action ? `<a class="btn ${h.run ? '' : 'primary'}" href="${h.action[1]}" target="_blank" rel="noreferrer">${esc(h.action[0])}</a>` : ''}${k === 'apiKey' && !S.config.connected ? '' : ''}<button class="btn ghost" data-setup-check>Check again</button></div>
+        ${k === 'apiKey' && !S.config.connected ? connectHTML() : ''}${h.inline === 'research' ? figmaTokenHTML(true) : ''}</div>`
+      : ''
+    return `<div class="setup-item${expanded ? ' is-open' : ''}"><button type="button" class="gate-row" data-setup-open="${k}"${it.ok ? ' style="opacity:.6"' : ''}><span class="dot ${it.ok ? 'done' : 'gate'}"></span><div style="min-width:0;text-align:left"><b>${esc(it.label || k)}</b><span class="s">${it.ok ? 'Done' : owner ? (expanded ? 'How to fix it' : 'Click for help') : 'Waiting for the Owner'}</span></div>${!it.ok && owner ? `<span class="go">${expanded ? 'Close' : 'Fix'}</span>` : ''}</button>${body}</div>`
+  })
+  const done = (st.required || []).length - (st.missing || []).length
+  return `<div class="home">
+    <h2><img src="${LOGO}" alt="">Finish setup first</h2>
+    <p class="sub">${owner ? 'The design agent stays off until all of these work, so nothing runs half-connected. Click one to see what to do. Items turn green by themselves within a few seconds of being connected.' : 'The Owner is still setting up the studio. Projects start once setup is finished.'}</p>
+    ${S.config.restartNeeded ? '<div class="gate-row" style="cursor:default"><span class="dot gate"></span><div><b>Restart the studio to load the latest version</b><span class="s">Close its Terminal window, then double-click Start Design Studio.</span></div></div>' : ''}
+    <div class="home-cards"><div class="label">Setup · ${done} of ${(st.required || []).length} done</div>${rows.join('')}</div>
+  </div>`
+}
+
 function homeHTML() {
+  if (S.config.setup && !S.config.setup.ready) return setupGateHTML()
   const mine = S.jobs.filter(needsMe)
   return `<div class="home">
     <h2><img src="${LOGO}" alt="">What are we designing?</h2>
@@ -811,7 +994,6 @@ function homeHTML() {
     ${S.config.connected ? '<div class="home-box" id="home-slot"></div>' : connectHTML()}
     ${mine.length ? `<div class="home-cards"><div class="label">Needs you</div>${mine.map((j) => `<a class="gate-row" href="#j/${j.slug}"><span class="dot gate"></span><div style="min-width:0"><b>${esc(j.title)}</b><span class="s">${esc(S.config.statuses[j.status]?.gate || '')}</span></div><span class="go">Open</span></a>`).join('')}</div>` : ''}
     ${lumenNotice()}
-    ${S.config.figma?.connected === false ? '<div class="gate-row"><span class="dot gate"></span><div style="min-width:0"><b>Figma isn’t connected to the agent</b><span class="s">Run Connect Figma.command once, then restart the studio. Needed for Figma screens in the handover.</span></div></div>' : ''}
     <p class="sub" style="margin-top:0;font-size:13px">BRDs from other repos land in <code>inbox/</code> and show up in the sidebar.</p>
   </div>`
 }
@@ -850,7 +1032,20 @@ function settingsHTML() {
       <div class="card-body"><input class="field-in" id="key-label" placeholder="Label, e.g. Business" maxlength="40" aria-label="Key label"><input class="field-in" id="key-value" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-label="API key">
       <label class="card-sub" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="key-active" checked> Make it the active key</label><div class="card-sub" id="key-err" style="color:var(--err)" hidden></div></div>
       <div class="card-actions"><button class="btn primary" type="submit">Add key</button></div></form>` : '<div class="card-sub">Only the Owner can add or change keys.</div>'}
+    ${figmaTokenHTML(owner)}
   </div>`
+}
+function figmaTokenHTML(owner) {
+  const F = S.figmaToken || {}
+  const R = F.research || S.config.research || {}
+  const status = F.set
+    ? R.error ? `<span style="color:var(--err)">${esc(R.error)}</span>` : R.checkedAt ? `Connected · ${R.files || 0} research files found${R.updated?.length ? ` · ${R.updated.length} new/updated` : ''}` : 'Saved · checking the folder…'
+    : 'Not set. The agent can still open research files you link, but won’t see new ones by itself.'
+  return `<div class="skill-group"><h3>Figma research folder</h3>
+    <div class="gate-row" style="cursor:default"><span class="dot ${F.set && !R.error ? 'done' : ''}"></span><div style="min-width:0"><b>${F.set ? `Token ${esc(F.hint || '')}` : 'No Figma token'}</b><span class="s">${status}</span></div></div></div>
+    ${owner ? `<form class="card" id="figma-token-form" style="max-width:560px"><div class="card-head"><div><div class="card-title">${F.set ? 'Replace the Figma token' : 'Add the Figma token'}</div><div class="card-sub">Figma home → your name (top-left) → Settings → Security → Personal access tokens. Scopes: Folders and File content, read only. Pick the longest expiry. It stays on this computer.</div></div></div>
+      <div class="card-body"><input class="field-in" id="figma-token" type="password" autocomplete="off" spellcheck="false" placeholder="figd_…" aria-label="Figma token"><div class="card-sub" id="ft-err" style="color:var(--err)" hidden></div></div>
+      <div class="card-actions"><button class="btn primary" type="submit">Save and check</button>${F.set ? '<button class="btn ghost" type="button" data-figma-remove>Remove</button>' : ''}</div></form>` : ''}`
 }
 function skillsHTML() {
   return `<div class="skills"><div><h2>Skills</h2><p>What the design agent reads before it designs. Edit these in the repo and the next run picks them up.</p></div>
@@ -867,7 +1062,7 @@ function placeComposer() {
   const slot = $('#home-slot')
   if (S.view === 'home' && slot) slot.append(composer)
   else if (composer.parentElement !== $('#main')) $('#main').append(composer)
-  composer.classList.toggle('is-home', S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || (S.view === 'job' && !S.job) || (S.view === 'home' && !S.config.connected))
+  composer.classList.toggle('is-home', S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'resources' || S.view === 'notifications' || (S.view === 'job' && !S.job) || (S.view === 'home' && (!S.config.connected || (S.config.setup && !S.config.setup.ready))))
   const j = S.job
   const home = S.view === 'home'
   input.placeholder = home
@@ -1025,6 +1220,7 @@ function openPanel(tab) {
 // ---------------- menus + modal ----------------
 function menu(anchor, html, bind) {
   const m = $('#me-menu')
+  m.classList.remove('me-menu')
   m.innerHTML = html
   m.hidden = false
   const r = anchor.getBoundingClientRect()
@@ -1042,18 +1238,32 @@ function menu(anchor, html, bind) {
 }
 function meMenu(anchor) {
   const u = me()
-  const perm = 'Notification' in window ? Notification.permission : 'unsupported'
+  const I = (d) => `<svg class="mi-ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`
+  const icons = {
+    ideas: I('<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0012 3z"/>'),
+    taste: I('<path d="M12 3l2.5 5.5L20 9l-4.2 4 1.1 6L12 16l-4.9 3 1.1-6L4 9l5.5-.5z"/>'),
+    skills: I('<path d="M4 5h6v14H4zM14 5h6v14h-6z"/>'),
+    settings: I('<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 00-2-1.2L14 3h-4l-.5 2.6a7 7 0 00-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 000 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 002 1.2L10 21h4l.5-2.6a7 7 0 002-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/>'),
+    res: I('<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>'),
+    bell: I('<path d="M6 16V11a6 6 0 1112 0v5l2 2H4zM10 20a2 2 0 004 0"/>'),
+    key: I('<circle cx="8" cy="14" r="4"/><path d="M11 11l9-9M17 5l2 2"/>'),
+    out: I('<path d="M15 4h4v16h-4M10 16l-4-4 4-4M6 12h10"/>'),
+  }
   menu(
     anchor,
-    `<div class="ml">${esc(u.name)} · ${u.role === 'owner' ? 'Owner · approves + signs off' : 'Requester · answers + feedback'}</div>
-    <button class="mi" id="mm-notify" ${perm !== 'default' ? 'disabled' : ''}>Desktop notifications<span class="check" style="color:var(--faint)">${perm === 'granted' ? 'On' : perm === 'denied' ? 'Blocked' : perm === 'unsupported' ? '—' : 'Turn on'}</span></button>
-    <a class="mi" href="#settings">Settings · people & keys</a>
-    <a class="mi" href="#skills">Skills the agent reads</a>
-    <hr><button class="mi" id="mm-pass">Change password</button>
-    <button class="mi" id="mm-out">Sign out</button>`,
+    `<div class="mm-head"><span class="avatar">${esc((u.name || '?').slice(0, 2).toUpperCase())}</span><div><b>${esc(u.name)}</b><span>${u.role === 'owner' ? 'Owner' : 'Requester'}</span></div></div>
+    <hr>
+    <a class="mi" href="#ideas">${icons.ideas}Ideas</a>
+    <a class="mi" href="#taste">${icons.taste}Taste</a>
+    <a class="mi" href="#skills">${icons.skills}Skills</a>
+    <a class="mi" href="#settings">${icons.settings}Settings</a>
+    <a class="mi" href="#resources">${icons.res}Resources</a>
+    <hr>
+    <a class="mi" href="#notifications">${icons.bell}Notifications</a>
+    <button class="mi" id="mm-pass">${icons.key}Change password</button>
+    <button class="mi" id="mm-out">${icons.out}Sign out</button>`,
     (m) => {
-      const n = $('#mm-notify', m)
-      if (n) n.onclick = async () => (await Notification.requestPermission(), (m.hidden = true))
+      m.classList.add('me-menu')
       $('#mm-out', m).onclick = async () => (await api('/api/auth/logout', {}).catch(() => {}), (S.user = null), authScreen('login'))
       $('#mm-pass', m).onclick = () => ((m.hidden = true), passwordModal())
     },
@@ -1198,6 +1408,69 @@ document.addEventListener('click', async (e) => {
     } catch (x) {
       toast('Couldn’t do that', x.message)
     }
+    return
+  }
+  if (e.target.closest('[data-figma-remove]')) {
+    S.figmaToken = await api('/api/figma-token', { remove: true }).catch(() => S.figmaToken)
+    renderAll()
+    return
+  }
+  const nfs = e.target.closest('[data-nf-sound]')
+  if (nfs) {
+    setPref('studio-sound', nfs.dataset.nfSound)
+    chime(nfs.dataset.nfSound)
+    return renderAll(false)
+  }
+  if (e.target.closest('[data-nf-desk]')) {
+    let p = Notification.permission
+    if (p === 'default') p = await Notification.requestPermission()
+    if (p === 'granted') new Notification('Design Studio', { body: 'Desktop alerts are on.', icon: LOGO })
+    return renderAll(false)
+  }
+  const nft = e.target.closest('[data-nf-test]')
+  const nfr = e.target.closest('[data-nf-remove]')
+  if (nft || nfr || e.target.closest('[data-nf-rotate]')) {
+    try {
+      S.notify = await api('/api/notify', nft ? { action: 'test', id: nft.dataset.nfTest } : nfr ? { action: 'remove', id: nfr.dataset.nfRemove } : { action: 'rotate' })
+      toast(nft ? 'Test sent' : nfr ? 'Channel removed' : 'New token', nft ? 'Check the channel.' : nfr ? '' : 'Update it in Mattermost / Slack.')
+    } catch (x) {
+      toast('Couldn’t do that', x.message)
+    }
+    return renderAll(false)
+  }
+  const nfc = e.target.closest('[data-nf-copy]')
+  if (nfc) {
+    navigator.clipboard?.writeText(nfc.dataset.nfCopy).then(() => toast('Copied', ''), () => toast('Couldn’t copy', 'Select it and copy by hand.'))
+    return
+  }
+  const so = e.target.closest('[data-setup-open]')
+  if (so) {
+    S.setupOpen = S.setupOpen === so.dataset.setupOpen ? '__none' : so.dataset.setupOpen
+    if (so.dataset.setupOpen === 'research' && !S.figmaToken) S.figmaToken = await api('/api/figma-token').catch(() => ({}))
+    renderAll(false)
+    return
+  }
+  const sr = e.target.closest('[data-setup-run]')
+  if (sr) {
+    try {
+      const r = await api('/api/setup/run', { item: sr.dataset.setupRun })
+      toast('Opened', r.message)
+    } catch (x) {
+      toast('Do this on the studio computer', x.message)
+    }
+    return
+  }
+  const sc = e.target.closest('[data-setup-check]')
+  if (sc) {
+    sc.disabled = true
+    sc.textContent = 'Checking…'
+    try {
+      S.config.setup = await api('/api/setup', {})
+      toast(S.config.setup.ready ? 'Setup complete' : 'Still missing', S.config.setup.ready ? 'The design agent is on.' : S.config.setup.missing.map((k) => S.config.setup.items[k].label).join(', '))
+    } catch (x) {
+      toast('Couldn’t check', x.message)
+    }
+    renderAll(false)
     return
   }
   const pr = e.target.closest('[data-promote]')
@@ -1379,6 +1652,23 @@ document.addEventListener('submit', async (e) => {
     }
     return
   }
+  if (e.target.id === 'figma-token-form') {
+    e.preventDefault()
+    const btn = e.target.querySelector('button[type=submit]')
+    btn.disabled = true
+    btn.textContent = 'Checking…'
+    try {
+      S.figmaToken = await api('/api/figma-token', { token: $('#figma-token').value })
+      toast('Figma token saved', 'Checking the research folder… this takes a few seconds.')
+      renderAll()
+    } catch (x) {
+      btn.disabled = false
+      btn.textContent = 'Save and check'
+      $('#ft-err').hidden = false
+      $('#ft-err').textContent = x.message
+    }
+    return
+  }
   if (e.target.id === 'key-form') {
     e.preventDefault()
     try {
@@ -1441,7 +1731,7 @@ function renderThread(scrollToEnd) {
       }
     }
   } else {
-    th.innerHTML = S.view === 'home' ? homeHTML() : S.view === 'skills' ? skillsHTML() : S.view === 'taste' ? tasteHTML() : S.view === 'ideas' ? ideasHTML() : S.view === 'settings' ? settingsHTML() : '<div class="sys" style="margin-top:20vh">Project not found.</div>'
+    th.innerHTML = S.view === 'home' ? homeHTML() : S.view === 'skills' ? skillsHTML() : S.view === 'taste' ? tasteHTML() : S.view === 'ideas' ? ideasHTML() : S.view === 'resources' ? resourcesHTML() : S.view === 'notifications' ? notificationsHTML() : S.view === 'settings' ? settingsHTML() : '<div class="sys" style="margin-top:20vh">Project not found.</div>'
   }
   placeComposer()
   if (active) {
@@ -1487,6 +1777,19 @@ function connect() {
     const msg = JSON.parse(m.data)
     if (msg.type === 'cursor') return onCursor(msg)
     if (msg.type === 'comments') return msg.slug === R.slug && R.open ? loadComments().then(renderReview) : undefined
+    if (msg.type === 'research' && msg.research?.checkedAt) {
+      if (S.figmaToken) S.figmaToken.research = msg.research
+      if (S.figmaToken?.set) toast(msg.research.error ? 'Research folder: problem' : 'Research folder connected', msg.research.error || `${msg.research.files} research files found.`)
+      if (S.view === 'home' || S.view === 'settings') renderAll(false)
+    }
+    if (msg.type === 'setup') {
+      const was = S.config.setup?.ready
+      const before = (S.config.setup?.missing || []).length
+      S.config.setup = { ...S.config.setup, ...msg.setup }
+      const after = (S.config.setup.missing || []).length
+      if (after < before) toast(S.config.setup.ready ? 'Setup complete' : 'Connected', S.config.setup.ready ? 'The design agent is on.' : `${after} left to do.`)
+      if (S.view === 'home' && (after !== before || was !== S.config.setup.ready)) renderAll(false)
+    }
     if (msg.type === 'lumen') {
       S.config.lumen = msg.lumen
       toast('Lumen changed', 'The agent will design against the new version. See Taste → Lumen.', () => go('#taste'))

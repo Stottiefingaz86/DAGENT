@@ -1,0 +1,50 @@
+{
+  "checkedAt": "2026-11-06T21:06:02.643Z",
+  "projects": [
+    "653184570"
+  ],
+  "files": {
+    "N8fVpJCEjsTPV4bZfTUsIx": {
+      "name": "Benchmark / Refes",
+      "key": "N8fVpJCEjsTPV4bZfTUsIx",
+      "url": "https://www.figma.com/design/N8fVpJCEjsTPV4bZfTUsIx",
+      "lastModified": "2026-11-05T18:16:58Z",
+      "project": "653184570"
+    },
+    "z4QSISLZkHo2Y2DJPR28ri": {
+      "name": "Breakpoints",
+      "key": "z4QSISLZkHo2Y2DJPR28ri",
+      "url": "https://www.figma.com/design/z4QSISLZkHo2Y2DJPR28ri",
+      "lastModified": "2026-11-06T17:45:43Z",
+      "project": "653184570"
+    },
+    "LttPy3eTdWV2ffBcTI2NB3": {
+      "name": "Casino Tournaments UI Research + Initial process",
+      "key": "LttPy3eTdWV2ffBcTI2NB3",
+      "url": "https://www.figma.com/design/LttPy3eTdWV2ffBcTI2NB3",
+      "lastModified": "2026-11-05T17:58:15Z",
+      "project": "653184570"
+    },
+    "tUaL195Qe7Ie8kuWmxL8Bi": {
+      "name": "Competitor Benchmarking",
+      "key": "tUaL195Qe7Ie8kuWmxL8Bi",
+      "url": "https://www.figma.com/design/tUaL195Qe7Ie8kuWmxL8Bi",
+      "lastModified": "2026-10-20T08:12:54Z",
+      "project": "653184570"
+    },
+    "ja1W2TShExuCGbE7WUPJeK": {
+      "name": "Journey Audits",
+      "key": "ja1W2TShExuCGbE7WUPJeK",
+      "url": "https://www.figma.com/design/ja1W2TShExuCGbE7WUPJeK",
+      "lastModified": "2026-09-25T15:07:09Z",
+      "project": "653184570"
+    },
+    "Jh2lavvDqyBtpYrdwQ70RM": {
+      "name": "Reward Economics",
+      "key": "Jh2lavvDqyBtpYrdwQ70RM",
+      "url": "https://www.figma.com/design/Jh2lavvDqyBtpYrdwQ70RM",
+      "lastModified": "2026-09-25T15:12:25Z",
+      "project": "653184570"
+    }
+  }
+}

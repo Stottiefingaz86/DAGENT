@@ -27,7 +27,8 @@
     "storybook:build": "storybook build -o storybook-static",
     "live-site:sync": "node scripts/sync-tokens.mjs && node scripts/sync-live-site-theme.mjs",
     "live-site:dev": "npm run live-site:sync && npm --prefix apps/live-site run dev",
-    "research:watch": "node scripts/research-watch.mjs"
+    "research:watch": "node scripts/research-watch.mjs",
+    "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^5.0.2",

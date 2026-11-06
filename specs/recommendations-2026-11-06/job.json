@@ -1,0 +1,66 @@
+{
+  "slug": "recommendations-2026-11-06",
+  "title": "Recommendations · 2026-11-06",
+  "surface": "Recommendations",
+  "source": "recommendation",
+  "requester": "CH",
+  "createdAt": "2026-11-06T21:08:07.337Z",
+  "updatedAt": "2026-11-06T21:15:43.267Z",
+  "status": "done",
+  "stage": "handoff",
+  "running": false,
+  "sessionId": "2c9fb4ea-ec3a-4efa-9ecb-c997f1dbc3de",
+  "questions": [],
+  "previewUrl": null,
+  "proposalSummary": null,
+  "learnings": [],
+  "round": 0,
+  "costUsd": 5.257734800000001,
+  "lastPrompt": "RECOMMENDATIONS — job recommendations-2026-11-06. Find ideas that move the product strategy, where we have a gap.\n1. set_title \"Recommendations · 2026-11-06\". set_stage research. Read knowledge/product-strategy/BRIEF.md (goals and KPIs), knowledge/product-strategy/RESEARCH_SOURCES.md, knowledge/research/CHANGELOG.md (what changed in the research Figma folder), COMPETITOR_RESEARCH.md, the journey audits and SURFACES.md.\n2. Research: open the research files in Figma that the changelog lists as new or updated (get_metadata / get_screenshot, read only), Mobbin for peer flows, and capture_site our own routes to see what we have today. Before calling something a gap, check the live site really lacks it.\n3. Pick the 3 strongest gaps. For each, write specs/recommendations-2026-11-06/ideas/<idea-slug>.md:\n   - Gap: what peers do / what users need that we don't (with screenshots and sources).\n   - Strategy: which BRIEF.md goal and KPI it moves, and why.\n   - Business case: expected impact (with the assumption behind each number), effort S/M/L, risk, how we'd measure it.\n   - Scope: MVP vs later, surfaces and routes, Lumen components reused, Lumen gaps.\n   - Mock: a DRAFT on the real shell at apps/live-site/app/prototype/idea-<idea-slug> (same rules as proposals: real components, no redrawn chrome), captured at 1440 and 390.\n4. Call studio.submit_recommendations with the list (title, summary, goal, impact, effort, mock screenshots, file) and end your turn. Chris turns the ones he likes into projects.\nNever clone a peer's look; translate into Lumen.",
+  "ideas": [
+    {
+      "id": "payout-tracker",
+      "title": "Live payout tracker",
+      "summary": "The homepage promises 'Payouts within minutes', but a withdrawal has no status after it's requested: Withdraw just redirects and Transactions rows have no status field. We already track deposits live. Add a 4-step status card (Requested → Approved → Sent → Arrived) with an ETA above Transactions, plus status pills on withdrawal rows.",
+      "goal": "Trust enabler · Initiative 08 (#10, #50) · Trust contacts ~27.6K/6 mo → half (BRIEF 'Now': live payout status/time)",
+      "impact": "~4–5.5K fewer contacts per 6 months (15–20% of baseline), assuming 30–40% of trust contacts are withdrawal-status chasers and the tracker deflects half. CX tags needed to confirm.",
+      "effort": "M (the UI is S; the work is the payments status feed)",
+      "file": "specs/recommendations-2026-11-06/ideas/payout-tracker.md",
+      "screenshots": [
+        "specs/recommendations-2026-11-06/refs/idea-payout-tracker-1440.png",
+        "specs/recommendations-2026-11-06/refs/idea-payout-tracker-390-390.png",
+        "specs/recommendations-2026-11-06/refs/today-transactions.png"
+      ],
+      "at": "2026-11-06T21:15:40.466Z"
+    },
+    {
+      "id": "first-week-path",
+      "title": "First-week path",
+      "summary": "New players get no plan for days 2–7. Missions exist, but only as a generic list inside VIP Hub. A 7-day strip at the top of the logged-in homepage gives one expiring step a day with its reward visible; Day 1 is the first casino bet. Claims use the existing mission claim sequence.",
+      "goal": "Activate + Reward · Initiatives 01/04/05 (#6, #15, #18, #25) · Week-one retention 50% → 65%; also time to first casino bet",
+      "impact": "+3–6 pts week-one retention on fast starters, to be proven with a holdout. Blended cost ~$8–12 per new player, assuming 20–30% finish all 7 days.",
+      "effort": "M (fixed 7-step script on the existing missions model; personalised steps need #46/#47 later)",
+      "file": "specs/recommendations-2026-11-06/ideas/first-week-path.md",
+      "screenshots": [
+        "specs/recommendations-2026-11-06/refs/idea-first-week-path-1440.png",
+        "specs/recommendations-2026-11-06/refs/idea-first-week-path-390-390.png"
+      ],
+      "at": "2026-11-06T21:15:40.466Z"
+    },
+    {
+      "id": "casino-tournaments",
+      "title": "Casino Tournaments",
+      "summary": "The casino sidebar's 'Tournaments' links back to /casino and tiles tagged Tournament lead nowhere. Our only competitive mechanic is the volume-based Daily Race. In the team's new benchmark, 85% of peers put tournaments in the lobby. Add short, game-specific events (best multiplier, streak) with pot, timer, live rank and Play, starting on Originals.",
+      "goal": "Reward bet + Discover · Initiative 04 (#19, #20) · Casino churn window ~30 → 60 days",
+      "impact": "8–12% of weekly casino actives join weekly (to be checked against Daily Race participation), and joiners' 30-day retention +5–10 pts vs matched non-joiners. Cost-neutral: part of the race pot moves into shorter events.",
+      "effort": "M for an Originals-only MVP; L for third-party slots",
+      "file": "specs/recommendations-2026-11-06/ideas/casino-tournaments.md",
+      "screenshots": [
+        "specs/recommendations-2026-11-06/refs/idea-casino-tournaments-1440.png",
+        "specs/recommendations-2026-11-06/refs/idea-casino-tournaments-390-390.png",
+        "specs/recommendations-2026-11-06/refs/today-races.png"
+      ],
+      "at": "2026-11-06T21:15:40.466Z"
+    }
+  ]
+}

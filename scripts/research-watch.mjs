@@ -15,6 +15,8 @@ const out = (o) => (json ? console.log(JSON.stringify(o)) : console.log(o.error 
 function token() {
   if (process.env.FIGMA_TOKEN) return process.env.FIGMA_TOKEN.trim()
   try {
+    const saved = path.join(root, 'apps/studio/.studio-figma-token') // pasted in Studio → Settings
+    if (fs.existsSync(saved)) return fs.readFileSync(saved, 'utf8').trim()
     const env = fs.readFileSync(path.join(root, 'apps/studio/.env'), 'utf8')
     return /^FIGMA_TOKEN=(.+)$/m.exec(env)?.[1]?.trim().replace(/^['"]|['"]$/g, '') || ''
   } catch {
@@ -34,18 +36,49 @@ fs.mkdirSync(dir, { recursive: true })
 const indexFile = path.join(dir, 'figma-index.json')
 const before = fs.existsSync(indexFile) ? JSON.parse(fs.readFileSync(indexFile, 'utf8')) : { files: {} }
 const files = {}
+// Figma moved projects → folders in 2026: /v2/folders (scope folders:read) first; the old /v1/projects (projects:read) as fallback.
+const get = async (url) => {
+  const r = await fetch(url, { headers: { 'X-Figma-Token': t } })
+  return { ok: r.ok, status: r.status, body: await r.text().catch(() => '') }
+}
+const pick = (o, ...keys) => keys.map((k) => o?.[k]).find((v) => v != null)
+const list = (j, ...keys) => (Array.isArray(j) ? j : keys.map((k) => j?.[k]).find(Array.isArray) || [])
+function explain(status, body) {
+  if (status === 403 || status === 401)
+    return /scope/i.test(body)
+      ? 'the token is missing a scope: make a new one with Folders = Read only and File content = Read only'
+      : 'Figma refused the token: copy it in full, or make a new one (Folders = Read only, File content = Read only)'
+  if (status === 404) return 'the research folder was not found for this Figma account: make the token while signed in as an account that can open the folder'
+  if (status === 429) return 'Figma is rate-limiting; it will retry later'
+  return `Figma answered ${status}`
+}
+async function folderFiles(id, depth = 0) {
+  const r = await get(`https://api.figma.com/v2/folders/${id}/files`)
+  if (!r.ok) return { error: { status: r.status, body: r.body } }
+  const j = JSON.parse(r.body || '{}')
+  for (const f of list(j, 'files', 'data')) {
+    const key = pick(f, 'key', 'file_key', 'id')
+    if (key) files[key] = { name: pick(f, 'name', 'title') || key, key, url: `https://www.figma.com/design/${key}`, lastModified: String(pick(f, 'last_modified', 'lastModified', 'updated_at') || ''), project: id }
+  }
+  if (depth < 3) {
+    const sub = await get(`https://api.figma.com/v2/folders/${id}/folders`)
+    if (sub.ok) for (const f of list(JSON.parse(sub.body || '{}'), 'folders', 'data')) { const fid = pick(f, 'id', 'folder_id'); if (fid) await folderFiles(fid, depth + 1) }
+  }
+  return {}
+}
 try {
   for (const id of projects) {
-    const r = await fetch(`https://api.figma.com/v1/projects/${id}/files`, { headers: { 'X-Figma-Token': t } })
-    if (!r.ok) throw new Error(`Figma API ${r.status} for project ${id}`)
-    const data = await r.json()
-    for (const f of data.files || []) files[f.key] = { name: f.name, key: f.key, url: `https://www.figma.com/design/${f.key}`, lastModified: f.last_modified, project: id }
+    const v2 = await folderFiles(id)
+    if (!v2.error) continue
+    const v1 = await get(`https://api.figma.com/v1/projects/${id}/files`)
+    if (!v1.ok) throw new Error(`Research folder: ${explain(v2.error.status, v2.error.body + v1.body)}.`)
+    for (const f of JSON.parse(v1.body).files || []) files[f.key] = { name: f.name, key: f.key, url: `https://www.figma.com/design/${f.key}`, lastModified: f.last_modified, project: id }
   }
 } catch (e) {
-  out({ changed: false, files: 0, updated: [], error: String(e.message) })
+  out({ changed: false, files: 0, updated: [], error: /fetch failed|ENOTFOUND|EAI_AGAIN/.test(String(e.message)) ? 'Can’t reach Figma from this computer (network or firewall).' : String(e.message) })
   process.exit(0)
 }
-const updated = Object.values(files).filter((f) => !before.files[f.key] || before.files[f.key].lastModified !== f.lastModified)
+const updated = Object.values(files).filter((f) => !before.files[f.key] || (f.lastModified && before.files[f.key].lastModified !== f.lastModified))
 const removed = Object.values(before.files).filter((f) => !files[f.key])
 fs.writeFileSync(indexFile, JSON.stringify({ checkedAt: new Date().toISOString(), projects, files }, null, 2))
 if (updated.length || removed.length) {
@@ -54,7 +87,7 @@ if (updated.length || removed.length) {
   const first = !Object.keys(before.files).length
   const entry = [
     `## ${new Date().toISOString().slice(0, 10)}${first ? ' · baseline' : ''}`,
-    ...updated.map((f) => `- ${before.files[f.key] ? 'Updated' : 'New'}: [${f.name}](${f.url}) — ${f.lastModified.slice(0, 10)}`),
+    ...updated.map((f) => `- ${before.files[f.key] ? 'Updated' : 'New'}: [${f.name}](${f.url}) — ${String(f.lastModified || '').slice(0, 10)}`),
     ...removed.map((f) => `- Removed: ${f.name}`),
     '',
   ].join('\n')

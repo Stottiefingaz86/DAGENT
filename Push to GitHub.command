@@ -24,7 +24,7 @@ else
 fi
 
 # Last safety check: never push an API key.
-if git add -A --dry-run | sed 's/^add .//; s/.$//' | xargs -I{} grep -IlE "sk-ant-[A-Za-z0-9_-]{20,}" "{}" 2>/dev/null | grep -q .; then
+if git add -A --dry-run | sed 's/^add .//; s/.$//' | xargs -I{} grep -IlE "(sk-ant-[A-Za-z0-9_-]{20,}|figd_[A-Za-z0-9_-]{20,})" "{}" 2>/dev/null | grep -q .; then
   echo ""; echo "  STOPPED: a file contains an Anthropic API key. Nothing was pushed."; read -r -p "  Press Enter to close."; exit 1
 fi
 

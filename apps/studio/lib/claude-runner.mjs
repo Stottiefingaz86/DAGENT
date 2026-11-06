@@ -249,11 +249,11 @@ export function createClaudeRunner({ store, repoRoot, model, siteOrigin = 'http:
       resume: job.sessionId || undefined,
       systemPrompt: { type: 'preset', preset: 'claude_code', append: SYSTEM_APPEND },
       // Figma runs also load your own Claude Code settings, so a Figma MCP you connected in Claude Code is available here.
-      // 'user' so the Figma sign-in made with Connect Figma.command is found; Figma is needed for research, Figma builds and the handover.
+      // 'user' so the Figma sign-in made with Connect Tools.command is found; Figma is needed for research, Figma builds and the handover.
       settingSources: ['user', 'project'],
-      // Figma jobs get the official Figma MCP explicitly. Its sign-in is the one done once with "Connect Figma.command"
+      // Figma jobs get the official Figma MCP explicitly. Its sign-in is the one done once with "Connect Tools.command"
       // (Claude Code keeps the token for the server named "figma" at this URL).
-      mcpServers: { studio: studioServer(store, slug, siteOrigin, lane, taste), figma: { type: 'http', url: process.env.STUDIO_FIGMA_MCP_URL || 'https://mcp.figma.com/mcp' } },
+      mcpServers: { studio: studioServer(store, slug, siteOrigin, lane, taste), figma: { type: 'http', url: process.env.STUDIO_FIGMA_MCP_URL || 'https://mcp.figma.com/mcp' }, mobbin: { type: 'http', url: process.env.STUDIO_MOBBIN_MCP_URL || 'https://api.mobbin.com/mcp' } },
       // studio tools + read-only tools never need approval; everything else goes through canUseTool below
       // An independent reviewer with a fresh context checks the work before Chris sees it (see REVIEWER below).
       agents: { 'design-reviewer': REVIEWER },

@@ -1,7 +1,17 @@
 import type React from "react"
 
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { extendTailwindMerge } from "tailwind-merge"
+
+/* Lumen type scale (text-size-*) is a font size, not a colour. Without this, tailwind-merge
+   drops text-size-* whenever a text colour is in the same cn() call and text falls back to 16px. */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [{ text: ["size-xxs", "size-xs", "size-sm", "size-base", "size-lg", "size-xl", "size-2xl", "size-3xl", "size-4xl", "size-5xl", "size-6xl", "size-7xl"] }],
+    },
+  },
+})
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
