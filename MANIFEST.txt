@@ -1,0 +1,44 @@
+BetOnline Claude Handoff — 2026-11-06T09:19Z
+
+Claude skills:
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-code-connect
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-create-new-file
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-design-to-code
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-generate-design
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-generate-diagram
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-generate-library
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-generative-plugins
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-implement-motion
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-shaders
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-swiftui
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-use
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-use-figjam
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-use-motion
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/figma-plugin/figma-use-slides
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/mobbin
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/lumen-build
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-analyze
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-checklist
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-clarify
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-constitution
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-implement
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-plan
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-specify
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-tasks
+/Users/christopherhunt/Desktop/BetOnline_Claude_Handoff/.claude/skills/project/speckit-taskstoissues
+
+Mobbin MCP pack:
+total 32
+drwxr-xr-x@ 10 christopherhunt  staff   320 Oct 16 09:12 .
+drwxr-xr-x@  3 christopherhunt  staff    96 Nov  6 10:18 ..
+-rw-r--r--@  1 christopherhunt  staff     0 Oct 16 09:12 .cache-complete
+drwxr-xr-x@  3 christopherhunt  staff    96 Oct 16 09:12 .cursor-plugin
+drwxr-xr-x@  3 christopherhunt  staff    96 Oct 16 09:12 .grok-plugin
+-rw-r--r--@  1 christopherhunt  staff  1073 Oct 16 09:12 LICENSE
+-rw-r--r--@  1 christopherhunt  staff   335 Oct 16 09:12 README.md
+-rw-r--r--@  1 christopherhunt  staff    90 Oct 16 09:12 mcp.json
+drwxr-xr-x@  3 christopherhunt  staff    96 Oct 16 09:12 rules
+-rw-r--r--@  1 christopherhunt  staff   498 Oct 16 09:12 server.json

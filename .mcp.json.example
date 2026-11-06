@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "figma": {
+      "description": "Official Figma MCP — auth in Claude. Skills: .claude/skills/figma-plugin/",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "mobbin": {
+      "description": "Official Mobbin MCP — competitor production screens. Skills: .claude/skills/mobbin/. Requires paid Mobbin plan. Auth per https://docs.mobbin.com/mcp",
+      "url": "https://api.mobbin.com/mcp",
+      "transport": "streamable-http"
+    }
+  }
+}

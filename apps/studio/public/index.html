@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Studio</title>
+<link rel="icon" href="/files/apps/live-site/public/shell/design-agent/logo-mark.png">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Projects">
+    <div class="side-top">
+      <a class="brand" href="#" aria-label="Design Studio home"><img src="/files/apps/live-site/public/shell/design-agent/logo-mark.png" alt=""><span>Design Studio</span></a>
+      <button class="icon-btn" id="side-close" aria-label="Close sidebar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+    </div>
+    <a class="new-btn" href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New BRD</a>
+    <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input id="search" type="search" placeholder="Search projects" aria-label="Search projects"></label>
+    <nav class="projects" id="projects"></nav>
+    <div class="side-foot">
+      <div class="foot-links">
+        <a href="#skills" data-view="skills">Skills</a>
+        <a href="#settings">Settings</a>
+        <a id="link-demo" target="_blank" rel="noreferrer">Demo site</a>
+        <a id="link-lumen" target="_blank" rel="noreferrer">Lumen</a>
+        <a id="link-figma" target="_blank" rel="noreferrer">Figma</a>
+      </div>
+      <button class="me" id="me-btn" aria-haspopup="true"><span class="avatar" id="me-avatar">C</span><span class="me-text"><b id="me-name">Chris</b><span id="me-role">Owner</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <header class="top" id="top"></header>
+    <div class="scroll" id="scroll"><div class="thread" id="thread"></div></div>
+    <form class="composer" id="composer">
+      <div class="files" id="files"></div>
+      <div class="box">
+        <textarea id="input" rows="1" aria-label="Message"></textarea>
+        <div class="box-row">
+          <label class="icon-btn" aria-label="Attach files">
+            <input type="file" id="file" multiple hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11l-8.5 8.5a5 5 0 01-7-7L13 4a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L14 7"/></svg>
+          </label>
+          <div class="chips" id="surface-chips"></div>
+          <span class="hint" id="composer-hint"></span>
+          <button class="send" type="submit" id="send" aria-label="Send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <aside class="panel" id="panel" aria-label="Work" hidden></aside>
+</div>
+
+<div class="menu" id="me-menu" role="menu" hidden></div>
+<div class="modal-root" id="modal-root" hidden></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

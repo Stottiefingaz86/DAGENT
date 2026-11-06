@@ -1,0 +1,18 @@
+{
+  "name": "betonline-design-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Design Studio: dashboard + Claude design agent worker for the BetOnline design repo",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check lib/claude-runner.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "latest",
+    "playwright-core": "latest"
+  }
+}

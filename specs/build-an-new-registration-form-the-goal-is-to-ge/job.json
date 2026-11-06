@@ -1,0 +1,108 @@
+{
+  "slug": "build-an-new-registration-form-the-goal-is-to-ge",
+  "title": "Fast join → deposit → first game",
+  "surface": "Other",
+  "source": "dashboard",
+  "requester": "C",
+  "createdAt": "2026-11-06T14:34:43.610Z",
+  "updatedAt": "2026-11-06T14:37:31.723Z",
+  "status": "questions",
+  "stage": "clarify",
+  "running": false,
+  "sessionId": "82a2b8f9-f6d5-4bf8-9d59-6f150c0758c8",
+  "questions": [
+    {
+      "id": "spins-before-confirm",
+      "title": "Can welcome free spins unlock when the deposit is detected, not confirmed?",
+      "text": "Can welcome free spins unlock when the deposit is detected, not confirmed?",
+      "context": "Needle is <2 min to first casino bet (BRIEF.md), but BTC takes ~6 min to arrive on BOL (Journey_Audits_2026 p.3). Today Use Free Spins only appears at 2/2 confirmations (cashier-sheet.tsx DepositConfirmedActions), so the player waits minutes with nothing to play.",
+      "why": "Decides whether the tracker screen gets a Play button the moment we see the transfer, or stays a wait screen until confirmed.",
+      "options": [
+        {
+          "label": "Unlock on detected (recommended)",
+          "detail": "Spins go live when the transfer is seen on-chain; tracker shows Use Free Spins while confirmations finish.",
+          "recommended": true
+        },
+        {
+          "label": "Unlock on confirmed (today)",
+          "detail": "Keep the wait; we only add a balance toast with Play for players who closed the wallet."
+        },
+        {
+          "label": "Unlock at sign-up",
+          "detail": "A few no-deposit spins right after Welcome, the rest on deposit; needs a new offer from product."
+        }
+      ],
+      "images": [
+        {
+          "src": "apps/live-site/public/shell/auth/welcome-offer-crypto.jpg",
+          "caption": "Our join offer art today"
+        }
+      ],
+      "answer": null
+    },
+    {
+      "id": "otp-placement",
+      "title": "Should the OTP stay a gate before the account exists?",
+      "text": "Should the OTP stay a gate before the account exists?",
+      "context": "BRD lists OTP as a must-have. Shipped Verify (auth-modal.tsx JoinVerifyPanel, AUTH_JOIN.md journey 5) blocks account creation until the code is entered, which adds a full step before deposit. Audit p.2: Whale auto-validates, Winna/Rainbet/Stake verify email but with 2–3 fields on screen one.",
+      "why": "Gate keeps two screens before Welcome; deferring makes join one screen and moves Name + OTP to before the first withdrawal.",
+      "options": [
+        {
+          "label": "Keep Verify before account (recommended)",
+          "detail": "Email, Password, 18+ → Name + OTP → Welcome; we cut taps elsewhere (preselected BTC, one-tap play).",
+          "recommended": true
+        },
+        {
+          "label": "Verify after first game",
+          "detail": "Account created on step one; Name + OTP asked as a compact card before first withdrawal."
+        },
+        {
+          "label": "Verify while deposit confirms",
+          "detail": "Name + OTP shown inside the deposit tracker so the wait time does the work."
+        }
+      ],
+      "images": [
+        {
+          "src": "apps/live-site/public/shell/auth/welcome-offer-crypto.jpg",
+          "caption": "Join screen art (Verify uses the same panel)"
+        }
+      ],
+      "answer": null
+    },
+    {
+      "id": "spins-schedule",
+      "title": "Welcome spins: 10 a day for 10 days, or 100 at once?",
+      "text": "Welcome spins: 10 a day for 10 days, or 100 at once?",
+      "context": "Join art says \"claim 10 free spins a day for 10 days\" (public/shell/auth/welcome-offer-crypto.jpg), but the code grants 100 spins on Chicken right after the deposit (lib/lumen/vip-hub.ts WELCOME_FREE_SPINS spinsTotal 100). The first-game screen copy depends on it.",
+      "why": "Changes the post-deposit card (\"100 Free Spins\" vs \"10 spins today · 9 days left\") and whether we add a daily return reminder.",
+      "options": [
+        {
+          "label": "10 a day for 10 days (recommended)",
+          "detail": "Match the art; first session shows 10 spins and a day counter that brings them back (week-one retention).",
+          "recommended": true
+        },
+        {
+          "label": "100 at once",
+          "detail": "Match the code; fix the art copy instead."
+        }
+      ],
+      "images": [
+        {
+          "src": "apps/live-site/public/shell/auth/welcome-offer-crypto.jpg",
+          "caption": "Offer art: 10 a day for 10 days"
+        },
+        {
+          "src": "apps/live-site/public/games/originals/chicken.png",
+          "caption": "Chicken, the free-spins game"
+        }
+      ],
+      "answer": null
+    }
+  ],
+  "previewUrl": null,
+  "proposalSummary": null,
+  "learnings": [],
+  "round": 0,
+  "costUsd": 1.0875350000000004,
+  "lastPrompt": "New BRD. Job slug: build-an-new-registration-form-the-goal-is-to-ge. Title: \"build an new registration form, the goal is to get users to sign up…\". Surface hint from the requester: Other.\nBRD: specs/build-an-new-registration-form-the-goal-is-to-ge/brd.md.\nAttachments (if any): specs/build-an-new-registration-form-the-goal-is-to-ge/attachments/.\n\nThis run: intake → spec → clarify.\n1. set_stage intake. Read the playbook, SURFACES.md and the BRD. Call set_title with a short, clear name for this project (the BRD may have arrived as a screenshot or file). log which surfaces it touches.\n2. set_stage spec. Follow .cursor/skills/speckit-specify/SKILL.md to write specs/build-an-new-registration-form-the-goal-is-to-ge/spec.md from .specify/templates/spec-template.md,\n   including Strategy alignment from BRIEF.md and the journey audits. (Skip the bash scripts and branch creation in the SpecKit skill — the studio already made the folder.)\n3. set_stage clarify. Follow .cursor/skills/speckit-clarify/SKILL.md. Answer what you can from the sources and write those answers into spec.md with citations.\n4. If anything still needs a human, call ask_questions and end your turn.\n   If nothing does, continue to research and the proposal (see below) and call submit_proposal.\n\nProposal (Chris, Nov 2026: hand-drawn HTML boards looked broken and used a fake logo — never again):\n- NEVER redraw the site, shell, logo, icons or components in HTML/CSS/SVG. Everything Chris sees is a real screenshot.\n- Current state: capture_site the routes/elements the BRD touches (desktop 1440 + mobile 390 where layout differs).\n- Proposed: build a DRAFT of the proposed screens on the real shell at apps/live-site/app/prototype/[slug] for slug \"build-an-new-registration-form-the-goal-is-to-ge\"\n  (register it in lib/agent/prototype-registry.ts like the existing entry), using the existing components and tokens only.\n  It only needs to look right for review, not be fully wired. Then capture_site \"/prototype/build-an-new-registration-form-the-goal-is-to-ge\" at 1440 and 390, plus key states\n  (use query params or a state switcher in the draft for empty / loading / error / success).\n- Brand marks: only the real components (ShellLogo, ShellIcon) or files under apps/live-site/public — never a copy, never stretched.\n- Before submitting, Read every screenshot you captured and fix the draft if anything looks broken (error overlay, overlaps, clipped text, stretched marks).\n- Then call submit_proposal with the structured board (it renders in the chat): summary, strategy, journey steps, current and proposed screenshots\n  with captions, what you reuse (component + path), gaps (component briefs), peer references, open questions (max 3, same rules as ask_questions)."
+}
