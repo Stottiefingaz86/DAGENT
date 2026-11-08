@@ -478,8 +478,13 @@ body.reviewing { overflow: hidden; }
 .dq .dot { margin-top: 6px; flex: none; }
 /* Ideas */
 .card.idea { overflow: hidden; }
-.idea-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 16px; }
-.idea-shots img { width: 100%; border-radius: 8px; display: block; }
+.idea-shots { display: flex; gap: 8px; padding: 0 16px; height: 220px; }
+.idea-shot { position: relative; flex: 3 1 0; min-width: 0; padding: 0; border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; background: var(--raise); cursor: zoom-in; }
+.idea-shot:nth-child(n+2) { flex: 1 1 0; } /* the first (desktop) mock gets most of the room */
+.idea-shot img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; transition: transform .25s ease; }
+.idea-shot:hover img { transform: scale(1.03); }
+.idea-shot .zoom-hint { position: absolute; right: 8px; bottom: 8px; font-size: 12px; padding: 4px 8px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; opacity: 0; transition: opacity .2s; }
+.idea-shot:hover .zoom-hint, .idea-shot:focus-visible .zoom-hint { opacity: 1; }
 
 /* Setup gate */
 .setup-item .gate-row { width: 100%; border: 0; font: inherit; color: inherit; background: none; }
@@ -511,3 +516,31 @@ body.reviewing { overflow: hidden; }
 .nf-events label { display: flex; gap: 8px; align-items: center; }
 .nf-copy { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .nf-copy code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Lightbox navigation */
+.lb-nav, .lb-close { position: fixed; z-index: 2; width: 44px; height: 44px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(20,20,24,.85); color: var(--fg); font-size: 26px; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.lb-prev { left: 20px; top: 50%; transform: translateY(-50%); } .lb-next { right: 20px; top: 50%; transform: translateY(-50%); }
+.lb-close { right: 20px; top: 20px; font-size: 24px; }
+.lb-open { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 13px; color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 999px; background: rgba(20,20,24,.85); border: 1px solid var(--line-2); }
+.lb-count { margin-left: 8px; color: var(--faint); }
+.lightbox { cursor: default; }
+
+/* Ideas: find-ideas box */
+.ideas-box { max-width: 720px; display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line-2); border-radius: 16px; background: var(--raise); }
+.ideas-row { display: flex; gap: 10px; align-items: center; }
+.ideas-in { flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--bg); color: var(--fg); font: inherit; font-size: 15px; outline: none; }
+.ideas-in:focus { border-color: var(--accent); }
+.ideas-row .btn { height: 44px; padding: 0 18px; white-space: nowrap; flex: none; }
+.ideas-note { font-size: 13px; color: var(--muted); padding: 0 2px; }
+@media (max-width: 560px) { .ideas-row { flex-direction: column; align-items: stretch; } }
+
+/* Ideas: dismiss + feedback */
+.icon-x { flex: none; margin-left: auto; width: 30px; height: 30px; border-radius: 8px; border: 1px solid transparent; background: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; }
+.icon-x:hover { border-color: var(--line-2); color: var(--fg); background: var(--raise-2); }
+.idea-fb { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 13px; color: var(--text); }
+.idea-fb > div { display: flex; gap: 8px; align-items: flex-start; }
+.av-s { flex: none; width: 20px; height: 20px; border-radius: 999px; background: var(--raise-2); border: 1px solid var(--line-2); font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+.idea-dismissed { margin-top: 8px; }
+.idea-dismissed summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 6px 0; }
+
+.secret-in { -webkit-text-security: disc; }

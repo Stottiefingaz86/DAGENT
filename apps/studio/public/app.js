@@ -65,12 +65,19 @@ const ic = {
 
 // ---------------- api ----------------
 async function api(path, body) {
-  const res = await fetch(path, {
-    method: body ? 'POST' : 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: 'same-origin',
-  })
+  // Never hang: if the studio doesn't answer in 25s, say so (usually too many studio tabs open, or the studio isn't running).
+  let res
+  try {
+    res = await fetch(path, {
+      method: body ? 'POST' : 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'same-origin',
+      signal: AbortSignal.timeout(25000),
+    })
+  } catch (e) {
+    throw new Error(e.name === 'TimeoutError' ? 'The studio didn’t answer. Close other Design Studio tabs, reload this one and try again.' : 'Can’t reach the studio. Is it running? Double-click Start Design Studio.')
+  }
   const data = await res.json().catch(() => ({}))
   if (res.status === 401 && data.signin) {
     authScreen('login')
@@ -185,6 +192,7 @@ async function route() {
   if (S.view === 'skills' && !S.skills) S.skills = await api('/api/skills')
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
+  if (S.view === 'home' && S.config.setup && !S.config.setup.ready && !S.figmaToken) S.figmaToken = await api('/api/figma-token').catch(() => null)
   if (S.view === 'notifications' && S.user?.role === 'owner') S.notify = await api('/api/notify').catch(() => null)
   if (S.view === 'settings') S.figmaToken = await api('/api/figma-token').catch(() => ({}))
   if (S.view === 'settings') {
@@ -423,6 +431,11 @@ function threadHTML() {
     }
     else if (/^Figma screens ready/.test(e.text) && j.figma) out.push(`<div class="card"><div class="card-head"><span class="card-icon">${ic.figma}</span><div style="min-width:0"><div class="card-title">Figma screens</div><div class="card-sub">${(j.figma.frames || []).length} frames · Lumen library only${(j.figma.gaps || []).length ? ` · ${j.figma.gaps.length} gaps` : ''}</div></div><a class="btn open" href="${esc(j.figma.url)}" target="_blank" rel="noreferrer">Open in Figma</a></div></div>`)
     else if (/^Dev handoff package ready/.test(e.text)) out.push(workCard('handoff', 'Handover', 'Spec, every screen and state, journeys, hover and motion, prototype and Figma', 'handoff'))
+    else if (/^\d+ recommendations? ready/.test(e.text)) {
+      // A recommendations run links straight to its ideas on the Ideas page.
+      const n = (j.ideas || []).length
+      out.push(`<div class="card indent-card"><div class="card-head"><span class="card-icon">${ic.taste}</span><div style="min-width:0"><div class="card-title">${n || ''} idea${n === 1 ? '' : 's'} ready</div><div class="card-sub">${esc((j.ideas || []).map((i) => i.title).join(' · ') || 'Gaps against the strategy, with mocks and business cases')}</div></div><a class="btn open" href="#ideas">Open Ideas</a></div></div>`)
+    }
     else if (/question/.test(e.text) && e.data?.questions) continue // shown as the live card below
     else if (/^BRD received/.test(e.text)) continue
     else out.push(`<div class="sys">${esc(e.text)}</div>`)
@@ -473,10 +486,33 @@ function zoom(src, caption, el) {
     const i = Math.max(0, images.findIndex((x) => x.url === src))
     return openReview(images.length ? images : [{ url: src, path, caption }], i)
   }
+  // Plain lightbox with previous / next through the screenshots next to the one clicked (e.g. an idea's mocks).
+  const group = el?.closest('.idea-shots, .pb-shots, .q-images') || null
+  const list = (group ? [...group.querySelectorAll('[data-zoom]')] : [el]).filter(Boolean).map((b) => ({ src: b.dataset.zoom, caption: b.dataset.caption || '' }))
+  if (!list.length) list.push({ src, caption })
+  let k = Math.max(0, list.findIndex((x) => x.src === src))
   const root = $('#modal-root')
-  root.innerHTML = `<figure class="lightbox"><img src="${esc(src)}" alt="${esc(caption || 'Screenshot')}"><figcaption>${esc(caption || '')}</figcaption></figure>`
+  const close = () => ((root.hidden = true), (root.innerHTML = ''), document.removeEventListener('keydown', onKey))
+  const show = () => {
+    const it = list[k]
+    root.innerHTML = `<figure class="lightbox"><img src="${esc(it.src)}" alt="${esc(it.caption || 'Screenshot')}">
+      <figcaption>${esc(it.caption || '')}${list.length > 1 ? ` <span class="lb-count">${k + 1} / ${list.length}</span>` : ''}</figcaption></figure>
+      ${list.length > 1 ? '<button class="lb-nav lb-prev" data-lb="-1" aria-label="Previous">‹</button><button class="lb-nav lb-next" data-lb="1" aria-label="Next">›</button>' : ''}
+      <button class="lb-close" aria-label="Close">×</button><a class="lb-open" href="${esc(it.src)}" target="_blank" rel="noreferrer">Open full size ↗</a>`
+  }
+  const onKey = (e) => {
+    if (e.key === 'Escape') close()
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') ((k = (k + (e.key === 'ArrowRight' ? 1 : -1) + list.length) % list.length), show())
+  }
+  show()
   root.hidden = false
-  root.onclick = () => ((root.hidden = true), (root.innerHTML = ''))
+  document.addEventListener('keydown', onKey)
+  root.onclick = (e) => {
+    const nav = e.target.closest('[data-lb]')
+    if (nav) return (e.stopPropagation(), (k = (k + Number(nav.dataset.lb) + list.length) % list.length), show())
+    if (e.target.closest('.lb-open')) return
+    close()
+  }
 }
 async function openReview(images, i) {
   Object.assign(R, { open: true, slug: S.job.slug, images, i, draft: null, focus: null })
@@ -797,6 +833,48 @@ function reactModal(value, target) {
   $('#re-send').onclick = send
   $('#re-note').onkeydown = (e) => e.key === 'Enter' && (e.metaKey || e.ctrlKey) && send(e)
 }
+function ideaModal(kind, run, id) {
+  const idea = (S.ideas || []).find((r) => r.slug === run)?.ideas?.find((i) => i.id === id)
+  if (!idea) return
+  const root = $('#modal-root')
+  const fb = kind === 'feedback'
+  root.innerHTML = `<form class="modal" role="dialog" aria-modal="true" aria-labelledby="idm-t" id="idm-form"><h2 id="idm-t">${fb ? `Feedback on “${esc(idea.title)}”` : `Dismiss “${esc(idea.title)}”?`}</h2>
+    <p>${fb ? 'Logged and learned. Tick the box to have the agent revise this idea now.' : 'It moves to Dismissed and won’t be proposed again. A reason helps the agent learn (optional).'}</p>
+    ${fb ? '<div class="nf-types" style="margin-bottom:10px"><button type="button" class="chip" data-idm-v="like">👍 Good</button><button type="button" class="chip" data-idm-v="dislike">👎 Not right</button></div>' : ''}
+    <textarea class="field-in" id="idm-text" rows="4" placeholder="${fb ? 'e.g. too much real estate on desktop; make Notify me an icon' : 'e.g. not a priority this quarter; we already have this in VIP'}"></textarea>
+    ${fb ? '<label class="card-sub" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="idm-revise"> Ask the agent to revise this idea now</label>' : ''}
+    <div class="card-sub" id="idm-err" style="color:var(--err)" hidden></div>
+    <div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">${fb ? 'Send feedback' : 'Dismiss idea'}</button></div></form>`
+  root.hidden = false
+  $('#idm-text').focus()
+  let value = null
+  const close = () => ((root.hidden = true), (root.innerHTML = ''))
+  root.onclick = (e) => {
+    const v = e.target.closest('[data-idm-v]')
+    if (v) {
+      value = value === v.dataset.idmV ? null : v.dataset.idmV
+      root.querySelectorAll('[data-idm-v]').forEach((c) => c.classList.toggle('on', c.dataset.idmV === value))
+      return
+    }
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
+  $('#idm-form').onsubmit = async (e) => {
+    e.preventDefault()
+    const text = $('#idm-text').value.trim()
+    try {
+      const r = fb
+        ? await api('/api/ideas/feedback', { slug: run, id, text, value, revise: $('#idm-revise').checked })
+        : await api('/api/ideas/dismiss', { slug: run, id, reason: text })
+      close()
+      toast(fb ? 'Feedback recorded' : 'Idea dismissed', fb ? (r.revising ? 'The agent is revising it now.' : 'Logged and learned.') : 'It won’t be proposed again.')
+      S.ideas = await api('/api/ideas')
+      renderAll(false)
+    } catch (x) {
+      $('#idm-err').hidden = false
+      $('#idm-err').textContent = x.message
+    }
+  }
+}
 function lumenNotice() {
   const L = S.config.lumen
   if (!L || L.baseline || !L.latestDate || Date.now() - Date.parse(L.latestDate) > 14 * 864e5) return ''
@@ -920,14 +998,25 @@ function resourcesHTML() {
 function ideasHTML() {
   const owner = S.user?.role === 'owner'
   const runs = S.ideas || []
-  const cards = runs.flatMap((r) => (r.ideas || []).map((i) => ({ ...i, run: r.slug })))
-  return `<div class="skills"><div><h2>Recommendations</h2><p>Ideas the agent found to move the product strategy: a gap we have against the research, with a mock, scope and business case. Turn the good ones into projects.</p></div>
-    ${owner ? `<form class="card" id="ideas-form" style="max-width:640px"><div class="card-body"><input class="field-in" id="ideas-focus" placeholder="Optional focus, e.g. retention in casino, first deposit, VIP" maxlength="300" aria-label="Focus"></div><div class="card-actions"><button class="btn primary" type="submit">Find ideas</button><span class="card-sub">Reads the strategy, the research Figma folder${S.config.research?.changed ? ' (updated)' : ''}, Mobbin and our live site.</span></div></form>` : ''}
-    ${runs.filter((r) => r.running || r.status === 'working').map((r) => `<a class="gate-row" href="#j/${r.slug}"><span class="dot gate"></span><div><b>${esc(r.title)}</b><span class="s">Researching…</span></div><span class="go">Watch</span></a>`).join('')}
-    ${cards.length ? `<div class="home-cards">${cards.map((i) => `<div class="card idea"><div class="card-head"><div><div class="card-title">${esc(i.title)}</div><div class="card-sub">${esc(i.goal || '')}</div></div></div>
-      ${(i.screenshots || []).length ? `<div class="idea-shots">${i.screenshots.slice(0, 2).map((x) => `<img src="/files/${encodeURI(x)}" alt="" loading="lazy">`).join('')}</div>` : ''}
-      <div class="card-body"><div>${esc(i.summary || '')}</div><div class="card-sub">Impact: ${esc(i.impact || '—')} · Effort: ${esc(i.effort || '—')}</div></div>
-      <div class="card-actions"><a class="btn ghost" href="/files/${encodeURI(i.file || '')}" target="_blank" rel="noreferrer">Business case</a>${i.project ? `<a class="btn" href="#j/${i.project}">Open project</a>` : owner ? `<button class="btn primary" data-promote="${esc(i.id)}" data-run="${esc(i.run)}">Turn into project</button>` : ''}</div></div>`).join('')}</div>` : runs.length ? '' : '<p class="card-sub">No ideas yet.</p>'}
+  const all = runs.flatMap((r) => (r.ideas || []).map((i) => ({ ...i, run: r.slug, revising: r.running && (i.feedback || []).some((f) => f.revise) })))
+  const live = all.filter((i) => !i.dismissed)
+  const gone = all.filter((i) => i.dismissed)
+  const fbHTML = (i) => {
+    const f = (i.feedback || []).slice(-2)
+    return f.length ? `<div class="idea-fb">${f.map((x) => `<div><span class="av-s">${esc(initials(x.by))}</span><span>${x.value ? (x.value === 'like' ? '👍 ' : '👎 ') : ''}${esc(x.text)}</span></div>`).join('')}${i.revising ? '<div class="card-sub">The agent is revising this idea…</div>' : ''}</div>` : ''
+  }
+  const card = (i) => `<div class="card idea"><div class="card-head"><div style="min-width:0"><div class="card-title">${esc(i.title)}</div><div class="card-sub">${esc(i.goal || '')}</div></div>${owner ? `<button class="icon-x" data-idea-dismiss="${esc(i.id)}" data-run="${esc(i.run)}" title="Dismiss this idea" aria-label="Dismiss this idea">×</button>` : ''}</div>
+      ${(i.screenshots || []).length ? `<div class="idea-shots">${i.screenshots.slice(0, 4).map((x) => `<button type="button" class="idea-shot" data-zoom="${esc(imgSrc(x))}" data-caption="${esc(`${i.title} · ${/390|mobile/i.test(x) ? 'mobile' : 'desktop'}`)}" aria-label="View mock larger"><img src="${esc(imgSrc(x))}" alt="" loading="lazy"><span class="zoom-hint">View larger</span></button>`).join('')}</div>` : ''}
+      <div class="card-body"><div>${esc(i.summary || '')}</div><div class="card-sub">Impact: ${esc(i.impact || '—')} · Effort: ${esc(i.effort || '—')}</div>${fbHTML(i)}</div>
+      <div class="card-actions">${owner ? `<button class="btn ghost" data-idea-fb="${esc(i.id)}" data-run="${esc(i.run)}">Give feedback</button>` : ''}<a class="btn ghost" href="/files/${encodeURI(i.file || '')}" target="_blank" rel="noreferrer">Business case</a>${i.project ? `<a class="btn" href="#j/${i.project}">Open project</a>` : owner ? `<button class="btn primary" data-promote="${esc(i.id)}" data-run="${esc(i.run)}">Turn into project</button>` : ''}</div></div>`
+  return `<div class="skills"><div><h2>Recommendations</h2><p>Ideas the agent found to move the product strategy: a gap we have against the research, with a mock, scope and business case. Turn the good ones into projects, give feedback, or dismiss the rest.</p></div>
+    ${owner ? `<form class="ideas-box" id="ideas-form">
+      <div class="ideas-row"><input class="ideas-in" id="ideas-focus" placeholder="Optional focus, e.g. retention in casino, first deposit, VIP" maxlength="300" aria-label="Focus"><button class="btn primary" type="submit">Find ideas</button></div>
+      <div class="ideas-note">Reads the strategy, the research Figma folder${S.config.research?.changed ? ' (updated)' : ''}, Mobbin and our live site. Takes a few minutes. Dismissed ideas aren’t proposed again.</div>
+    </form>` : ''}
+    ${runs.filter((r) => r.running || r.status === 'working').map((r) => `<a class="gate-row" href="#j/${r.slug}"><span class="dot gate"></span><div><b>${esc(r.title)}</b><span class="s">${(r.ideas || []).length ? 'Revising an idea…' : 'Researching…'}</span></div><span class="go">Watch</span></a>`).join('')}
+    ${live.length ? `<div class="home-cards">${live.map(card).join('')}</div>` : runs.length ? '<p class="card-sub">No open ideas. Run Find ideas for more.</p>' : '<p class="card-sub">No ideas yet.</p>'}
+    ${gone.length ? `<details class="idea-dismissed"><summary>Dismissed · ${gone.length}</summary>${gone.map((i) => `<div class="gate-row" style="cursor:default"><span class="dot"></span><div style="min-width:0"><b>${esc(i.title)}</b><span class="s">${esc(i.dismissed.reason || 'No reason given')} · ${esc(i.dismissed.by || '')}</span></div>${owner ? `<button class="btn ghost" data-idea-restore="${esc(i.id)}" data-run="${esc(i.run)}">Restore</button>` : ''}</div>`).join('')}</details>` : ''}
   </div>`
 }
 
@@ -1044,7 +1133,7 @@ function figmaTokenHTML(owner) {
   return `<div class="skill-group"><h3>Figma research folder</h3>
     <div class="gate-row" style="cursor:default"><span class="dot ${F.set && !R.error ? 'done' : ''}"></span><div style="min-width:0"><b>${F.set ? `Token ${esc(F.hint || '')}` : 'No Figma token'}</b><span class="s">${status}</span></div></div></div>
     ${owner ? `<form class="card" id="figma-token-form" style="max-width:560px"><div class="card-head"><div><div class="card-title">${F.set ? 'Replace the Figma token' : 'Add the Figma token'}</div><div class="card-sub">Figma home → your name (top-left) → Settings → Security → Personal access tokens. Scopes: Folders and File content, read only. Pick the longest expiry. It stays on this computer.</div></div></div>
-      <div class="card-body"><input class="field-in" id="figma-token" type="password" autocomplete="off" spellcheck="false" placeholder="figd_…" aria-label="Figma token"><div class="card-sub" id="ft-err" style="color:var(--err)" hidden></div></div>
+      <div class="card-body"><input class="field-in secret-in" id="figma-token" type="text" name="figma-token-input" autocomplete="off" data-1p-ignore data-lpignore="true" spellcheck="false" placeholder="figd_…" aria-label="Figma token"><div class="card-sub" id="ft-err" style="color:var(--err)" hidden></div></div>
       <div class="card-actions"><button class="btn primary" type="submit">Save and check</button>${F.set ? '<button class="btn ghost" type="button" data-figma-remove>Remove</button>' : ''}</div></form>` : ''}`
 }
 function skillsHTML() {
@@ -1074,7 +1163,7 @@ function placeComposer() {
       : j?.status === 'questions'
         ? 'Answer above, or reply in your own words'
         : 'Reply to the design agent'
-  $('#composer-hint').textContent = home ? 'Surface optional' : j?.status === 'refine' || j?.status === 'awaiting_signoff' ? `Round ${(j.round || 0) + 1} · logged and learned` : j?.status === 'direction' ? 'Change request · logged in feedback.md' : ''
+  $('#composer-hint').textContent = home ? '' : j?.status === 'refine' || j?.status === 'awaiting_signoff' ? `Round ${(j.round || 0) + 1} · logged and learned` : j?.status === 'direction' ? 'Change request · logged in feedback.md' : ''
   $('#surface-chips').innerHTML = home ? SURFACES.map((s) => `<button type="button" class="chip" data-surface="${s}" aria-pressed="${S.surface === s}">${s}</button>`).join('') : ''
   $('#file').accept = home ? '.pdf,.md,.txt,image/*' : 'image/*,.pdf'
   renderFiles()
@@ -1473,6 +1562,15 @@ document.addEventListener('click', async (e) => {
     renderAll(false)
     return
   }
+  const idb = e.target.closest('[data-idea-fb],[data-idea-dismiss],[data-idea-restore]')
+  if (idb) {
+    if (idb.dataset.ideaRestore) {
+      await api('/api/ideas/dismiss', { slug: idb.dataset.run, id: idb.dataset.ideaRestore, undo: true }).catch((x) => toast('Couldn’t restore', x.message))
+      S.ideas = await api('/api/ideas')
+      return renderAll(false)
+    }
+    return ideaModal(idb.dataset.ideaFb ? 'feedback' : 'dismiss', idb.dataset.run, idb.dataset.ideaFb || idb.dataset.ideaDismiss)
+  }
   const pr = e.target.closest('[data-promote]')
   if (pr) {
     try {
@@ -1770,8 +1868,16 @@ function refresh(now = false) {
     )
   })
 }
+// Live updates use one long-lived connection per tab. Browsers allow only 6 per site, so background tabs
+// give theirs up; otherwise a few open studio tabs can block every button (it just says "Checking…").
+let ES = null
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) ES?.close(), (ES = null)
+  else if (!ES && S.user) connect(), refresh?.()
+})
 function connect() {
-  const es = new EventSource('/api/events')
+  if (ES) ES.close()
+  const es = (ES = new EventSource('/api/events'))
   es.onerror = () => api('/api/auth/me').then((r) => !r.user && authScreen(r.setup ? 'setup' : 'login')).catch(() => {})
   es.onmessage = (m) => {
     const msg = JSON.parse(m.data)

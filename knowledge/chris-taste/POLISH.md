@@ -59,3 +59,11 @@ Any time the player **gets something** (cash claim, rakeback, mission, free spin
 - Opaque sub-navs, heavy blur (> 32px), glass on content cards, glass chevrons on mobile.
 - Linear easing, bouncy springs on chrome, animations over ~500ms outside a reward moment, snapping balances.
 - **Don't (Chris, Nov 2026): text that jumps size after a token change.** Banner copy and game-tile tags went oversized and overlapping when `text-size-*` was dropped by `cn()`. After any typography/token change, screenshot the homepage banners and casino tiles (desktop + mobile) before calling it done.
+
+## Learned rules
+
+_Added by the design agent from feedback; the Owner keeps or undoes each one on the Studio Taste page._
+- **Do:** Keep new UI simple, polished and compact: when a composition feels busy, remove elements before adding any. — Ideas mocks were judged not simple, polished and compact. _(learned 2026-11-07 from recommendations-2026-11-06)_ <!-- rule:3681d5b3 -->
+- **Don’t:** Don’t give a status/tracker card a full-width, tall row on desktop. Use a compact card (e.g. a slim inline stepper) sized to its content. — Payout tracker took too much real estate on desktop. _(learned 2026-11-07 from recommendations-2026-11-06)_ <!-- rule:5b1d3c95 -->
+- **Don’t:** Don’t crowd mobile cards with several text buttons. One primary action at most; secondary actions like Notify me or Copy become icon buttons. — Payout tracker on mobile looked crowded and messy. _(learned 2026-11-07 from recommendations-2026-11-06)_ <!-- rule:2b6feb20 -->
+- **Do:** For layouts peers already do well (tournaments, leaderboards, lobbies), study the best peer compositions in Mobbin and the research folder first, and aim for one clear focal item with a calm hierarchy. — Tournaments composition looked messy; competitors do it better. _(learned 2026-11-07 from recommendations-2026-11-06)_ <!-- rule:5fe898c8 -->

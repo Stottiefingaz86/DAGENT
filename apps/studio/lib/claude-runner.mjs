@@ -59,13 +59,20 @@ export function permission(repoRoot) {
       return { behavior: 'allow', updatedInput: input }
     }
     if (toolName === 'Bash') {
-      const cmd = String(input.command || '').trim()
+      // Agents often prefix "cd <repo root> &&" or "cd ../.. &&"; that's harmless, so drop it before checking.
+      const esc = repoRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const cmd = String(input.command || '')
+        .trim()
+        .replace(new RegExp(`^cd\\s+["']?(${esc}|\\.\\./\\.\\.|\\.)["']?\\s*&&\\s*`), '')
+        .replace(/^(node\s+)?(\.\/)?scripts\/lint-tokens\.mjs\b/, 'node scripts/lint-tokens.mjs')
+      // Token lint always runs from the repo root, whatever folder the agent's shell is in.
+      const lint = /^(npm run tokens:lint|node scripts\/lint-tokens\.mjs)\b/.test(cmd)
       if (SECRET_WORDS.test(cmd) || /(^|\s)\/(?!dev\/null)/.test(cmd.replace(/^cd apps\/live-site && /, '')) || /\.\.\//.test(cmd)) return { behavior: 'deny', message: 'Shell commands may only touch non-secret files inside the repo (relative paths).' }
       if (BLOCKED.test(cmd)) return { behavior: 'deny', message: 'Blocked in the studio: no git writes, deploys or destructive commands.' }
       // One command at a time: no chaining, redirects or substitution (pipes only into head/wc/sort; use the Grep and Glob tools to search).
       const rest = cmd.replace(/^cd apps\/live-site && /, '')
       const chained = /;|&&|\|\||`|\$\(|>|</.test(rest) || rest.split('|').slice(1).some((seg) => !/^\s*(head|wc|grep|sort)\b/.test(seg))
-      if (!chained && SAFE_BASH.some((r) => r.test(cmd))) return { behavior: 'allow', updatedInput: input }
+      if (!chained && SAFE_BASH.some((r) => r.test(cmd))) return { behavior: 'allow', updatedInput: { ...input, command: lint ? `cd "${repoRoot}" && ${cmd}` : cmd } }
       return { behavior: 'deny', message: 'The studio only allows read-only shell commands, token lint and the type-check ("cd apps/live-site && npx tsc --noEmit"), one command at a time. Use Read/Write/Edit instead.' }
     }
     return { behavior: 'deny', message: `${toolName} is not enabled in the studio.` }

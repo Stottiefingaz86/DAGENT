@@ -401,7 +401,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Frame-Options', 'DENY')
-  if (req.method === 'POST') studioLog(`POST ${p}`)
+  if (req.method === 'POST' && p !== '/api/presence') studioLog(`POST ${p}`)
   try {
     req.user = auth.userFor(req)
     if (req.method !== 'GET' && req.method !== 'HEAD' && !sameOrigin(req)) return send(res, 403, { error: 'Cross-site request refused.' })
@@ -645,12 +645,46 @@ const server = http.createServer(async (req, res) => {
       if (!connected()) return send(res, 400, { error: 'Connect the design agent first (Settings → API keys).' })
       const b = await readJson(req)
       const job = store.create({ title: `Recommendations · ${new Date().toISOString().slice(0, 10)}`, surface: 'Recommendations', brief: String(b.focus || 'Find gaps against the product strategy'), source: 'recommendation', requester: who(req) })
+      // Earlier dismissals travel into the new run, so the agent doesn't re-propose them.
+      const dismissedIdeas = store.list().filter((j) => j.source === 'recommendation').flatMap((j) => (j.ideas || []).filter((i) => i.dismissed).map((i) => ({ title: i.title, reason: i.dismissed.reason })))
+      store.update(job.slug, { dismissedIdeas })
       orch.run(job.slug, P.recommendPrompt(store.get(job.slug), String(b.focus || '').slice(0, 1000)))
       return send(res, 201, store.get(job.slug))
     }
     if (p === '/api/ideas' && req.method === 'GET') {
       const runs = store.list().filter((j) => j.source === 'recommendation')
       return send(res, 200, runs.map((j) => ({ slug: j.slug, title: j.title, status: j.status, running: orch.isRunning(j.slug), brief: j.brief, at: j.updatedAt, ideas: j.ideas || [] })))
+    }
+    // Dismiss / restore an idea, or give feedback on it (optionally asking the agent to revise it).
+    if ((p === '/api/ideas/dismiss' || p === '/api/ideas/feedback') && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Owner can do that.' })
+      const b = await readJson(req)
+      const run = store.get(String(b.slug || ''))
+      const idea = run?.ideas?.find((i) => i.id === b.id)
+      if (!idea) return send(res, 404, { error: 'No such idea' })
+      const text = String(b.text || b.reason || '').trim().slice(0, 2000)
+      if (p === '/api/ideas/dismiss') {
+        const undo = !!b.undo
+        store.update(run.slug, (j) => ({ ideas: j.ideas.map((i) => (i.id === idea.id ? { ...i, dismissed: undo ? null : { by: who(req), at: new Date().toISOString(), reason: text } } : i)) }))
+        if (!undo) {
+          taste.signal({ kind: 'dislike', project: run.slug, title: idea.title, text: `Dismissed idea “${idea.title}”${text ? `: ${text}` : ''}`, by: who(req), target: 'proposal' })
+          store.appendFeedback(run.slug, (run.round || 0) + 1, `[Dismissed idea: ${idea.title}]${text ? ` ${text}` : ''}`, [])
+          store.update(run.slug, (j) => ({ round: (j.round || 0) + 1 }))
+        }
+        return send(res, 200, { ok: true })
+      }
+      if (!text && !b.value) return send(res, 400, { error: 'Write your feedback first.' })
+      if (b.revise) {
+        const nr = notReady()
+        if (nr) return send(res, 423, nr)
+      }
+      const fb = { by: who(req), at: new Date().toISOString(), text, value: b.value === 'like' ? 'like' : b.value === 'dislike' ? 'dislike' : null, revise: !!b.revise }
+      store.update(run.slug, (j) => ({ round: (j.round || 0) + 1, ideas: j.ideas.map((i) => (i.id === idea.id ? { ...i, feedback: [...(i.feedback || []), fb] } : i)) }))
+      store.appendFeedback(run.slug, store.get(run.slug).round, `[Idea: ${idea.title}]${fb.value ? ` ${fb.value === 'like' ? '👍' : '👎'}` : ''} ${text}`, [])
+      taste.signal({ kind: fb.value || 'change', project: run.slug, title: idea.title, text: `Idea “${idea.title}”: ${text}`, by: who(req), target: 'proposal' })
+      store.event(run.slug, 'human', `Feedback on “${idea.title}”${fb.value ? ` ${fb.value === 'like' ? '👍' : '👎'}` : ''}: ${text}`, { by: who(req) })
+      if (b.revise) orch.run(run.slug, P.reviseIdeaPrompt(store.get(run.slug), idea, text))
+      return send(res, 200, { ok: true, revising: !!b.revise })
     }
     if (p === '/api/ideas/promote' && req.method === 'POST') {
       { const nr = notReady(); if (nr) return send(res, 423, nr) }

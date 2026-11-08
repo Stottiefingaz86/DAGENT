@@ -40,3 +40,4 @@ archive/
 .cursor/skills/
 *.tsbuildinfo
 apps/live-site/.env.local
+.claude/settings.local.json

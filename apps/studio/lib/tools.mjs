@@ -77,7 +77,19 @@ export function makeTools(store, slug, taste) {
       return needsDesign ? 'Marked as needing design. Raise it with ask_questions.' : 'Answer recorded; the dev agent can fetch it now.'
     },
     submit_recommendations({ ideas = [], summary }) {
-      store.update(slug, { status: 'done', stage: 'handoff', ideas: ideas.map((i, n) => ({ id: i.id || `idea-${n + 1}`, ...i, at: new Date().toISOString() })) })
+      // A revised run keeps what people already did with each idea (dismissed, feedback, turned into a project).
+      store.update(slug, (job) => {
+        const prev = Object.fromEntries((job.ideas || []).map((i) => [i.id, i]))
+        return {
+          status: 'done',
+          stage: 'handoff',
+          ideas: ideas.map((i, n) => {
+            const id = i.id || `idea-${n + 1}`
+            const old = prev[id] || {}
+            return { ...i, id, dismissed: old.dismissed, feedback: old.feedback, project: old.project, at: new Date().toISOString() }
+          }),
+        }
+      })
       store.event(slug, 'system', `${ideas.length} recommendation${ideas.length === 1 ? '' : 's'} ready.`, { summary, ideas: true })
       return 'Recommendations recorded. End your turn.'
     },

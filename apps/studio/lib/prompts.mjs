@@ -199,6 +199,16 @@ Update the prototype/handover/Figma as needed, then call studio.answer_dev_quest
 `.trim()
 }
 
+export function reviseIdeaPrompt(job, idea, text) {
+  return `
+Chris gave feedback on the idea "${idea.title}" (id ${idea.id}) in ${job.slug}:
+"${text}"
+It's logged in specs/${job.slug}/feedback.md. Learn durable points with propose_rule.
+Revise ONLY this idea: its mock (apps/live-site/app/prototype/idea-${idea.id}), screenshots and ${idea.file || 'its idea file'}. Follow the taste rules, re-capture at 1440 and 390, run the design-reviewer.
+Then call submit_recommendations with ALL ideas of this run (same ids; the others unchanged) and end your turn.
+`.trim()
+}
+
 export function recommendPrompt(job, focus) {
   return `
 RECOMMENDATIONS — job ${job.slug}. Find ideas that move the product strategy, where we have a gap.${focus ? `\nFocus from Chris: "${focus}"` : ''}
@@ -210,6 +220,8 @@ RECOMMENDATIONS — job ${job.slug}. Find ideas that move the product strategy, 
    - Business case: expected impact (with the assumption behind each number), effort S/M/L, risk, how we'd measure it.
    - Scope: MVP vs later, surfaces and routes, Lumen components reused, Lumen gaps.
    - Mock: a DRAFT on the real shell at apps/live-site/app/prototype/idea-<idea-slug> (same rules as proposals: real components, no redrawn chrome), captured at 1440 and 390.
+Ideas Chris already dismissed (don't propose them again, and learn from his reasons):
+${(job.dismissedIdeas || []).map((d) => `- ${d.title}${d.reason ? `: ${d.reason}` : ''}`).join('\n') || '- none yet'}
 4. Call studio.submit_recommendations with the list (title, summary, goal, impact, effort, mock screenshots, file) and end your turn. Chris turns the ones he likes into projects.
 Never clone a peer's look; translate into Lumen.
 `.trim()

@@ -1,0 +1,87 @@
+[
+  {
+    "id": "9b4e7aef",
+    "file": "SURFACES.md",
+    "polarity": "dont",
+    "rule": "Never place feature strips or new modules above the homepage hero banner. They sit in the lobby as a block, like the casino content rows.",
+    "why": "Chris rejected the first-week strip above the hero (twice).",
+    "evidence": [
+      {
+        "project": "recommendations-2026-11-06",
+        "quote": "the play daily should not go above hero banner, should be a block like casino content",
+        "at": "2026-11-07T09:10:43.374Z"
+      }
+    ],
+    "seen": 1,
+    "status": "new",
+    "at": "2026-11-07T09:10:43.374Z"
+  },
+  {
+    "id": "3681d5b3",
+    "file": "POLISH.md",
+    "polarity": "do",
+    "rule": "Keep new UI simple, polished and compact: when a composition feels busy, remove elements before adding any.",
+    "why": "Ideas mocks were judged not simple, polished and compact.",
+    "evidence": [
+      {
+        "project": "recommendations-2026-11-06",
+        "quote": "the design is not simple and polished and compact",
+        "at": "2026-11-07T09:10:43.377Z"
+      }
+    ],
+    "seen": 1,
+    "status": "new",
+    "at": "2026-11-07T09:10:43.378Z"
+  },
+  {
+    "id": "5b1d3c95",
+    "file": "POLISH.md",
+    "polarity": "dont",
+    "rule": "Don’t give a status/tracker card a full-width, tall row on desktop. Use a compact card (e.g. a slim inline stepper) sized to its content.",
+    "why": "Payout tracker took too much real estate on desktop.",
+    "evidence": [
+      {
+        "project": "recommendations-2026-11-06",
+        "quote": "this takes so much real estate",
+        "at": "2026-11-07T09:10:43.380Z"
+      }
+    ],
+    "seen": 1,
+    "status": "new",
+    "at": "2026-11-07T09:10:43.380Z"
+  },
+  {
+    "id": "2b6feb20",
+    "file": "POLISH.md",
+    "polarity": "dont",
+    "rule": "Don’t crowd mobile cards with several text buttons. One primary action at most; secondary actions like Notify me or Copy become icon buttons.",
+    "why": "Payout tracker on mobile looked crowded and messy.",
+    "evidence": [
+      {
+        "project": "recommendations-2026-11-06",
+        "quote": "this looks too crowded and messy notify me could just be an icon",
+        "at": "2026-11-07T09:10:43.381Z"
+      }
+    ],
+    "seen": 1,
+    "status": "new",
+    "at": "2026-11-07T09:10:43.381Z"
+  },
+  {
+    "id": "5fe898c8",
+    "file": "POLISH.md",
+    "polarity": "do",
+    "rule": "For layouts peers already do well (tournaments, leaderboards, lobbies), study the best peer compositions in Mobbin and the research folder first, and aim for one clear focal item with a calm hierarchy.",
+    "why": "Tournaments composition looked messy; competitors do it better.",
+    "evidence": [
+      {
+        "project": "recommendations-2026-11-06",
+        "quote": "the composition of the tournaments is not great, looks a mess, i think competitors do it better",
+        "at": "2026-11-07T09:10:43.383Z"
+      }
+    ],
+    "seen": 1,
+    "status": "new",
+    "at": "2026-11-07T09:10:43.383Z"
+  }
+]
