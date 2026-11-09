@@ -49,7 +49,7 @@ Run `speckit-clarify`. Answer every question you can from the BRD, strategy, aud
 ### 3. Research
 In this order (see `knowledge/product-strategy/RESEARCH_SOURCES.md`):
 1. **Research Figma folder** — read `knowledge/research/CHANGELOG.md` and open the New / Updated research files (Figma MCP, read only). This is the team's living competitor research; it wins over memory and older notes.
-2. **Strategy** — BRIEF.md, journey audits, COMPETITOR_RESEARCH.md.
+2. **Peers + strategy** — `knowledge/product-strategy/PEERS.md` (Rainbet, Winna, Stake for casino and rewards; Kalshi, Polymarket for sportsbook), then BRIEF.md, journey audits, COMPETITOR_RESEARCH.md.
 3. **Mobbin** — `search_flows` / `search_screens` with the queries SURFACES.md suggests, adapted to the BRD (web for casino and sportsbook peers, iOS when mobile chrome matters). Look at the images, keep the links.
 4. **Our live site** — `capture_site` before calling anything a gap.
 Cross-check against Chris-liked notes. Inspire, never clone.
@@ -61,7 +61,7 @@ Compose from existing Lumen components and tokens first. Only if that truly can'
 Before building, show Chris a proposal **in the chat** (studio `submit_proposal`). **Never redraw the site, logo or components in HTML** — capture today's screens, build a quick draft on the real shell at `/prototype/<slug>` with real components, and screenshot that. The board has:
 - Journey map: steps, entry point, route in the shell, where it hands off (cashier, lobby, betslip, VIP Hub…)
 - Current state (what ships today) next to the proposed change
-- Strategy line: bet · initiative/feature # · needle baseline → target
+- Strategy line: bet · initiative/feature # · needle baseline → target · **KPI it moves** from `knowledge/product-strategy/KPIS.md` (casino first: 70% of the scorecard; friction removed, never urgency added)
 - Lumen inventory: components reused (with paths), tokens used, gaps (→ component brief)
 - 1–3 peer references with Mobbin links: what we borrow, what we deliberately don't
 - Key screens at 390 and 1440, all states (empty, loading/skeleton, error, success, logged-in/out)
@@ -103,6 +103,9 @@ Dev agents (e.g. SpecKit clarify in the dev repo) POST questions to `/api/jobs/<
 On request (studio → Ideas), find the 3 strongest gaps against the strategy and research, each with evidence, the goal/KPI it moves, a business case (impact with assumptions, effort, risk, measure), scope and a draft mock on the real shell. Chris turns the good ones into projects.
 
 ## Learning loop (ALWAYS, every piece of feedback)
+
+**Read `knowledge/chris-taste/FEEDBACK_LOG.md` before designing anything.** It holds six months of Chris's likes and dislikes by surface (sub-nav, shell, carousels, cards, inputs, join/OTP, copy, claims, Lumen, process, responsive). Grep it for the surface you're touching; every **Don't** is a hard reject, never retried with a small tweak.
+When feedback arrives, also append a dated entry to its "Chronological entries" (format at the top of the file) and, if the surface already has a row, update that row's Do / Don't instead of adding a duplicate.
 
 In the same turn feedback arrives, before or alongside the fix:
 1. **Log it** in `specs/<slug>/feedback.md`: date, round, Chris's words verbatim, screenshot path if any, what changed.

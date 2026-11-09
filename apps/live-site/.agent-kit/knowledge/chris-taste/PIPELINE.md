@@ -70,3 +70,9 @@ Rejected: generic, hard-coded questions ("Where should this live first?", "Is th
 ## Unhappy paths are part of the design (Chris, Nov 2026: "don't only create screens for happy paths")
 - **Do:** every proposal, prototype and Figma build covers the full state set, not just the happy path: logged in, logged out, loading skeleton (shaped like the real content), empty, partial data, image/asset failure, **failed API call / server error with a retry**, single-item and overflow cases, and mobile for each where layout differs.
 - **Don't:** ship a Figma page or prototype that shows only the default state. If the BRD doesn't say what happens on failure, decide it on-system (Lumen error/empty patterns, plain copy, a retry) and list it as a decision in the spec.
+
+## Handover = one package (Chris, Nov 2026)
+- Mocks + prototype + Figma + spec + handover docs, with journeys for happy AND unhappy paths, hover states and motion. One archive the dev agent can build from.
+- Dev questions come back through the studio; answer from the handover, escalate only real design decisions.
+- Research comes from the research Figma folder first (it is always being updated), then strategy, then Mobbin.
+- Recommend ideas that move the strategy: gap + evidence + mock + scope + business case.

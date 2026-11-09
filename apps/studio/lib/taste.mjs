@@ -48,6 +48,23 @@ export function createTaste(repoRoot) {
     const base = path.basename(String(file || 'GENERAL.md')).replace(/[^\w.-]/g, '').replace(/\.md$/i, '') || 'GENERAL'
     return path.join(TASTE, `${base.toUpperCase()}.md`)
   }
+  // Every learned rule is also logged in FEEDBACK_LOG.md (the long-running likes/dislikes record agents read first).
+  function logFeedback(r, reinforced, ev) {
+    try {
+      const f = path.join(TASTE, 'FEEDBACK_LOG.md')
+      if (!fs.existsSync(f)) return
+      const entry = [
+        '',
+        `### ${new Date().toISOString().slice(0, 10)} — ${reinforced ? 'Seen again: ' : ''}${clip(r.rule, 70)}`,
+        `- **Sentiment:** ${r.polarity === 'do' ? 'positive' : 'negative'}${reinforced ? ` (repeated ${r.seen}×)` : ''}`,
+        `- **Surface:** ${path.basename(r.file, '.md').replace(/_/g, ' ').toLowerCase()}${ev.project ? ` · ${ev.project}` : ''}`,
+        `- **Signal:** ${ev.quote ? `“${ev.quote}”` : r.why || '—'}`,
+        `- **${r.polarity === 'do' ? 'Do' : 'Don’t'}:** ${r.rule} <!-- rule:${r.id} -->`,
+        '',
+      ].join('\n')
+      fs.appendFileSync(f, entry)
+    } catch {}
+  }
   const marker = (id) => `<!-- rule:${id} -->`
   const line = (r) => `- **${r.polarity === 'do' ? 'Do' : 'Don’t'}:** ${r.rule}${r.why ? ` — ${r.why}` : ''} _(learned ${r.at.slice(0, 10)} from ${r.evidence[0]?.project || 'feedback'}${r.seen > 1 ? ` · seen ${r.seen}×` : ''}${r.status === 'kept' ? ' · confirmed' : ''})_ ${marker(r.id)}`
 
@@ -88,6 +105,7 @@ export function createTaste(repoRoot) {
       }
       const rel = writeLine(r)
       writeRules(rules)
+      logFeedback(r, r.seen > 1, ev)
       signal({ kind: 'rule', project, text: `${r.polarity === 'do' ? 'Do' : 'Don’t'}: ${r.rule}`, ruleId: r.id, file: rel, seen: r.seen })
       return { ok: true, rule: r, file: rel, reinforced: r.seen > 1 }
     },

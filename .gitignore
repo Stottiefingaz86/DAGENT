@@ -29,6 +29,7 @@ apps/studio/.studio-users.json
 apps/studio/.studio-sessions.json
 apps/studio/.studio-figma-token
 apps/studio/.studio-notify.json
+apps/studio/.studio-tidy.json
 .studio-trash/
 
 apps/live-site/.next-prototype

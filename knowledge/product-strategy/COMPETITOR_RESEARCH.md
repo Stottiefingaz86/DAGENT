@@ -3,6 +3,7 @@
 **Purpose:** When writing a BRD or debating UX, cross-check **strategy** (`BRIEF.md`) + **journey audits** (`research/Journey_Audits_2026.pdf`) + **these patterns**. Research only — do not copy brand/visuals; translate into Lumen + the site shell.
 
 **Peers covered here:** Rainbet, Winna (also audited: Whale.io, Stake, MyBookie).
+**Benchmark set (Chris, Nov 2026):** Rainbet + Winna (patterns we like), Stake (main influence), Kalshi + Polymarket (sportsbook direction). Profiles: `PEERS.md`.
 
 Screenshots: `competitors/`.
 

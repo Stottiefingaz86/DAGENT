@@ -35,3 +35,8 @@ Paths are under `apps/live-site/`. Taste notes are under `knowledge/chris-taste/
 8. **Before dropping a peer item because "we don't have it", check the live site** (Chris, Nov 2026: “we also do have orginals, you can see in the casino we have a carousel called orginals”). Do: check `site/casino-subnav.tsx` (`CASINO_SUBNAV`), lobby shelves in `lumen/casino-lobby-page.tsx` / `homepage-lobby-page.tsx` and `lib/lumen/casino-lobby-catalog.ts`. Don't: infer from BRIEF phasing ("in-house games = Later") that a category doesn't exist. The site ships **Originals** (`/casino/category/originals`, lobby shelf) and **New** (`/casino/category/new`).
 
 **Every surface:** also read `POLISH.md` (celebration + sound on rewards, slight glass on chrome, house motion).
+
+## Learned rules
+
+_Added by the design agent from feedback; the Owner keeps or undoes each one on the Studio Taste page._
+- **Don’t:** Never place feature strips or new modules above the homepage hero banner. They sit in the lobby as a block, like the casino content rows. — Chris rejected the first-week strip above the hero (twice). _(learned 2026-11-07 from recommendations-2026-11-06)_ <!-- rule:9b4e7aef -->

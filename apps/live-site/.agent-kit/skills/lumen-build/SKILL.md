@@ -157,3 +157,5 @@ Detail catalog: [patterns.md](patterns.md).
 | `rounded-full` sheet close | `rounded-lg hover:bg-accent` |
 | Body portal with only Tailwind `z-*` | Carve-out + fixed `z≥250` in `globals.css` (VIP Hub is 200) |
 | Flat muted Daily Spin wedges | Jackpot wheel: radial fills, neon rim, `/jackpot/*` assets |
+
+> **Lumen type scale + cn() (Nov 2026):** `text-size-*` classes only survive `cn()` because `lib/utils.ts` registers them with tailwind-merge as font sizes. If you add a new Lumen size token, add it there too, or text silently falls back to 16px.

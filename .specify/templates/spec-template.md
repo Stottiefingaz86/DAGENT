@@ -7,7 +7,8 @@
 
 ## Strategy alignment *(mandatory)*
 
-<!-- Fill from knowledge/product-strategy/BRIEF.md, COMPETITOR_RESEARCH.md and the journey audits. Cite the source for every number. -->
+<!-- Fill from knowledge/product-strategy/BRIEF.md, KPIS.md, COMPETITOR_RESEARCH.md and the journey audits. Cite the source for every number. -->
+- **KPI it moves** (KPIS.md): [# and name, e.g. #4 median deposit → first casino stake, target 12 min] · expected direction · how it's read (control group / same four months last year)
 
 - **Core bet / enabler**: [Activate | Reward | Convert | Discover | Trust]
 - **Initiative + feature #**: [e.g. 01 Frictionless Join & Welcome · #3 Fast Registration]

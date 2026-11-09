@@ -79,3 +79,4 @@ Short labels. No AI-slop desk poetry. See `COPY.md`.
 - Every project screenshot opens in the review viewer: click anywhere to pin a comment, reply in threads, resolve; everyone sees pins and each other's cursors live, each person in their own colour.
 - "Send" gives the agent the screenshot with numbered pins drawn on it plus each pin's x/y and the full thread — the agent must Read the annotated image before changing anything.
 - During direction review only the Owner sends pinned comments (they become change requests); in refine anyone can.
+- **Don't (Chris, Nov 2026): no bar above the shell header on prototypes** ("Prototype · … · design lane — not demo nav / Design agent / Merge to demo later"). `/prototype/<slug>` renders the real ShellFrame only, so it looks exactly like the live site. Lane info belongs in the studio, never on the page.

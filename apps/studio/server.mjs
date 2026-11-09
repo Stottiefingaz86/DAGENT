@@ -293,6 +293,43 @@ watchInbox({
   },
 })
 
+// ---- Taste tidy, on the fly (Chris, Nov 2026: "should be doing this on the fly") ----
+// After every 6 newly learned rules (or 10 new feedback-log entries), the agent tidies the taste notes by itself:
+// merges duplicates, resolves conflicts, promotes feedback into the per-surface Do/Don't tables.
+const TIDY_FILE = path.join(here, '.studio-tidy.json')
+const tidyState = () => {
+  try {
+    return JSON.parse(fs.readFileSync(TIDY_FILE, 'utf8'))
+  } catch {
+    return { at: null, rules: 0, entries: 0 }
+  }
+}
+const logEntries = () => {
+  try {
+    return (fs.readFileSync(path.join(REPO_ROOT, 'knowledge', 'chris-taste', 'FEEDBACK_LOG.md'), 'utf8').match(/^### /gm) || []).length
+  } catch {
+    return 0
+  }
+}
+function autoTidy() {
+  try {
+    const st = tidyState()
+    const rules = taste.rules().filter((r) => r.status !== 'undone').length
+    const entries = logEntries()
+    if (st.at === null) return fs.writeFileSync(TIDY_FILE, JSON.stringify({ at: new Date().toISOString(), rules, entries })) // first run: baseline
+    if (rules - st.rules < 6 && entries - st.entries < 10) return
+    if (notReady() || store.list().some((j) => j.source === 'maintenance' && /Tidy taste/.test(j.title) && orch.isRunning(j.slug))) return
+    const job = store.create({ title: `Tidy taste notes (auto) · ${new Date().toISOString().slice(0, 10)}`, surface: 'Maintenance', brief: 'Automatic tidy after new feedback', source: 'maintenance', requester: 'Studio' })
+    orch.run(job.slug, P.tidyTastePrompt(store.get(job.slug)))
+    fs.writeFileSync(TIDY_FILE, JSON.stringify({ at: new Date().toISOString(), rules, entries }))
+    studioLog(`auto tidy started (${rules - st.rules} new rules, ${entries - st.entries} new log entries)`)
+  } catch (e) {
+    studioLog(`auto tidy skipped: ${e.message}`)
+  }
+}
+setInterval(autoTidy, 5 * 60e3).unref()
+setTimeout(autoTidy, 60e3).unref()
+
 // --- live updates (Server-Sent Events) ---
 const clients = new Set()
 store.on('change', (msg) => {

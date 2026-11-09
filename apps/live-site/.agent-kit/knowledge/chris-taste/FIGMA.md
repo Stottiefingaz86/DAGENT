@@ -9,3 +9,11 @@
 - New work goes in **one file named "Design Agent" in the Lumen folder**. One page per project. Create the file there if it doesn't exist.
 - Lumen folder (project) id: `625743109` — https://www.figma.com/files/1304356510223900444/folder/625743109
 - **Design Agent file:** `MYeELetKW9xye1shSpm8Fn` — https://www.figma.com/design/MYeELetKW9xye1shSpm8Fn (created Nov 2026; the only file the agent writes to; one page per project)
+
+## Chris, Nov 2026 (handover)
+- Figma is part of the handover, built after the prototype is approved/signed off — not a separate afterthought.
+- Icons come from the Lumen icon set. A Figma page with missing icons is not done.
+- Capture hover/pressed/focus as component variants and motion as annotations next to the components — dev must not have to guess.
+- Never end a Figma run with an empty or half-built page.
+- Technical: Lumen `color/card` is translucent in Dark mode. On the canvas (sections are white) put `color/background` under it, or text disappears.
+- Technical: instances don't expose hidden children to findOne — guard text overrides.

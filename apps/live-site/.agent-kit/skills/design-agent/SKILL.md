@@ -47,13 +47,21 @@ Run `speckit-clarify`. Answer every question you can from the BRD, strategy, aud
 **Question rules (Chris, Nov 2026 — generic questions rejected):** never ask where it lives, which components, breakpoints or states — decide from SURFACES.md and the code and say what you decided. Every question names the specific gap or conflict you found and its source ("BRD says one-tap claim; VIP Hub claims confirm with a toast in vip-claim-toast.tsx — keep it?"), says what changes in the design per answer, and offers 2–4 concrete options with your recommendation first. Max 3. If a sensible default exists, take it and state it instead of asking. Every question shows screenshots: the part of our site it's about (studio `capture_site`, logged in, desktop + 390 when layout differs) and the peer it cites (competitors/ or Mobbin).
 
 ### 3. Research
-Mobbin `search_flows` / `search_screens` with the queries SURFACES.md suggests, adapted to the BRD (web for casino and sportsbook peers, iOS when mobile chrome matters). Look at the images, keep the links. Cross-check against Chris-liked notes.
+In this order (see `knowledge/product-strategy/RESEARCH_SOURCES.md`):
+1. **Research Figma folder** — read `knowledge/research/CHANGELOG.md` and open the New / Updated research files (Figma MCP, read only). This is the team's living competitor research; it wins over memory and older notes.
+2. **Peers + strategy** — `knowledge/product-strategy/PEERS.md` (Rainbet, Winna, Stake for casino and rewards; Kalshi, Polymarket for sportsbook), then BRIEF.md, journey audits, COMPETITOR_RESEARCH.md.
+3. **Mobbin** — `search_flows` / `search_screens` with the queries SURFACES.md suggests, adapted to the BRD (web for casino and sportsbook peers, iOS when mobile chrome matters). Look at the images, keep the links.
+4. **Our live site** — `capture_site` before calling anything a gap.
+Cross-check against Chris-liked notes. Inspire, never clone.
+
+### Lumen gaps (a component or variant Lumen doesn't have)
+Compose from existing Lumen components and tokens first. Only if that truly can't work: build it in `apps/live-site/components/proposed/<name>.tsx` from Lumen tokens only (header `PROPOSED — not in Lumen yet`), add an entry to `knowledge/lumen/GAPS.md`, show it in the proposal's gaps for Chris to approve, put it in the handover `gaps`, and in Figma build it in a "Proposed components" section with the same label. Never present it as a library component. Swap to the real one when the Lumen changelog shows it.
 
 ### 4. Proposal → HUMAN gate (direction)
 Before building, show Chris a proposal **in the chat** (studio `submit_proposal`). **Never redraw the site, logo or components in HTML** — capture today's screens, build a quick draft on the real shell at `/prototype/<slug>` with real components, and screenshot that. The board has:
 - Journey map: steps, entry point, route in the shell, where it hands off (cashier, lobby, betslip, VIP Hub…)
 - Current state (what ships today) next to the proposed change
-- Strategy line: bet · initiative/feature # · needle baseline → target
+- Strategy line: bet · initiative/feature # · needle baseline → target · **KPI it moves** from `knowledge/product-strategy/KPIS.md` (casino first: 70% of the scorecard; friction removed, never urgency added)
 - Lumen inventory: components reused (with paths), tokens used, gaps (→ component brief)
 - 1–3 peer references with Mobbin links: what we borrow, what we deliberately don't
 - Key screens at 390 and 1440, all states (empty, loading/skeleton, error, success, logged-in/out)
@@ -69,18 +77,35 @@ Chris reviews motion, transitions, hover, sound, tokens, copy — against `POLIS
 ### 7. Final sign-off
 Only Chris. "Looks good" from anyone else is a request for sign-off, not sign-off. Chris saying "Back to refine" reopens step 6.
 
-### 7b. Figma (on request, after approval)
-Figma rules (HARD — Chris, Nov 2026):
-- Use ONLY the Lumen design system ("Lumen_Desing System"). Ignore every MUI library (MUI Agnostic, MUI for Figma / Joy UI) and every other library in the org.
-- NEVER edit existing Figma files or folders — not the Lumen library file, not any team file. Read them only.
-- All agent work goes in ONE file: "Design Agent", fileKey `MYeELetKW9xye1shSpm8Fn` (https://www.figma.com/design/MYeELetKW9xye1shSpm8Fn), in the Lumen folder (project `625743109`). Never create other files. Each project gets its own page in that file, named after the project.
+### 8. Handover package (after Final sign-off) — ONE package for the dev agent
+Everything lives in `specs/<slug>/handover/` and downloads as one archive from the studio (`/api/jobs/<slug>/handover.tar.gz`):
+- `README.md` — the index the dev agent reads first (links to everything below, prototype route + source path, Figma page, how to ask design).
+- `screens/` — every screen × state × width (1440, 390), logged in and logged out, captured from the prototype.
+- `journeys.md` — the happy path step by step, then every unhappy branch (logged out, loading, empty, API failure + retry, image failure, partial failure, timeout) with what the user sees and how they recover.
+- `states.md` — component/section × state (default, hover, pressed, focus, disabled, loading, empty, error, logged out) × breakpoint.
+- `interactions.md` — hover/focus/pressed, motion table (trigger, property, duration, easing, token), sound and celebration, keyboard and screen reader.
+- `data-and-errors.md` — each API/data dependency, its failure UI, retry, skeleton timing, analytics events.
+- `dev-delivery.md` — template below; acceptance criteria as Given/When/Then for happy AND unhappy paths.
+- `decisions.md` — every question dev asked later, the answer and who decided.
+- `manifest.json` — the same, machine-readable for agents.
+- **Figma** — built in the same run when the Figma MCP is connected (rules below); otherwise the README says "Figma: pending" and Chris clicks Build in Figma.
 
-When Chris clicks Build in Figma: load `.claude/skills/figma-use` + `figma-generate-design`, build one frame per prototype screen at 1440 and 390 from Lumen library instances and variables only (no detached instances, no raw hex). Figma org: ours (Enterprise). Lumen library key `lk-40fae532f4d55afe9d90d03a1d23bb174e778ffbae07cd2f0474fa95b2d2d722c963aac1e23b5574fcef93bdd232629e4ba24792340aae1653726545bb15ac8f` — pass it as `includeLibraryKeys` on every `search_design_system`; ignore the org's other libraries (MUI Agnostic, Kraken, Sportsbook UI Kit, Sportbook 26, Lumen | Shell | News), screenshot-compare with the prototype, report the link. If no Figma write tool is connected, say so in one line — never fake it.
+### Figma rules (HARD — Chris, Nov 2026)
+- Lumen only ("Lumen_Desing System", library key `lk-40fae532f4d55afe9d90d03a1d23bb174e778ffbae07cd2f0474fa95b2d2d722c963aac1e23b5574fcef93bdd232629e4ba24792340aae1653726545bb15ac8f` as `includeLibraryKeys` on every `search_design_system`). Never MUI, Kraken, Sportsbook UI Kit, Sportbook 26, Lumen | Shell | News.
+- Never edit existing Figma files or folders. Write only to the "Design Agent" file `MYeELetKW9xye1shSpm8Fn` (the studio blocks other files). One page per project.
+- Instances + bound variables only (Dark mode), Figtree, no raw hex, no detached instances. **Icons from the Lumen icon set — never missing, never drawn.**
+- Build: component sets with every interactive state (hover, pressed, focus, disabled, open/collapsed, loading); screens at 1440 and 390 for happy AND unhappy paths; a Journeys section; motion annotations next to each component. Screenshot every frame and compare with the prototype.
 
-### 8. Dev handoff package
-Write `specs/<slug>/dev-delivery.md` (template below). Optionally build Figma frames from the approved prototype (load `.claude/skills/figma-generate-design` + `figma-use` first, Lumen library instances only). If the feature added a new surface, add its row to SURFACES.md.
+### 9. Questions from dev
+Dev agents (e.g. SpecKit clarify in the dev repo) POST questions to `/api/jobs/<slug>/dev-questions`. Answer from the handover with a source when it's covered (`answer_dev_question`) and fix the handover if it was unclear. If it isn't covered, it's a design decision: mark `needsDesign`, recommend an answer and ask Chris (`ask_questions`). Log every Q&A in `handover/decisions.md`.
+
+### Recommendations
+On request (studio → Ideas), find the 3 strongest gaps against the strategy and research, each with evidence, the goal/KPI it moves, a business case (impact with assumptions, effort, risk, measure), scope and a draft mock on the real shell. Chris turns the good ones into projects.
 
 ## Learning loop (ALWAYS, every piece of feedback)
+
+**Read `knowledge/chris-taste/FEEDBACK_LOG.md` before designing anything.** It holds six months of Chris's likes and dislikes by surface (sub-nav, shell, carousels, cards, inputs, join/OTP, copy, claims, Lumen, process, responsive). Grep it for the surface you're touching; every **Don't** is a hard reject, never retried with a small tweak.
+When feedback arrives, also append a dated entry to its "Chronological entries" (format at the top of the file) and, if the surface already has a row, update that row's Do / Don't instead of adding a duplicate.
 
 In the same turn feedback arrives, before or alongside the fix:
 1. **Log it** in `specs/<slug>/feedback.md`: date, round, Chris's words verbatim, screenshot path if any, what changed.
@@ -108,7 +133,7 @@ Run the independent `design-reviewer` (studio subagent) on every proposal and pr
 
 Read the newest entry of `knowledge/lumen/CHANGELOG.md` at the start of every run (`npm run lumen:watch` updates it). Never use a removed token or component.
 
-## dev-delivery.md template
+## dev-delivery.md template (inside handover/)
 
 The dev repo can't read our skills or taste notes, so this file must stand on its own:
 

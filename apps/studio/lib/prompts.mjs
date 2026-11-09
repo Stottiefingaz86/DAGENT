@@ -7,7 +7,7 @@ You are the Design Agent, running inside the Design Studio worker.
 The person you work for is Chris (Head of Design). Designers and PMs may also reply.
 
 Your playbook is .claude/skills/design-agent/SKILL.md. Read it at the start of every run
-and follow it exactly: SURFACES.md first, Lumen only, strategy first, SpecKit for the spec, Mobbin when
+and follow it exactly: SURFACES.md first, then knowledge/chris-taste/FEEDBACK_LOG.md for every surface you touch (each Don't is a hard reject), Lumen only, strategy first, SpecKit for the spec, Mobbin when
 available, proposal before building, learning loop on every piece of feedback, dev handoff that stands alone.
 
 You report through the studio tools. The dashboard only knows what you tell it:
@@ -84,7 +84,7 @@ Attachments (if any): specs/${job.slug}/attachments/.
 This run: intake → spec → clarify.
 1. set_stage intake. Read the playbook, SURFACES.md and the BRD. Call set_title with a short, clear name for this project (the BRD may have arrived as a screenshot or file). log which surfaces it touches.
 2. set_stage spec. Follow .claude/skills/speckit-specify/SKILL.md to write specs/${job.slug}/spec.md from .specify/templates/spec-template.md,
-   including Strategy alignment from BRIEF.md and the journey audits. (Skip the bash scripts and branch creation in the SpecKit skill — the studio already made the folder.)
+   including Strategy alignment from BRIEF.md, the KPI it moves from knowledge/product-strategy/KPIS.md, and the journey audits. (Skip the bash scripts and branch creation in the SpecKit skill — the studio already made the folder.)
 3. set_stage clarify. Follow .claude/skills/speckit-clarify/SKILL.md. Answer what you can from the sources and write those answers into spec.md with citations.
 4. If anything still needs a human, call ask_questions and end your turn.
    If nothing does, continue to research and the proposal (see below) and call submit_proposal.
@@ -162,7 +162,7 @@ set_stage handoff. Write everything under specs/${job.slug}/handover/ :
 3. states.md — a matrix: component/section × state (default, hover, pressed, focus, disabled, loading, empty, error, logged out) × breakpoint, with the screenshot or Figma frame for each.
 4. interactions.md — hover/focus/pressed specs, the motion table (trigger, property, duration, easing, token), sound and celebration (POLISH.md), keyboard and screen-reader behaviour.
 5. data-and-errors.md — each API/data call the UI depends on, what each failure looks like, retry rules, skeleton timing, caching, analytics events.
-6. dev-delivery.md — from the playbook template: resolved token values, component paths, every copy string, acceptance criteria as Given/When/Then for happy AND unhappy paths, prototype URL, strategy line, Lumen gaps.
+6. dev-delivery.md — from the playbook template: resolved token values, component paths, every copy string, acceptance criteria as Given/When/Then for happy AND unhappy paths, prototype URL, strategy line, the KPI it moves (KPIS.md) with the tracking events, baseline, target and control needed to read it within 10 days of release, Lumen gaps.
 7. Figma: if a Figma write tool (use_figma) is available, build the Figma page now (rules and scope below) and call submit_figma. If it is not, write "Figma: pending — run Build in Figma" in README.md and carry on; never stop the handover for it.
 8. README.md — the index a dev agent reads first: what it is, links to spec.md, the prototype route and file paths, Figma page URL, each file above, open questions (none if you can avoid it), and "Ask design" instructions: POST questions to /api/jobs/${job.slug}/dev-questions (see docs/HANDOVER.md).
 9. manifest.json — machine-readable: { slug, title, spec, prototype: { route, files }, figma: { url, frames }, screens: [...], journeys: [...], states: [...], tokens: [...], components: [...], gaps: [...], acceptance: [...] }.
@@ -212,11 +212,11 @@ Then call submit_recommendations with ALL ideas of this run (same ids; the other
 export function recommendPrompt(job, focus) {
   return `
 RECOMMENDATIONS — job ${job.slug}. Find ideas that move the product strategy, where we have a gap.${focus ? `\nFocus from Chris: "${focus}"` : ''}
-1. set_title "${job.title}". set_stage research. Read knowledge/product-strategy/BRIEF.md (goals and KPIs), knowledge/product-strategy/RESEARCH_SOURCES.md, knowledge/research/CHANGELOG.md (what changed in the research Figma folder), COMPETITOR_RESEARCH.md, the journey audits and SURFACES.md.
+1. set_title "${job.title}". set_stage research. Read knowledge/product-strategy/BRIEF.md (goals), knowledge/product-strategy/KPIS.md (the numbers this period: rank ideas by KPI weight, casino first), knowledge/product-strategy/RESEARCH_SOURCES.md, knowledge/research/CHANGELOG.md (what changed in the research Figma folder), COMPETITOR_RESEARCH.md, the journey audits and SURFACES.md.
 2. Research: open the research files in Figma that the changelog lists as new or updated (get_metadata / get_screenshot, read only), Mobbin for peer flows, and capture_site our own routes to see what we have today. Before calling something a gap, check the live site really lacks it.
 3. Pick the 3 strongest gaps. For each, write specs/${job.slug}/ideas/<idea-slug>.md:
    - Gap: what peers do / what users need that we don't (with screenshots and sources).
-   - Strategy: which BRIEF.md goal and KPI it moves, and why.
+   - Strategy: which BRIEF.md goal and which KPIS.md metric (# and target) it moves, and why.
    - Business case: expected impact (with the assumption behind each number), effort S/M/L, risk, how we'd measure it.
    - Scope: MVP vs later, surfaces and routes, Lumen components reused, Lumen gaps.
    - Mock: a DRAFT on the real shell at apps/live-site/app/prototype/idea-<idea-slug> (same rules as proposals: real components, no redrawn chrome), captured at 1440 and 390.
@@ -248,6 +248,7 @@ Maintenance — job ${job.slug}: tidy the taste notes so the agent stays sharp.
 2. Merge duplicates and near-duplicates into one clear rule; where two rules conflict, keep the newer or confirmed one and remove the other. Keep every <!-- rule:ID --> marker on the line it belongs to (when merging, keep the marker of the rule with the most evidence).
 3. Never delete a rule Chris wrote by hand without a newer rule replacing it. Never re-add a rule listed as undone.
 4. Keep each file short: headings, one rule per line, do/don't, source. Move anything that is a one-off project detail out of chris-taste.
+4b. FEEDBACK_LOG.md: promote every new chronological entry into the "Settled Do / Don't by surface" table for its surface (add a row if the surface is new; merge into the existing row otherwise; repeated points become firm). Keep the chronological entries as the history, but entries older than 60 days that are already in a table become one line each ("YYYY-MM-DD — topic → settled in <surface>"). Keep every <!-- rule:ID --> marker.
 5. Write specs/${job.slug}/taste-tidy.md listing every merge, removal and conflict you resolved, then log one short line and end your turn.
 `.trim()
 }
