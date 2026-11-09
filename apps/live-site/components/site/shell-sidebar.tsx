@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useShellNavPath, useShellNavProduct } from './shell-nav-path'
 import type { CasinoLobbyGame } from '@/lib/lumen/casino-lobby-catalog'
 import {
   hashFromHref,
@@ -44,11 +44,11 @@ export function ShellSidebar() {
 }
 
 function ShellSidebarDefault() {
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const hash = useLocationHash()
   const {
     expanded,
-    product,
+    product: shellProduct,
     startNavigating,
     launchGame,
     setVipHubOpen,
@@ -56,6 +56,7 @@ function ShellSidebarDefault() {
     lastPlayedGame,
     openAuth,
   } = useShell()
+  const product = useShellNavProduct(shellProduct)
   const groups = withLastGamePlayed(
     withNavActive(navForPathname(pathname, product), pathname, hash),
     { loggedIn, lastPlayed: lastPlayedGame },

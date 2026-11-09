@@ -1,0 +1,3 @@
+# on sportbook, after a bet we want to be able to share my bet via so…
+
+on sportbook, after a bet we want to be able to share my bet via socials. on the betslip success page and the bet history page.

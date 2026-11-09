@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, type ReactNode } from 'react'
-import { usePathname } from 'next/navigation'
+import { useShellNavPath } from './shell-nav-path'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ShellContent } from './shell-content'
 import { useShell, useShellOptional, ShellProvider } from './shell-context'
@@ -126,7 +126,7 @@ function ShellChrome({
   /** Next `loading.tsx` ShellFrame — keep destination skeleton until page mounts. */
   forceSkeleton?: boolean
 }) {
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const {
     expanded,
     drawerOpen,

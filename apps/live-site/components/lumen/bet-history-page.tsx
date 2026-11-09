@@ -406,7 +406,14 @@ function DailyFiguresCard({
 }
 
 /** Figma 4275:185619 expand — Description / Type / Comment · Bet ID / Accepted / Graded · Risk / To Win / Status · Print */
-function BetExpanded({ row }: { row: BetHistoryRow }) {
+function BetExpanded({
+  row,
+  actions,
+}: {
+  row: BetHistoryRow
+  /** Optional extra actions beside Print (prototype lane: Share). */
+  actions?: (row: BetHistoryRow) => ReactNode
+}) {
   const d = row.detail
   return (
     <div className="flex flex-col gap-4 px-3 py-3 lg:flex-row lg:items-start lg:justify-between">
@@ -429,15 +436,18 @@ function BetExpanded({ row }: { row: BetHistoryRow }) {
           </DetailRow>
         </div>
       </div>
-      <Button
-        type="button"
-        size="sm"
-        className="h-8 shrink-0 gap-1.5 self-start bg-info text-white hover:bg-info/90"
-        onClick={() => window.print()}
-      >
-        <IconPrinter className="size-4" stroke={2} aria-hidden />
-        Print
-      </Button>
+      <div className="flex shrink-0 items-center gap-2 self-start">
+        {actions?.(row)}
+        <Button
+          type="button"
+          size="sm"
+          className="h-8 shrink-0 gap-1.5 bg-info text-white hover:bg-info/90"
+          onClick={() => window.print()}
+        >
+          <IconPrinter className="size-4" stroke={2} aria-hidden />
+          Print
+        </Button>
+      </div>
     </div>
   )
 }
@@ -446,14 +456,18 @@ function BetHistoryTable({
   statusFilter,
   wagerTypeFilter,
   dayDateKey,
+  defaultExpandedId = null,
+  expandedActions,
 }: {
   statusFilter: string
   wagerTypeFilter: string
   dayDateKey: string | null
+  defaultExpandedId?: string | null
+  expandedActions?: (row: BetHistoryRow) => ReactNode
 }) {
   const [page, setPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState('10')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(defaultExpandedId)
 
   const rows = useMemo(
     () =>
@@ -576,7 +590,7 @@ function BetHistoryTable({
                     <TableCell colSpan={7} className="border-0 p-0">
                       <ExpandPanel open={open}>
                         <div className="border-b border-border bg-background">
-                          <BetExpanded row={row} />
+                          <BetExpanded row={row} actions={expandedActions} />
                         </div>
                       </ExpandPanel>
                     </TableCell>
@@ -605,7 +619,17 @@ function BetHistoryTable({
  * Bet History — Figma WIP Wqxp5CMA12JdC77cgqCLpa
  * Expanded: 4275:185619 · Filters: 4473:179048
  */
-export function BetHistoryPage({ className }: { className?: string }) {
+export function BetHistoryPage({
+  className,
+  defaultExpandedId,
+  expandedActions,
+}: {
+  className?: string
+  /** Prototype lane: open a row on load. */
+  defaultExpandedId?: string
+  /** Prototype lane: extra actions beside Print in the expanded row. */
+  expandedActions?: (row: BetHistoryRow) => ReactNode
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const statusFromUrl = searchParams.get('status')
@@ -748,6 +772,8 @@ export function BetHistoryPage({ className }: { className?: string }) {
         statusFilter={applied.status}
         wagerTypeFilter={applied.wagerType}
         dayDateKey={selectedDay?.dateKey ?? null}
+        defaultExpandedId={defaultExpandedId ?? null}
+        expandedActions={expandedActions}
       />
 
       {/* Casino social proof under account tables. */}

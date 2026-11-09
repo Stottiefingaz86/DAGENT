@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useShellNavPath, useShellNavProduct } from './shell-nav-path'
 import { useState } from 'react'
 import { pickRandomLobbyGame } from '@/lib/lumen/casino-lobby-catalog'
 import { useShell } from './shell-context'
@@ -59,9 +59,9 @@ function dockForPath(pathname: string, product: ShellProduct): DockItem[] {
 
 /** Figma `nav-menu-icon-solid` — floating dock. Labels sit under the icons. */
 export function ShellMobileNav() {
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const {
-    product,
+    product: shellProduct,
     setCasinoSearchOpen,
     launchGame,
     startNavigating,
@@ -73,6 +73,7 @@ export function ShellMobileNav() {
     lastPlayedGame,
     openAuth,
   } = useShell()
+  const product = useShellNavProduct(shellProduct)
   const hidden = useHideOnScroll('down')
   const items = dockForPath(pathname, product)
   const [selected, setSelected] = useState<string | null>(null)

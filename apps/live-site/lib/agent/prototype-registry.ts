@@ -26,6 +26,11 @@ const REGISTRY: Record<string, PrototypeEntry> = {
     livePath: '/casino',
     label: 'Casino expanding hover banners',
   },
+  'on-sportbook-after-a-bet-we-want-to-be-able-to-s': {
+    /* Share my bet: betslip success + Bet History + public shared-bet page. */
+    livePath: '/account/bet-history',
+    label: 'Share my bet',
+  },
 }
 
 function isHostedDeploy(): boolean {

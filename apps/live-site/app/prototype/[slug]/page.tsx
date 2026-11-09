@@ -8,6 +8,7 @@ import {
   ExpandingBannersPrototype,
 } from '@/components/lumen/expanding-banner-row-prototype'
 import { PrototypeInitiativeFallback } from '@/components/lumen/prototype-initiative-fallback'
+import { SHARE_BET_SLUG, ShareBetPrototype } from '@/components/lumen/share-bet-prototype'
 import { VipBenefitsPrototypePage } from '@/components/lumen/vip-benefits-prototype-page'
 import {
   SHELL_NAV_REFRESH_SLUG,
@@ -73,6 +74,11 @@ export default function PrototypePage() {
     <div data-prototype-lane="" className="min-h-svh bg-background">
       {slug === SHELL_NAV_REFRESH_SLUG ? (
         <ShellNavRefreshPrototype />
+      ) : slug === SHARE_BET_SLUG ? (
+        /* Own ShellFrame: sets the real section (sports / account) per view. */
+        <Suspense fallback={null}>
+          <ShareBetPrototype />
+        </Suspense>
       ) : (
         <ShellFrame>{body}</ShellFrame>
       )}

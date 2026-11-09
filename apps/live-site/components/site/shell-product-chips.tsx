@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useShellNavPath } from './shell-nav-path'
 import {
   galleryIsCompact,
   useGalleryDevice,
@@ -29,7 +29,7 @@ function ChipSpinner({ className }: { className?: string }) {
  * glass sub-nav — not a separate sticky of its own.
  */
 export function ShellProductChips({ className }: { className?: string }) {
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const galleryCompact = galleryIsCompact(useGalleryDevice())
   const { startNavigating, pendingHref } = useShell()
   const nav = useShellNavVariant()

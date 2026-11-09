@@ -190,9 +190,13 @@ async function route() {
   S.view = r.view
   if (r.section) S.settingsSec = r.section
   S.slug = r.slug || null
-  if (changed) Object.assign(S, { job: null, liveKey: '', liveUrl: null, liveFor: null, qDraft: {}, qStep: 0, qMore: {}, docs: {}, openSteps: new Set(), panel: r.panel })
+  if (changed) {
+    // A new project starts from a blank page: the previous project's thread, live prototype and comments never carry over.
+    Object.assign(S, { job: null, liveKey: null, liveUrl: null, liveFor: null, qDraft: {}, qStep: 0, qMore: {}, docs: {}, openSteps: new Set(), panel: r.panel, jobComments: null })
+    $('#thread').innerHTML = ''
+  }
   else if (r.panel !== undefined) S.panel = r.panel
-  if (S.view === 'job') await loadJob()
+  if (S.view === 'job' && !(await loadJob())) return // you already moved on; the newer route draws
   if (S.view === 'skills' && !S.skills) S.skills = await api('/api/skills')
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
@@ -213,17 +217,42 @@ const go = (h) => (location.hash === h ? route() : (location.hash = h))
 
 // ---------------- data ----------------
 const loadJobs = async () => (S.jobs = await api('/api/jobs'))
+// Only keep the answer if you're still on that project. A slow load for a project you've left
+// (e.g. a refresh fired while an agent was streaming) must never replace the one on screen.
 async function loadJob() {
+  const slug = S.slug
+  let job = null
   try {
-    S.job = await api(`/api/jobs/${S.slug}`)
-  } catch {
-    S.job = null
-  }
+    job = await api(`/api/jobs/${slug}`)
+  } catch {}
+  if (S.slug !== slug) return false
+  S.job = job && job.slug === slug ? job : null
+  loadJobComments(slug)
+  return true
+}
+// Open comments per screenshot, for the count badge on each thumbnail.
+async function loadJobComments(slug = S.slug) {
+  const list = await api(`/api/jobs/${slug}/comments`).catch(() => null)
+  if (S.slug !== slug || !list) return
+  const before = JSON.stringify(S.jobComments?.list || [])
+  S.jobComments = { slug, list }
+  if (JSON.stringify(list) !== before && S.view === 'job') renderThread(false)
+}
+function commentBadge(src) {
+  const path = repoPath(imgSrc(src))
+  const C = S.jobComments
+  if (!path || !C || C.slug !== S.slug) return ''
+  const mine = C.list.filter((c) => c.image === path)
+  if (!mine.length) return ''
+  const open = mine.filter((c) => !c.resolved).length
+  const unsent = mine.filter((c) => !c.resolved && !c.sentAt).length
+  const tip = open ? `${open} open comment${open === 1 ? '' : 's'}${unsent ? ` · ${unsent} not sent to the agent yet` : ''}` : `All ${mine.length} comment${mine.length === 1 ? '' : 's'} resolved`
+  return `<span class="shot-badge${open ? '' : ' done'}" title="${tip}" aria-label="${tip}">${open ? `${open} open` : '✓ Resolved'}</span>`
 }
 async function doc(name) {
   const f = S.job?.files?.[name]
   if (!f) return ''
-  const key = `${name}:${S.job.updatedAt}`
+  const key = `${S.job.slug}:${name}:${S.job.updatedAt}`
   if (S.docs[key] == null) {
     const r = await fetch(`/files/specs/${S.slug}/${f}?t=${Date.now()}`)
     S.docs[key] = r.ok ? await r.text() : ''
@@ -291,7 +320,7 @@ function stepsBlock(items, live, key) {
 function shots(list, label) {
   if (!list?.length) return ''
   return `<div class="pb-block"><div class="pb-label">${label}</div><div class="pb-shots">${list
-    .map((im) => `<button type="button" class="q-img" data-zoom="${esc(imgSrc(im.src))}" data-caption="${esc(im.caption || '')}"><img src="${esc(imgSrc(im.src))}" alt="${esc(im.caption || label)}" loading="lazy"><span>${esc(im.caption || '')}</span></button>`)
+    .map((im) => `<button type="button" class="q-img" data-zoom="${esc(imgSrc(im.src))}" data-caption="${esc(im.caption || '')}">${commentBadge(im.src)}<img src="${esc(imgSrc(im.src))}" alt="${esc(im.caption || label)}" loading="lazy"><span>${esc(im.caption || '')}</span></button>`)
     .join('')}</div></div>`
 }
 function proposalCard(b, n, total) {
@@ -479,7 +508,12 @@ const imgSrc = (src) => (/^https?:\/\//.test(src) ? src : `/files/${String(src).
 // ---------------- review: pinned comments + live cursors on screenshots (Figma-style) ----------------
 const R = { open: false, slug: null, images: [], i: 0, comments: [], cursors: new Map(), draft: null, focus: null, lastSent: 0 }
 const repoPath = (url) => (url.startsWith('/files/') ? decodeURIComponent(url.slice(7)) : null)
-const initials = (n) => String(n || '?').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+const initials = (n) => {
+  const w = String(n || '?').trim().split(/\s+/)
+  // A name written as initials (e.g. "CH", "NEK") keeps them
+  if (w.length === 1 && /^[A-Z]{2,3}$/.test(w[0])) return w[0]
+  return w.map((x) => x[0]).join('').slice(0, 2).toUpperCase()
+}
 const rvAgo = (iso) => {
   const s = (Date.now() - Date.parse(iso)) / 1000
   return s < 60 ? 'now' : s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h` : new Date(iso).toLocaleDateString()
@@ -547,6 +581,7 @@ function closeReview() {
   $('#review').hidden = true
   $('#review').innerHTML = ''
   document.body.classList.remove('reviewing')
+  loadJobComments() // refresh the counts on the thumbnails
 }
 async function loadComments() {
   try {
@@ -590,16 +625,16 @@ function renderReview() {
         </div>
       </div>
       <aside class="rv-side">
-        <div class="rv-side-head"><b>Comments</b><span>${list.length ? `${list.filter((c) => !c.resolved).length} open · ${list.filter((c) => c.resolved).length} resolved` : 'None yet'}</span></div>
+        <div class="rv-side-head"><b>Comments</b><span>${list.length ? `${list.filter((c) => !c.resolved).length} open · ${list.filter((c) => c.resolved).length} done` : 'None yet'}</span></div>
         <div class="rv-list">
           ${list.length ? list.map((c) => `<article class="rv-c ${c.resolved ? 'done' : ''} ${R.focus === c.id ? 'on' : ''}" data-cid="${c.id}">
-              <div class="rv-c-head"><span class="rv-av sm" style="--c:${c.color}">${esc(initials(c.by))}</span><b>${esc(c.by)}</b><span class="rv-n">#${c.n}</span><span class="rv-t">${rvAgo(c.at)}</span>${c.sentAt ? '<span class="rv-sent">sent</span>' : ''}</div>
+              <div class="rv-c-head"><span class="rv-av sm" style="--c:${c.color}">${esc(initials(c.by))}</span><b>${esc(c.by)}</b><span class="rv-n">#${c.n}</span><span class="rv-t">${rvAgo(c.at)}</span>${c.sentAt ? '<span class="rv-sent" title="The agent has this comment">Sent</span>' : c.resolved ? '<span class="rv-state done" title="Marked done without sending. The agent never saw it.">Done · not sent</span>' : '<span class="rv-state" title="Press Send to agent to give it to the agent">Not sent</span>'}</div>
               <div class="rv-c-text">${hl(esc(c.text))}</div>
               ${c.replies.map((r) => `<div class="rv-r"><b>${esc(r.by)}</b> ${hl(esc(r.text))} <span class="rv-t">${rvAgo(r.at)}</span></div>`).join('')}
-              <div class="rv-c-act"><input class="rv-reply" data-reply="${c.id}" placeholder="Reply · @ to mention" aria-label="Reply to comment ${c.n}"><button class="btn ghost" data-resolve="${c.id}">${c.resolved ? 'Reopen' : 'Resolve'}</button>${c.byId === me().id || owner ? `<button class="btn ghost" data-del="${c.id}" aria-label="Delete comment ${c.n}">Delete</button>` : ''}</div>
+              <div class="rv-c-act"><input class="rv-reply" data-reply="${c.id}" placeholder="Reply · @ to mention" aria-label="Reply to comment ${c.n}"><button class="btn ghost" data-resolve="${c.id}" title="${c.resolved ? 'Open it again' : 'Mark as handled. Comments marked done are not sent to the agent.'}">${c.resolved ? 'Reopen' : 'Mark done'}</button>${c.byId === me().id || owner ? `<button class="btn ghost" data-del="${c.id}" aria-label="Delete comment ${c.n}">Delete</button>` : ''}</div>
             </article>`).join('') : '<p class="rv-empty">Click a spot on the screenshot to leave the first comment. Everyone on this project sees it live, and the agent gets the exact spot.</p>'}
         </div>
-        ${pending ? `<div class="rv-foot">${pending} comment${pending === 1 ? '' : 's'} not sent yet. ${job?.status === 'direction' ? 'Sending asks the agent to revise the proposal.' : 'Sending gives them to the agent as feedback.'}</div>` : ''}
+        ${pending ? `<div class="rv-foot"><span>${pending} comment${pending === 1 ? '' : 's'} not sent yet. ${job?.status === 'direction' ? 'Sending asks the agent to revise the proposal.' : 'Sending gives them to the agent as feedback.'}</span>${(job?.status !== 'direction' ? canWork(job) : signer) ? `<button class="btn primary rv-foot-send" data-rv="send">Send ${pending} to agent</button>` : ''}</div>` : list.length && list.every((c) => c.resolved || c.sentAt) ? '' : ''}
       </aside>
     </div>`
   bindReview()
@@ -733,7 +768,14 @@ document.addEventListener('click', async (e) => {
     return renderReview()
   }
   const res = e.target.closest('[data-resolve]')
-  if (res) return rvCall('resolve', { id: res.dataset.resolve, value: !R.comments.find((c) => c.id === res.dataset.resolve)?.resolved })
+  if (res) {
+    const c = R.comments.find((x) => x.id === res.dataset.resolve)
+    const value = !c?.resolved
+    const ok = await rvCall('resolve', { id: res.dataset.resolve, value })
+    // Marking an unsent comment done means the agent never gets it: say so, with a one-click undo.
+    if (ok && value && !c.sentAt) toast('Marked done, not sent', 'The agent won’t get this comment. Click here to reopen it, then Send to agent.', () => rvCall('resolve', { id: c.id, value: false }))
+    return
+  }
   const del = e.target.closest('[data-del]')
   if (del) return rvCall('delete', { id: del.dataset.del })
   const b = e.target.closest('[data-rv]')
@@ -833,7 +875,10 @@ function reactModal(value, target) {
   root.hidden = false
   $('#re-note').focus()
   const close = () => ((root.hidden = true), (root.innerHTML = ''))
-  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  root.onclick = (e) => {
+    // a block body: returning false from onclick would cancel the click and stop form buttons from submitting
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
   const send = async (e) => {
     e?.preventDefault()
     const note = $('#re-note').value.trim()
@@ -1279,7 +1324,7 @@ let panelKey = ''
 async function renderPanel(force = false) {
   const el = $('#panel')
   const j = S.job
-  if (S.view !== 'job' || !j || !S.panel) {
+  if (S.view !== 'job' || !j || !S.panel || j.slug !== S.slug) {
     el.hidden = true
     panelKey = ''
     return
@@ -1390,7 +1435,10 @@ function passwordModal(target) {
   root.hidden = false
   $('#pw-new').focus()
   const close = () => ((root.hidden = true), (root.innerHTML = ''))
-  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  root.onclick = (e) => {
+    // a block body: returning false from onclick would cancel the click and stop form buttons from submitting
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
   $('#pw-save').onclick = (e) => (e.preventDefault(), $('#pw-form').requestSubmit())
   $('#pw-form').onsubmit = async (e) => {
     e.preventDefault()
@@ -1413,7 +1461,10 @@ function deleteModal(j) {
   root.hidden = false
   $('#del-go').focus()
   const close = () => ((root.hidden = true), (root.innerHTML = ''))
-  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  root.onclick = (e) => {
+    // a block body: returning false from onclick would cancel the click and stop form buttons from submitting
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
   $('#del-go').onclick = async () => {
     try {
       await api(`/api/jobs/${j.slug}/delete`, {})
@@ -1490,7 +1541,10 @@ function changesModal() {
   root.hidden = false
   $('#ch-note').focus()
   const close = () => ((root.hidden = true), (root.innerHTML = ''))
-  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  root.onclick = (e) => {
+    // a block body: returning false from onclick would cancel the click and stop form buttons from submitting
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
   $('#ch-go').onclick = async () => {
     const note = $('#ch-note').value.trim()
     if (!note) return
@@ -1837,6 +1891,8 @@ function renderThread(scrollToEnd) {
   const typing = document.activeElement === input
   const inputCaret = typing ? input.selectionStart : null
   const th = $('#thread')
+  // Belt and braces: never draw one project's thread under another project's URL.
+  if (S.view === 'job' && S.job && S.job.slug !== S.slug) return
   if (S.view === 'job' && S.job) {
     if (!th.querySelector('#t-main')) {
       th.innerHTML = '<div id="t-main" class="t-part"></div><div id="t-live" class="t-part"></div><div id="t-gate" class="t-part"></div>'
@@ -1884,8 +1940,11 @@ function refresh(now = false) {
   return new Promise((ok) => {
     timer = setTimeout(
       async () => {
+        const slug = S.slug
         await loadJobs()
-        if (S.view === 'job') await loadJob()
+        if (S.view === 'job' && !(await loadJob())) return ok()
+        // you moved to another project while this refresh was loading: that page renders itself
+        if (S.slug !== slug) return ok()
         renderSide()
         renderTop()
         renderThread(false)
@@ -1935,7 +1994,10 @@ function connect() {
       if (['assigned', 'signoff'].includes(msg.kind)) refresh()
       return
     }
-    if (msg.type === 'comments') return msg.slug === R.slug && R.open ? loadComments().then(renderReview) : undefined
+    if (msg.type === 'comments') {
+      if (msg.slug === S.slug) loadJobComments(msg.slug)
+      return msg.slug === R.slug && R.open ? loadComments().then(renderReview) : undefined
+    }
     if (msg.type === 'research' && msg.research?.checkedAt) {
       if (S.figmaToken) S.figmaToken.research = msg.research
       if (S.figmaToken?.set) toast(msg.research.error ? 'Research folder: problem' : 'Research folder connected', msg.research.error || `${msg.research.files} research files found.`)
@@ -1978,7 +2040,7 @@ const ROLE_LABEL = { owner: 'Admin', lead: 'Lead', designer: 'Designer', viewer:
 const roleLabel = (u) => ROLE_LABEL[u?.role] || 'Designer'
 const members = () => S.team?.members || []
 const member = (id) => members().find((m) => m.id === id)
-const avatarHTML = (u, cls = '') => `<span class="tm-av ${cls}" style="--c:${esc(u?.color || 'var(--line-2)')}" title="${esc(u?.name || '')}">${esc(initials(u?.name))}</span>`
+const avatarHTML = (u, cls = '') => `<span class="tm-av ${cls}${initials(u?.name).length > 2 ? ' n3' : ''}" style="--c:${esc(u?.color || 'var(--line-2)')}" title="${esc(u?.name || '')}">${esc(initials(u?.name))}</span>`
 const onProject = (j) => !!j && ((j.assignees || []).includes(me().id) || j.createdById === me().id)
 // Approve direction / Final sign-off: Admins, or a Designer with sign-off rights on this project.
 const canSign = (j) => ['owner', 'lead'].includes(me().role) || (!!S.config?.me?.signoffNow && onProject(j))
@@ -2074,10 +2136,13 @@ function assignMenu(anchor, j = S.job) {
   menu(
     anchor,
     `<div class="ml">${admin ? 'Who’s on this project' : 'On this project'}</div>${admin ? rows.join('') : rows.filter((_, i) => on.has(members()[i].id)).join('') || '<div class="ml">Nobody yet</div>'}
-    ${admin ? '<hr><div class="tm-pick-foot"><span class="card-sub">They get notified and can work on it.</span><button class="btn primary" id="as-save">Save</button></div>' : ''}`,
+    ${admin && members().length < 2 ? '<div class="ml" style="font-weight:400">Nobody else is in the studio yet. Invite your team first.</div>' : ''}
+    ${admin ? `<hr><button class="mi" id="as-invite">${ic.plus || '+'} Invite someone to this project</button>${members().length > 1 ? '<div class="tm-pick-foot"><span class="card-sub">They get notified and can work on it.</span><button class="btn primary" id="as-save">Save</button></div>' : ''}` : ''}`,
     (m) => {
       m.classList.add('tm-pick-menu')
       m.style.left = Math.max(8, Math.min(anchor.getBoundingClientRect().left, innerWidth - 308)) + 'px'
+      const inv = $('#as-invite', m)
+      if (inv) inv.onclick = () => ((m.hidden = true), inviteModal(j.slug))
       const b = $('#as-save', m)
       if (b)
         b.onclick = async () => {
@@ -2176,7 +2241,10 @@ function requestSignoffModal() {
   root.hidden = false
   $('#rs-note').focus()
   const close = () => ((root.hidden = true), (root.innerHTML = ''))
-  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  root.onclick = (e) => {
+    // a block body: returning false from onclick would cancel the click and stop form buttons from submitting
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
   $('#rs-form').onsubmit = async (e) => {
     e.preventDefault()
     const note = $('#rs-note').value.trim()
@@ -2500,14 +2568,15 @@ function securityHTML() {
       ${stRow('Secrets', 'API keys, the Figma token, accounts and sessions stay on the studio’s computer and are git-ignored.', '<span class="st-val ok">Not in git</span>')}
     </div>`
 }
-function inviteModal() {
+async function inviteModal(preselect = null) {
+  await loadTeam() // so new projects are in the list
   const root = $('#modal-root')
   const P = S.team?.projects || []
   root.innerHTML = `<form class="modal st-modal" role="dialog" aria-modal="true" aria-labelledby="iv-t" id="invite-form"><h2 id="iv-t">Invite people</h2>
     <p>Send them the link. They choose a username and password and land on the projects you pick. One use, expires in ${S.team?.settings?.inviteDays || 7} days.</p>
     <div class="tm-inv-grid"><input class="field-in" id="iv-name" placeholder="Name (optional)" maxlength="40" aria-label="Name">
-      <select class="field-in" id="iv-role" aria-label="Role"><option value="designer">Designer</option><option value="lead">Lead · can sign off</option><option value="viewer">Viewer</option><option value="owner">Admin</option></select></div>
-    ${P.length ? `<div class="card-sub">Add them to projects (optional)</div><div class="tm-chips">${P.map((p) => `<label class="chip"><input type="checkbox" value="${p.slug}" hidden>${esc(p.title)}</label>`).join('')}</div>` : ''}
+      <select class="field-in" id="iv-role" aria-label="Role"><option value="designer">Designer · works on their projects</option><option value="viewer">Viewer · sees and comments</option><option value="lead">Lead · can sign off</option><option value="owner">Admin</option></select></div>
+    ${P.length ? `<div class="card-sub">Add them to projects (optional)</div><div class="tm-chips">${P.map((p) => `<label class="chip${p.slug === preselect ? ' on' : ''}"><input type="checkbox" value="${p.slug}" hidden ${p.slug === preselect ? 'checked' : ''}>${esc(p.title)}</label>`).join('')}</div>` : ''}
     <div id="iv-out"></div>
     ${/localhost|127\.0\.0\.1/.test(location.host) ? '<p class="card-sub">This studio runs on your computer, so links only work here until it’s hosted (docs/SETUP.md → Hosting).</p>' : ''}
     <details class="tm-direct"><summary class="card-sub">Or add someone directly with a temporary password</summary><div class="st-direct"><input class="field-in" id="nu-name" placeholder="Name" maxlength="40" aria-label="Name"><input class="field-in" id="nu-user" placeholder="Username or email" aria-label="Username or email"><input class="field-in" id="nu-pass" type="password" autocomplete="new-password" placeholder="Temporary password (10+ characters)" aria-label="Temporary password"><button type="button" class="btn" id="nu-add">Add person</button><div class="card-sub" id="nu-err" style="color:var(--err)" hidden></div></div></details>
@@ -2515,7 +2584,10 @@ function inviteModal() {
   root.hidden = false
   $('#iv-name').focus()
   const close = () => ((root.hidden = true), (root.innerHTML = ''), loadTeam().then(() => renderAll(false)))
-  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  root.onclick = (e) => {
+    // a block body: returning false from onclick would cancel the click and stop form buttons from submitting
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
   $('#invite-form').onsubmit = async (e) => {
     e.preventDefault()
     e.stopPropagation()

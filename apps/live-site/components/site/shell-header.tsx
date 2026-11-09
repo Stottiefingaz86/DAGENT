@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useShellNavPath } from './shell-nav-path'
 import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useGalleryDevice } from '@/components/lumen/lumen-gallery/device-context'
@@ -23,7 +23,7 @@ const navItemClass =
  * No nav spinners — they flickered between soft-nav states.
  */
 export function ShellHeader() {
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const galleryDevice = useGalleryDevice()
   const {
     toggle,

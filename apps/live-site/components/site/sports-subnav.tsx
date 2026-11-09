@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import { useShellNavPath } from '@/components/site/shell-nav-path'
 import {
   IconBallAmericanFootball,
   IconBallBaseball,
@@ -45,7 +46,7 @@ function activeRailId(pathname: string | null): string {
  * Scrolls horizontally on mobile (carousel); frosts content underneath.
  */
 export function SportsSubNav() {
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const router = useRouter()
   const { startNavigating } = useShell()
   const [railLoading, setRailLoading] = useState<string | null>(null)

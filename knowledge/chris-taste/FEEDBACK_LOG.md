@@ -229,3 +229,22 @@ Format for new chronological entries (bottom of file):
 - **Signal:** The peers we like are Rainbet and Winna; Stake is our main influence; for sportsbook we aim to be like Kalshi and Polymarket.
 - **Do:** Research these peers first for every BRD (`knowledge/product-strategy/PEERS.md`); translate their patterns into Lumen and cite them.
 - **Don't:** Clone their look; benchmark against random operators instead of this set.
+
+### 2026-11-09 — Shared bet links land on the sportsbook
+- **Sentiment:** negative
+- **Surface:** sportsbook / betslip / shared links
+- **Signal:** Rejected a public shared-bet landing page; the friend should land on sports with the bets already in the slip.
+- **Do:** Bet deep links open /sports/<sport> with the picks in an open betslip (see `SPORTSBOOK.md`).
+- **Don't:** An in-between landing page with a bet card and an Add to betslip button.
+
+### 2026-11-09 — Don't send players to an in-between landing page (e.g. a public shared
+- **Sentiment:** negative
+- **Surface:** sportsbook · on-sportbook-after-a-bet-we-want-to-be-able-to-s
+- **Signal:** “I dont like how a player lands on this screen, they should land on sports with the bets already in the slip”
+- **Don’t:** Don't send players to an in-between landing page (e.g. a public shared-bet page with the bet card and an Add to betslip button) when a link is about betting. <!-- rule:4179a534 -->
+
+### 2026-11-09 — Shared or deep links to a bet land on the sportsbook (/sports/<sport>)
+- **Sentiment:** positive
+- **Surface:** sportsbook · on-sportbook-after-a-bet-we-want-to-be-able-to-s
+- **Signal:** “they should land on sports with the bets already in the slip”
+- **Do:** Shared or deep links to a bet land on the sportsbook (/sports/<sport>) with the picks already in the betslip and the slip open, ready for a stake; logged-out players hit Join only at Place Bet. <!-- rule:a9a5ef57 -->

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -9,6 +9,8 @@ import {
   IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
+  IconRefresh,
+  IconShare2,
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
@@ -146,10 +148,30 @@ export function SoccerBetslip({
   picks,
   onRemove,
   onClear,
+  initialConfirmed,
+  onShare,
+  shareStep,
+  onShareBack,
+  initialOpen,
+  notice,
+  onNoticeRetry,
 }: {
   picks: SoccerSlipPick[]
   onRemove: (id: string) => void
   onClear: () => void
+  /** Prototype lane: mount already on the "Bets placed" screen. */
+  initialConfirmed?: { count: number; stake: number; win: number }
+  /** Share my bet (proposal): icon button beside My Bets. */
+  onShare?: () => void
+  /** Share my bet (proposal): replaces the success body while sharing. */
+  shareStep?: ReactNode
+  onShareBack?: () => void
+  /** Shared-bet link: open the slip on mount with the picks already in it. */
+  initialOpen?: boolean
+  /** One muted line in the slip (e.g. dropped legs from a shared bet). Empty slip: replaces the title. */
+  notice?: string
+  /** Shows Retry under the empty-slip notice (shared picks failed to load). */
+  onNoticeRetry?: () => void
 }) {
   const router = useRouter()
   const {
@@ -164,20 +186,20 @@ export function SoccerBetslip({
     loggedIn,
     openAuth,
   } = useShell()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(Boolean(initialConfirmed || initialOpen))
   const [portalReady, setPortalReady] = useState(false)
   /** Per-pick straight stakes */
   const [straightStakes, setStraightStakes] = useState<Record<string, string>>({})
   const [parlayStake, setParlayStake] = useState(DEFAULT_STAKE)
   /** Post–Place Bet confirmation (confetti + My Bets + cross-sell). */
-  const [confirmed, setConfirmed] = useState(false)
-  const [confirmedStake, setConfirmedStake] = useState(0)
-  const [confirmedWin, setConfirmedWin] = useState(0)
-  const [confirmedCount, setConfirmedCount] = useState(0)
+  const [confirmed, setConfirmed] = useState(Boolean(initialConfirmed))
+  const [confirmedStake, setConfirmedStake] = useState(initialConfirmed?.stake ?? 0)
+  const [confirmedWin, setConfirmedWin] = useState(initialConfirmed?.win ?? 0)
+  const [confirmedCount, setConfirmedCount] = useState(initialConfirmed?.count ?? 0)
   const [crossSellCanPrev, setCrossSellCanPrev] = useState(false)
   const [crossSellCanNext, setCrossSellCanNext] = useState(false)
   const crossSellRef = useRef<HTMLDivElement>(null)
-  const prevCountRef = useRef(0)
+  const prevCountRef = useRef(initialConfirmed || initialOpen ? picks.length : 0)
   const dismissedRef = useRef(false)
   /** Desktop Selection bar only after user minimizes — never on first bet. */
   const [showDesktopDock, setShowDesktopDock] = useState(false)
@@ -425,6 +447,16 @@ export function SoccerBetslip({
 
               {/* Header — trash when picks; minimize desktop-only */}
               <div className="flex shrink-0 items-center gap-1 px-4 pb-2">
+                {confirmed && shareStep ? (
+                  <button
+                    type="button"
+                    aria-label="Back"
+                    onClick={onShareBack}
+                    className="shell-chrome-btn inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-200 ease-in-out hover:bg-accent hover:text-foreground"
+                  >
+                    <IconChevronLeft className="size-4" stroke={1.5} />
+                  </button>
+                ) : null}
                 {confirmed ? null : (
                   <span
                     data-betslip-fly-target=""
@@ -439,10 +471,12 @@ export function SoccerBetslip({
                   weight="semibold"
                   className={cn(
                     'min-w-0 flex-1 truncate',
-                    confirmed && 'tabular-nums text-muted-foreground',
+                    confirmed && !shareStep && 'tabular-nums text-muted-foreground',
                   )}
                 >
-                  {confirmed
+                  {confirmed && shareStep
+                    ? 'Share bet'
+                    : confirmed
                     ? `${confirmedCount} selection${confirmedCount === 1 ? '' : 's'} · $${confirmedStake.toFixed(2)} to win $${confirmedWin.toFixed(2)}`
                     : hasPicks
                       ? `Selection${picks.length > 1 ? 's' : ''}`
@@ -475,7 +509,11 @@ export function SoccerBetslip({
 
               <div className="mx-4 h-px shrink-0 bg-border" />
 
-              {confirmed ? (
+              {confirmed && shareStep ? (
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide px-4 pb-5 pt-4">
+                  {shareStep}
+                </div>
+              ) : confirmed ? (
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide">
                   {/* Join-welcome success pattern — primary disc + bold check, concrete copy. */}
                   <div className="flex flex-col items-center px-6 pb-5 pt-7 text-center">
@@ -515,6 +553,7 @@ export function SoccerBetslip({
                   </div>
 
                   <div className="flex flex-col items-center gap-2.5 px-4 pb-4">
+                    <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       onClick={onMyBets}
@@ -532,6 +571,19 @@ export function SoccerBetslip({
                       />
                       My Bets
                     </Button>
+                    {onShare ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        aria-label="Share bet"
+                        title="Share bet"
+                        onClick={onShare}
+                        className="size-10 rounded-lg p-0 active:scale-95"
+                      >
+                        <IconShare2 className="size-4" stroke={2} aria-hidden />
+                      </Button>
+                    ) : null}
+                    </div>
                     <button
                       type="button"
                       onClick={onReuseSelection}
@@ -614,6 +666,9 @@ export function SoccerBetslip({
                 <>
                   {/* Straight bets — label scrolls with picks (not sticky) */}
                   <div className="min-h-0 flex-1 overflow-y-auto px-3 scrollbar-hide">
+                    {notice ? (
+                      <p className="px-1 pt-3 text-xs leading-4 text-muted-foreground">{notice}</p>
+                    ) : null}
                     <Typography
                       as="div"
                       shape="xs"
@@ -734,11 +789,24 @@ export function SoccerBetslip({
               ) : (
                 <div className="flex min-h-[160px] flex-1 flex-col items-center justify-center gap-1 px-6 py-10 text-center">
                   <Typography as="p" shape="small" weight="semibold" className="text-foreground">
-                    No bets at this time
+                    {notice ?? 'No bets at this time'}
                   </Typography>
-                  <Typography as="p" shape="xs" className="text-muted-foreground">
-                    Tap odds on the board to build your slip.
-                  </Typography>
+                  {notice ? null : (
+                    <Typography as="p" shape="xs" className="text-muted-foreground">
+                      Tap odds on the board to build your slip.
+                    </Typography>
+                  )}
+                  {onNoticeRetry ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={onNoticeRetry}
+                      className="mt-3 h-9 gap-1.5 rounded-lg px-4"
+                    >
+                      <IconRefresh className="size-4" stroke={2} aria-hidden />
+                      Retry
+                    </Button>
+                  ) : null}
                 </div>
               )}
             </aside>

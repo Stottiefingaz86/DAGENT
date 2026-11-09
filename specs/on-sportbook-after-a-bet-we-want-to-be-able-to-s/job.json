@@ -1,0 +1,589 @@
+{
+  "slug": "on-sportbook-after-a-bet-we-want-to-be-able-to-s",
+  "title": "Share my bet (sportsbook)",
+  "surface": "Other",
+  "source": "dashboard",
+  "requester": "CH",
+  "createdAt": "2026-11-09T15:23:07.367Z",
+  "updatedAt": "2026-11-09T15:54:32.180Z",
+  "status": "direction",
+  "stage": "proposal",
+  "running": true,
+  "sessionId": "81e29380-4131-44f6-b4e2-555ac14c09b6",
+  "questions": [
+    {
+      "id": "amounts",
+      "title": "Should the shared bet card show the stake and payout amounts?",
+      "text": "Should the shared bet card show the stake and payout amounts?",
+      "context": "The BRD says \"share my bet\" but doesn't say whether dollar amounts go public. Bet history shows Risk and To Win on every row (bet-history-page.tsx), and the success header reads \"$5.00 to win $34.00\" (soccer-betslip.tsx:446).",
+      "why": "This changes the card layout and adds a toggle in the share menu, or removes one.",
+      "options": [
+        {
+          "label": "Picks + odds, amounts off by default",
+          "detail": "The card shows selections, odds and status. A \"Show amounts\" switch in the share menu adds stake and payout.",
+          "recommended": true
+        },
+        {
+          "label": "Always show amounts",
+          "detail": "Stake and payout are always on the card. This makes for a bigger brag on wins but exposes every player's spend."
+        },
+        {
+          "label": "Never show amounts",
+          "detail": "The card shows picks, odds and status only, with no toggle."
+        }
+      ],
+      "images": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/bet-history-today-desktop.png",
+          "caption": "Our bet history today: Risk / To Win"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/bet-history-today-mobile-390.png",
+          "caption": "Bet history on mobile"
+        }
+      ],
+      "answer": "Always show amounts",
+      "answeredBy": "CH",
+      "answeredAt": "2026-11-09T15:26:39.845Z",
+      "agent": "design"
+    },
+    {
+      "id": "raf",
+      "title": "Should the shared bet link carry the player's Refer-a-Friend code?",
+      "text": "Should the shared bet link carry the player's Refer-a-Friend code?",
+      "context": "RAF already shares a link with ?RAF=code and calls earnReferShare on Copy / Share on X (refer-a-friend-page.tsx:221, 428). The BRD doesn't say whether a bet share counts as a referral.",
+      "why": "If it does, a sign-up from a shared bet pays the sharer commission and the RAF page counts it. If not, the link is plain attribution only.",
+      "options": [
+        {
+          "label": "Yes, attach the RAF code",
+          "detail": "Every bet share doubles as a referral and counts in Refer-a-Friend. This moves the Convert enabler most.",
+          "recommended": true
+        },
+        {
+          "label": "No, plain link with tracking only",
+          "detail": "The link is attributed to a share for analytics but pays no commission."
+        }
+      ],
+      "images": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/raf-share-today-desktop.png",
+          "caption": "Our RAF share today"
+        }
+      ],
+      "answer": "Yes, attach the RAF code",
+      "answeredBy": "CH",
+      "answeredAt": "2026-11-09T15:26:39.845Z",
+      "agent": "design"
+    },
+    {
+      "id": "landing",
+      "title": "What does a friend see when they open a shared bet link?",
+      "text": "What does a friend see when they open a shared bet link?",
+      "context": "The BRD covers the sharer only. BRIEF lists #41 Back My Picks (Initiative 09) and \"shareable receipts\" as Later. A tap-to-bet landing pulls part of #41 forward.",
+      "why": "This decides whether I design one surface (the card) or two (card + a public bet page with logged-out and expired states).",
+      "options": [
+        {
+          "label": "Public bet page with Add to betslip",
+          "detail": "The page shows the card plus one primary \"Add to betslip\". Logged-out visitors join first and then return with the picks loaded; settled bets show the result and the sportsbook.",
+          "recommended": true
+        },
+        {
+          "label": "Image only, link to sportsbook",
+          "detail": "The post is the card image, and the link opens /sports. It's the smallest scope."
+        },
+        {
+          "label": "Public page, view only",
+          "detail": "The page shows the card and a Join CTA but doesn't pre-fill a betslip."
+        }
+      ],
+      "images": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/sports-soccer-today-mobile-390.png",
+          "caption": "Sportsbook today, where a tailed bet would land"
+        }
+      ],
+      "answer": "Public bet page with Add to betslip",
+      "answeredBy": "CH",
+      "answeredAt": "2026-11-09T15:26:39.845Z",
+      "agent": "design"
+    }
+  ],
+  "previewUrl": null,
+  "proposalSummary": "Revised per your pin: there's no landing page any more. The shared link opens the sportsbook for that bet's sport, with the picks already in an open betslip ready for a stake. Logged-out friends only see Join when they tap Place. Sharing stays the same: a Share icon next to My Bets on \"Bets placed\", and Share next to Print in Bet History. Both open the compact card with stake and payout, X / Telegram / WhatsApp / Save image, and a Copy link that carries the RAF code.",
+  "learnings": [
+    {
+      "file": "knowledge/chris-taste/SPORTSBOOK.md",
+      "rule": "Don’t: Don't send players to an in-between landing page (e.g. a public shared-bet page with the bet card and an Add to betslip button) when a link is about betting.",
+      "id": "4179a534",
+      "at": "2026-11-09T15:50:51.158Z"
+    },
+    {
+      "file": "knowledge/chris-taste/SPORTSBOOK.md",
+      "rule": "Do: Shared or deep links to a bet land on the sportsbook (/sports/<sport>) with the picks already in the betslip and the slip open, ready for a stake; logged-out players hit Join only at Place Bet.",
+      "id": "a9a5ef57",
+      "at": "2026-11-09T15:50:53.044Z"
+    }
+  ],
+  "round": 1,
+  "costUsd": 8.5624122,
+  "createdById": "bb53c1f7-4345-4b21-92a2-a7b53658ccfe",
+  "assignees": [
+    "bb53c1f7-4345-4b21-92a2-a7b53658ccfe"
+  ],
+  "lastPrompt": "Chris asked for changes to the direction of on-sportbook-after-a-bet-we-want-to-be-able-to-s:\n\"Pinned comments on the screenshots (1). Numbered pins are drawn on the annotated copies — Read them first; x/y are % from the image's left/top edge.\n\nOn `specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-public-settled-desktop.png`:\n- #1 at (x 64%, y 33%) — CH: \"I dont like how a player lands on this screen, they should land on sports with the bets already in the slip\"\"\nReference screenshots from Chris: `specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/feedback/pins-p-public-settled-desktop-mw9ftu5p.png` (Read them first).\nRun the learning loop: it is logged in specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/feedback.md; learn each durable point with propose_rule ('dont' for what he rejects, 'do' for what he asks for instead).\nRevise the draft prototype, re-capture the screenshots and call submit_proposal again.",
+  "messages": [],
+  "screens": [],
+  "artifacts": {},
+  "proposal": {
+    "summary": "Revised per your pin: there's no landing page any more. The shared link opens the sportsbook for that bet's sport, with the picks already in an open betslip ready for a stake. Logged-out friends only see Join when they tap Place. Sharing stays the same: a Share icon next to My Bets on \"Bets placed\", and Share next to Print in Bet History. Both open the compact card with stake and payout, X / Telegram / WhatsApp / Save image, and a Copy link that carries the RAF code.",
+    "strategy": "Convert enabler · Initiative 09 Sports-to-Casino, near #41 Back My Picks · KPI #6 net revenue per active player outside casino (+5%), plus #5 30-day return · Needle: shares per placed bet and RAF sign-ups from shared links, both start at 0. Landing in the slip removes a step, which supports the sportsbook goal of 3 taps or fewer from selection to bet.",
+    "journey": [
+      {
+        "step": "Place a bet",
+        "detail": "/sports/soccer betslip → Bets placed (shipped screen: confetti, My Bets, Reuse selection, Play while you wait)."
+      },
+      {
+        "step": "Share",
+        "detail": "Share icon next to My Bets. Mobile uses the native share sheet; otherwise the betslip swaps to a Share bet step with Back."
+      },
+      {
+        "step": "Or share later from Bet History",
+        "detail": "Expand a Pending, Won or Lost row → Share next to Print. Desktop shows a popover; mobile shows a bottom sheet. Cancelled has no Share."
+      },
+      {
+        "step": "Channel or Copy",
+        "detail": "X / Telegram / WhatsApp / Save image. Copy shows \"Copied\" in place, with no toast or sound. The link is /sports/<sport>?share=<token>&RAF=<code>."
+      },
+      {
+        "step": "Friend opens the link",
+        "detail": "Lands on /sports/<sport> with the picks in the open betslip, at current odds, with stakes empty. There's no page in between."
+      },
+      {
+        "step": "Place or Join",
+        "detail": "Logged in: enter a stake and Place. Logged out: Place opens Join with the RAF code, and the slip keeps the picks."
+      },
+      {
+        "step": "Unhappy paths",
+        "detail": "Started legs are dropped with one line in the slip. Settled or bad links show an empty slip with \"This bet has settled.\" or \"This bet isn't available.\" A load failure shows Retry."
+      }
+    ],
+    "current": [
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/feedback/pins-p-public-settled-desktop-mw9ftu5p.png",
+        "caption": "Round 1: the landing page you rejected"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/sports-soccer-today-mobile-390.png",
+        "caption": "Sportsbook today, where friends now land"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/bet-history-today-desktop.png",
+        "caption": "Bet History today: Print only"
+      }
+    ],
+    "proposed": [
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-slip-desktop-loggedout.png",
+        "caption": "Friend lands: Sports, picks in the slip"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-slip-mobile-loggedout-390.png",
+        "caption": "Same on 390, logged out"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-partial-mobile-390.png",
+        "caption": "One leg started: dropped, one line"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-settled-desktop.png",
+        "caption": "Settled bet: empty slip, one line"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-error-mobile-390.png",
+        "caption": "Picks failed to load: Retry"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-success-desktop.png",
+        "caption": "Bets placed: Share next to My Bets"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-share-mobile-390.png",
+        "caption": "Share step in the betslip"
+      },
+      {
+        "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-history-share-desktop.png",
+        "caption": "Bet History: Share next to Print"
+      }
+    ],
+    "reuse": [
+      {
+        "component": "SoccerBetslip",
+        "path": "apps/live-site/components/lumen/soccer-betslip.tsx",
+        "note": "New optional props: initialOpen + notice for landing, and onShare / shareStep for sharing"
+      },
+      {
+        "component": "BetHistoryPage expanded row",
+        "path": "apps/live-site/components/lumen/bet-history-page.tsx",
+        "note": "Optional expandedActions slot next to Print"
+      },
+      {
+        "component": "SoccerSportPage",
+        "path": "apps/live-site/components/lumen/soccer-sport-page.tsx",
+        "note": "Landing board, unchanged"
+      },
+      {
+        "component": "BET_STATUS_STYLE",
+        "path": "apps/live-site/lib/lumen/bet-history.ts",
+        "note": "Status pill on the share card"
+      },
+      {
+        "component": "ShellWordmark",
+        "path": "apps/live-site/components/site/shell-icons.tsx",
+        "note": "Brand mark on the card"
+      },
+      {
+        "component": "RAF Copy / X intent",
+        "path": "apps/live-site/components/lumen/refer-a-friend-page.tsx",
+        "note": "Copied state, X share, earnReferShare"
+      },
+      {
+        "component": "Popover, Button, Skeleton",
+        "path": "apps/live-site/components/ui/",
+        "note": "Desktop share menu, loading card"
+      }
+    ],
+    "gaps": [
+      "No new Lumen component is needed, and the public bet page is gone.",
+      "Dev needs a share-token endpoint that returns the legs, and the sportsbook must read ?share= to load them into the slip.",
+      "Card shadow: the lumen-build recipe's 0 0 16px shadow fails tokens:lint, so the draft uses Lumen shadow-sm. Should the recipe be updated?"
+    ],
+    "peers": [
+      {
+        "name": "Kalshi / Polymarket (PEERS.md)",
+        "take": "A calm market card with pick, price and payout, plus one clear action.",
+        "avoid": "Order-book or probability chrome on a shared card."
+      },
+      {
+        "name": "Our Refer-a-Friend share (live site)",
+        "take": "Copy/Copied field, X intent link, RAF attribution.",
+        "avoid": "Separate cards per channel.",
+        "image": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/raf-share-today-desktop.png"
+      }
+    ],
+    "questions": [
+      {
+        "title": "Should the shared slip pre-fill the sharer's stake, or leave stakes empty?",
+        "context": "The draft leaves the friend's stakes at $0.00 (the betslip default, DEFAULT_STAKE in soccer-betslip.tsx). The shared card shows the sharer's $20.",
+        "options": [
+          "Leave stakes empty (recommended)",
+          "Pre-fill the parlay with the sharer's stake"
+        ]
+      }
+    ],
+    "at": "2026-11-09T15:54:32.179Z"
+  },
+  "proposals": [
+    {
+      "summary": "Players share a bet from two places: a Share icon next to My Bets on the \"Bets placed\" screen, and a Share button next to Print in Bet History. Both open the same compact share step: the bet card with stake and payout always shown, plus X, Telegram, WhatsApp, Save image, and a Copy link that carries the player's RAF code. On mobile the phone's own share sheet opens first. A friend who opens the link lands on a public bet page with one action, Add to betslip.",
+      "strategy": "Convert enabler · Initiative 09 Sports-to-Casino, near #41 Back My Picks (\"shareable receipts\" in BRIEF, pulled forward from Later) · KPI #6 net revenue per active player outside casino (+5% target) and KPI #5 30-day return · Needle: shares per placed bet and RAF sign-ups from shared links, both start at 0 (new). Tracking: bet_share_opened, bet_share_channel, bet_share_link_opened, bet_share_signup.",
+      "journey": [
+        {
+          "step": "Place a bet",
+          "detail": "/sports/soccer betslip → Bets placed (shipped success screen, confetti, My Bets, Reuse selection)."
+        },
+        {
+          "step": "Tap Share icon beside My Bets",
+          "detail": "Mobile: native share sheet. Desktop / fallback: the betslip swaps to a Share bet step with a Back chevron."
+        },
+        {
+          "step": "Or share later from Bet History",
+          "detail": "/account/bet-history → expand a Pending, Won or Lost row → Share next to Print. Desktop shows a popover; mobile shows a bottom sheet. Cancelled bets have no Share."
+        },
+        {
+          "step": "Pick a channel or Copy",
+          "detail": "X / Telegram / WhatsApp / Save image. Copy shows \"Copied\" in place, with no toast or sound. The link carries ?RAF= and counts as a RAF share."
+        },
+        {
+          "step": "Friend opens the link",
+          "detail": "Public bet page in the Sports section shows who shared it, the card, and one primary Add to betslip. Logged-out visitors go to Join, then come back with the picks loaded."
+        },
+        {
+          "step": "Settled or unavailable",
+          "detail": "A settled bet shows the result with Go to Sportsbook. A bad link shows \"This bet isn't available.\" Loading shows a skeleton; an error shows Retry."
+        }
+      ],
+      "current": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/bet-history-today-desktop.png",
+          "caption": "Bet History today: Print only, no share"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/bet-history-today-mobile-390.png",
+          "caption": "Bet History today, 390"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/sports-soccer-today-mobile-390.png",
+          "caption": "Sportsbook today, where the betslip opens"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/raf-share-today-desktop.png",
+          "caption": "Our RAF share today, the pattern we reuse"
+        }
+      ],
+      "proposed": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-success-desktop.png",
+          "caption": "Bets placed: Share icon beside My Bets"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-share-mobile-390.png",
+          "caption": "Share step in the betslip, 390"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-history-share-desktop.png",
+          "caption": "Bet History: Share next to Print"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-history-share-mobile-390.png",
+          "caption": "Bet History share sheet, 390"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-public-open-mobile-loggedout-390.png",
+          "caption": "Friend lands, logged out: Add to betslip"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-public-settled-desktop.png",
+          "caption": "Settled bet: result + Go to Sportsbook"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-share-error-mobile-390.png",
+          "caption": "Share link failed: Retry"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-public-loading-mobile-390.png",
+          "caption": "Public page loading skeleton"
+        }
+      ],
+      "reuse": [
+        {
+          "component": "SoccerBetslip (success state)",
+          "path": "apps/live-site/components/lumen/soccer-betslip.tsx",
+          "note": "New optional props onShare / shareStep; the success screen is otherwise unchanged"
+        },
+        {
+          "component": "BetHistoryPage expanded row",
+          "path": "apps/live-site/components/lumen/bet-history-page.tsx",
+          "note": "Optional expandedActions slot next to Print"
+        },
+        {
+          "component": "BET_STATUS_STYLE",
+          "path": "apps/live-site/lib/lumen/bet-history.ts",
+          "note": "Status pill on the card"
+        },
+        {
+          "component": "ShellWordmark",
+          "path": "apps/live-site/components/site/shell-icons.tsx",
+          "note": "Brand mark on the card"
+        },
+        {
+          "component": "ShellIcon bets / ticket",
+          "path": "apps/live-site/components/site/shell-icons.tsx",
+          "note": "Add to betslip / My Bets"
+        },
+        {
+          "component": "RAF Copy + Share on X",
+          "path": "apps/live-site/components/lumen/refer-a-friend-page.tsx",
+          "note": "Copy/Copied pattern, X intent URL, earnReferShare"
+        },
+        {
+          "component": "Popover",
+          "path": "apps/live-site/components/ui/popover.tsx",
+          "note": "Desktop share menu in Bet History"
+        },
+        {
+          "component": "Button, Skeleton, Typography",
+          "path": "apps/live-site/components/ui/",
+          "note": "Primary hugs content; card-shaped skeleton"
+        }
+      ],
+      "gaps": [
+        "No new Lumen component is needed: the share panel is composed from Button, Popover, Skeleton and the bet-history status tokens.",
+        "New public route (e.g. /sports/bet/<token>) for the shared bet page. It's a page, not a component, and dev must build it.",
+        "Card shadow: the lumen-build recipe's 0 0 16px shadow fails tokens:lint, so the draft uses Lumen shadow-sm. Should the recipe be updated?"
+      ],
+      "peers": [
+        {
+          "name": "Kalshi / Polymarket (PEERS.md)",
+          "take": "A calm market card: pick, price and payout in one line, with one clear action.",
+          "avoid": "Order-book or probability chrome on a shared card."
+        },
+        {
+          "name": "Our Refer-a-Friend share (live site)",
+          "take": "The Copy/Copied field, the X intent link and RAF attribution.",
+          "avoid": "Separate cards per channel. Here it's one compact row.",
+          "image": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/raf-share-today-desktop.png"
+        }
+      ],
+      "questions": [
+        {
+          "title": "Should a friend's Add to betslip use today's odds or be blocked if odds moved a lot?",
+          "context": "The draft adds the legs at current odds and shows \"Odds may have changed since it was placed.\" The betslip already reprices (soccer-betslip.tsx).",
+          "options": [
+            "Current odds + note (recommended)",
+            "Block if a leg moved past a threshold",
+            "Drop started legs, keep the rest"
+          ]
+        }
+      ],
+      "at": "2026-11-09T15:39:57.064Z"
+    },
+    {
+      "summary": "Revised per your pin: there's no landing page any more. The shared link opens the sportsbook for that bet's sport, with the picks already in an open betslip ready for a stake. Logged-out friends only see Join when they tap Place. Sharing stays the same: a Share icon next to My Bets on \"Bets placed\", and Share next to Print in Bet History. Both open the compact card with stake and payout, X / Telegram / WhatsApp / Save image, and a Copy link that carries the RAF code.",
+      "strategy": "Convert enabler · Initiative 09 Sports-to-Casino, near #41 Back My Picks · KPI #6 net revenue per active player outside casino (+5%), plus #5 30-day return · Needle: shares per placed bet and RAF sign-ups from shared links, both start at 0. Landing in the slip removes a step, which supports the sportsbook goal of 3 taps or fewer from selection to bet.",
+      "journey": [
+        {
+          "step": "Place a bet",
+          "detail": "/sports/soccer betslip → Bets placed (shipped screen: confetti, My Bets, Reuse selection, Play while you wait)."
+        },
+        {
+          "step": "Share",
+          "detail": "Share icon next to My Bets. Mobile uses the native share sheet; otherwise the betslip swaps to a Share bet step with Back."
+        },
+        {
+          "step": "Or share later from Bet History",
+          "detail": "Expand a Pending, Won or Lost row → Share next to Print. Desktop shows a popover; mobile shows a bottom sheet. Cancelled has no Share."
+        },
+        {
+          "step": "Channel or Copy",
+          "detail": "X / Telegram / WhatsApp / Save image. Copy shows \"Copied\" in place, with no toast or sound. The link is /sports/<sport>?share=<token>&RAF=<code>."
+        },
+        {
+          "step": "Friend opens the link",
+          "detail": "Lands on /sports/<sport> with the picks in the open betslip, at current odds, with stakes empty. There's no page in between."
+        },
+        {
+          "step": "Place or Join",
+          "detail": "Logged in: enter a stake and Place. Logged out: Place opens Join with the RAF code, and the slip keeps the picks."
+        },
+        {
+          "step": "Unhappy paths",
+          "detail": "Started legs are dropped with one line in the slip. Settled or bad links show an empty slip with \"This bet has settled.\" or \"This bet isn't available.\" A load failure shows Retry."
+        }
+      ],
+      "current": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/feedback/pins-p-public-settled-desktop-mw9ftu5p.png",
+          "caption": "Round 1: the landing page you rejected"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/sports-soccer-today-mobile-390.png",
+          "caption": "Sportsbook today, where friends now land"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/bet-history-today-desktop.png",
+          "caption": "Bet History today: Print only"
+        }
+      ],
+      "proposed": [
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-slip-desktop-loggedout.png",
+          "caption": "Friend lands: Sports, picks in the slip"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-slip-mobile-loggedout-390.png",
+          "caption": "Same on 390, logged out"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-partial-mobile-390.png",
+          "caption": "One leg started: dropped, one line"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-settled-desktop.png",
+          "caption": "Settled bet: empty slip, one line"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-landing-error-mobile-390.png",
+          "caption": "Picks failed to load: Retry"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-success-desktop.png",
+          "caption": "Bets placed: Share next to My Bets"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-slip-share-mobile-390.png",
+          "caption": "Share step in the betslip"
+        },
+        {
+          "src": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/p-history-share-desktop.png",
+          "caption": "Bet History: Share next to Print"
+        }
+      ],
+      "reuse": [
+        {
+          "component": "SoccerBetslip",
+          "path": "apps/live-site/components/lumen/soccer-betslip.tsx",
+          "note": "New optional props: initialOpen + notice for landing, and onShare / shareStep for sharing"
+        },
+        {
+          "component": "BetHistoryPage expanded row",
+          "path": "apps/live-site/components/lumen/bet-history-page.tsx",
+          "note": "Optional expandedActions slot next to Print"
+        },
+        {
+          "component": "SoccerSportPage",
+          "path": "apps/live-site/components/lumen/soccer-sport-page.tsx",
+          "note": "Landing board, unchanged"
+        },
+        {
+          "component": "BET_STATUS_STYLE",
+          "path": "apps/live-site/lib/lumen/bet-history.ts",
+          "note": "Status pill on the share card"
+        },
+        {
+          "component": "ShellWordmark",
+          "path": "apps/live-site/components/site/shell-icons.tsx",
+          "note": "Brand mark on the card"
+        },
+        {
+          "component": "RAF Copy / X intent",
+          "path": "apps/live-site/components/lumen/refer-a-friend-page.tsx",
+          "note": "Copied state, X share, earnReferShare"
+        },
+        {
+          "component": "Popover, Button, Skeleton",
+          "path": "apps/live-site/components/ui/",
+          "note": "Desktop share menu, loading card"
+        }
+      ],
+      "gaps": [
+        "No new Lumen component is needed, and the public bet page is gone.",
+        "Dev needs a share-token endpoint that returns the legs, and the sportsbook must read ?share= to load them into the slip.",
+        "Card shadow: the lumen-build recipe's 0 0 16px shadow fails tokens:lint, so the draft uses Lumen shadow-sm. Should the recipe be updated?"
+      ],
+      "peers": [
+        {
+          "name": "Kalshi / Polymarket (PEERS.md)",
+          "take": "A calm market card with pick, price and payout, plus one clear action.",
+          "avoid": "Order-book or probability chrome on a shared card."
+        },
+        {
+          "name": "Our Refer-a-Friend share (live site)",
+          "take": "Copy/Copied field, X intent link, RAF attribution.",
+          "avoid": "Separate cards per channel.",
+          "image": "specs/on-sportbook-after-a-bet-we-want-to-be-able-to-s/refs/raf-share-today-desktop.png"
+        }
+      ],
+      "questions": [
+        {
+          "title": "Should the shared slip pre-fill the sharer's stake, or leave stakes empty?",
+          "context": "The draft leaves the friend's stakes at $0.00 (the betslip default, DEFAULT_STAKE in soccer-betslip.tsx). The shared card shows the sharer's $20.",
+          "options": [
+            "Leave stakes empty (recommended)",
+            "Pre-fill the parlay with the sharer's stake"
+          ]
+        }
+      ],
+      "at": "2026-11-09T15:54:32.179Z"
+    }
+  ]
+}

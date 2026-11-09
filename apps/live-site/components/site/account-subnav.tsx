@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import { useShellNavPath } from './shell-nav-path'
 import { ACCOUNT_SECTIONS } from '@/lib/lumen/my-account'
 import { useShell } from './shell-context'
 import { cn } from '@/lib/utils'
@@ -27,7 +28,7 @@ function activeFromPath(pathname: string | null): AccountHref {
  */
 export function AccountSubNav({ motion = true }: { motion?: boolean }) {
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = useShellNavPath()
   const { startNavigating } = useShell()
   const [active, setActive] = useState<AccountHref>(activeFromPath(pathname))
   const trackRef = useRef<HTMLDivElement>(null)
