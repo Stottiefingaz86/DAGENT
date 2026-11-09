@@ -15,6 +15,7 @@ import { createTaste } from './lib/taste.mjs'
 import { createComments } from './lib/comments.mjs'
 import { renderAnnotated } from './lib/capture.mjs'
 import { createNotify } from './lib/notify.mjs'
+import { createTeam } from './lib/team.mjs'
 import crypto from 'node:crypto'
 import * as P from './lib/prompts.mjs'
 import { execFile } from 'node:child_process'
@@ -88,6 +89,42 @@ const colorFor = (id) => {
   return PALETTE[(i >= 0 ? i : parseInt(crypto.createHash('md5').update(String(id)).digest('hex').slice(0, 6), 16)) % PALETTE.length]
 }
 const broadcast = (msg) => store.emit('change', msg)
+// Team: roles, invites, assignment, the in-app inbox, @mentions, who's online.
+const team = createTeam(here, { auth, broadcast })
+auth.setPolicy(() => team.settings())
+// Who gets told about a project: the people on it (or the Admins when nobody is assigned yet).
+const peopleOn = (job) => {
+  const ids = [...new Set([...(job.assignees || []), job.createdById].filter(Boolean))]
+  return ids.length ? ids : auth.raw().filter((u) => u.role === 'owner').map((u) => u.id)
+}
+const admins = () => auth.raw().filter((u) => u.role === 'owner').map((u) => u.id)
+const signerIds = (job) => team.signers(job).map((u) => u.id)
+// @mentions in any feedback: notify the people named (they also get added to the project so they can open it).
+function mentionNotify(slug, text, user, where) {
+  const job = store.get(slug)
+  if (!job) return []
+  const hit = team.mentioned(text).filter((u) => u.id !== user.id)
+  const fresh = hit.filter((u) => !team.canSee(u, job)).map((u) => u.id)
+  if (fresh.length) store.update(slug, { assignees: [...new Set([...(job.assignees || []), ...fresh])] })
+  team.notify(hit.map((u) => u.id), { type: 'mention', slug, title: job.title, text: `${user.name} mentioned you ${where}: “${String(text).slice(0, 200)}”`, by: user.name, byId: user.id })
+  return hit.map((u) => u.id)
+}
+store.on('change', (msg) => {
+  try {
+    if (msg.type === 'notify') {
+      const job = store.get(msg.slug)
+      if (!job) return
+      if (msg.status === 'direction') team.notify(signerIds(job), { type: 'direction', slug: msg.slug, title: job.title, text: 'Direction is ready for your approval.' })
+      else if (msg.status !== 'awaiting_signoff') team.notify(peopleOn(job), { type: 'gate', slug: msg.slug, title: job.title, text: msg.gate })
+    }
+    if (msg.type === 'event' && msg.event?.text) {
+      const job = store.get(msg.slug)
+      const t = msg.event.text
+      if (/^Dev handoff package ready/.test(t)) team.notify([...peopleOn(job), ...admins()], { type: 'handover', slug: msg.slug, title: job?.title, text: 'Handover is ready for dev.' })
+      if (/^Dev question needs design/.test(t)) team.notify([...peopleOn(job), ...admins()], { type: 'dev_question', slug: msg.slug, title: job?.title, text: t.replace(/^Dev question needs design:\s*/, 'Dev asked: ') })
+    }
+  } catch {}
+})
 // The studio runs the prototype lane itself (apps/live-site on :3001).
 const lane = createLane({ repoRoot: REPO_ROOT, origin: LINKS.prototypeOrigin, onChange: (st) => store.emit('change', { type: 'lane', lane: st }) })
 const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL, siteOrigin: LINKS.prototypeOrigin, lane, taste })
@@ -431,6 +468,57 @@ async function deleteJob(slug) {
   return path.relative(REPO_ROOT, trash)
 }
 
+// --- Activity: one timeline built from each project's events + comments, and the audit log ---
+function buildActivity() {
+  const jobs = store.list().filter((j) => !['maintenance', 'recommendation'].includes(j.source))
+  const name = (id) => auth.raw().find((u) => u.id === id)?.name
+  const items = []
+  const brds = []
+  const classify = (e) => {
+    const k = e.data?.kind
+    const t = e.text || ''
+    if (k === 'answers') return ['answers', 'Answered the agent’s questions']
+    if (k === 'approve') return ['approval', 'Approved direction']
+    if (k === 'changes') return ['feedback', 'Asked for changes']
+    if (k === 'reaction') return ['feedback', t.startsWith('👍') ? 'Liked' : 'Disliked']
+    if (k === 'signoff') return ['approval', 'Final sign-off']
+    if (k === 'dev-questions') return ['dev', 'Dev questions']
+    if (t === 'Requested sign-off.') return ['approval', 'Requested sign-off']
+    if (t === 'Back to refine.') return ['approval', 'Sent back to refine']
+    if (t === 'Build the screens in Figma.') return ['work', 'Asked for Figma screens']
+    if (t.startsWith('Team:')) return ['team', 'Assigned people']
+    if (t.startsWith('Pinned comments on the screenshots')) return ['comment', 'Sent comments to the agent']
+    return ['feedback', 'Feedback']
+  }
+  for (const j of jobs) {
+    const ev = store.events(j.slug)
+    const human = ev.filter((e) => e.who === 'human' && e.data?.by)
+    const from = j.createdById ? name(j.createdById) || j.requester : j.requester && j.requester !== 'Chris' ? j.requester : String(j.source || '').replace(/^api · /, '')
+    items.push({ at: j.createdAt, by: from || 'Inbox', type: 'brd', label: 'BRD received', text: `${j.title}${j.surface && j.surface !== 'Other' ? ` · ${j.surface}` : ''} · via ${j.source}`, slug: j.slug, title: j.title, stage: 'intake' })
+    for (const e of human) {
+      const [type, label] = classify(e)
+      items.push({ at: e.t, by: e.data.by, type, label, text: type === 'comment' ? e.text.replace(/^Pinned comments[^\n]*\n\n/, '') : e.text.replace(/^Team:\s*/, ''), slug: j.slug, title: j.title, stage: e.data.stage, round: e.data.round, shots: e.data.shots?.length || 0 })
+    }
+    const cs = comments.list(j.slug)
+    for (const c of cs) {
+      items.push({ at: c.at, by: c.by, type: 'comment', label: `Commented #${c.n}`, text: c.text, slug: j.slug, title: j.title, image: c.image })
+      for (const r of c.replies) items.push({ at: r.at, by: r.by, type: 'comment', label: `Replied on #${c.n}`, text: r.text, slug: j.slug, title: j.title, image: c.image })
+    }
+    const fb = human.filter((e) => !['team', 'answers'].includes(classify(e)[0]))
+    const last = [...fb, ...cs.map((c) => ({ t: c.at, text: c.text, data: { by: c.by } }))].sort((a, b) => (a.t < b.t ? 1 : -1))[0]
+    brds.push({
+      slug: j.slug, title: j.title, surface: j.surface, source: j.source, from: from || 'Inbox', receivedAt: j.createdAt, status: j.status, stage: j.stage, round: j.round || 0,
+      designers: (j.assignees || []).map(name).filter(Boolean),
+      feedbackCount: fb.length + cs.length, lastFeedback: last ? { at: last.t, by: last.data.by, text: String(last.text).slice(0, 200) } : null,
+      signedOffBy: j.signedOffBy || null, signedOffAt: j.signedOffAt || null, updatedAt: j.updatedAt,
+    })
+  }
+  for (const a of team.auditList()) items.push({ at: a.at, by: a.by, type: a.type === 'signin' || a.type === 'signout' || a.type === 'signin_failed' || a.type === 'joined' ? 'access' : 'admin', label: { signin: 'Signed in', signout: 'Signed out', signin_failed: 'Failed sign-in', joined: 'Joined the studio', access: 'Team change', security: 'Security change' }[a.type] || a.type, text: a.text, ip: a.ip })
+  items.sort((a, b) => (a.at < b.at ? 1 : -1))
+  brds.sort((a, b) => (a.receivedAt < b.receivedAt ? 1 : -1))
+  return { items: items.slice(0, 3000), brds, people: [...new Set(items.map((i) => i.by))].sort() }
+}
+
 // --- routes ---
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
@@ -441,6 +529,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && p !== '/api/presence') studioLog(`POST ${p}`)
   try {
     req.user = auth.userFor(req)
+    if (req.user) team.touch(req.user)
     if (req.method !== 'GET' && req.method !== 'HEAD' && !sameOrigin(req)) return send(res, 403, { error: 'Cross-site request refused.' })
 
     // ---- login ----
@@ -450,13 +539,44 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { user: auth.setup(res, await readJson(req), SECURE_COOKIE) })
     }
     if (p === '/api/auth/login' && req.method === 'POST') {
+      const body = await readJson(req)
       try {
-        return send(res, 200, { user: auth.login(req, res, await readJson(req), ip(req), SECURE_COOKIE) })
+        const u = auth.login(req, res, body, ip(req), SECURE_COOKIE)
+        team.audit(u, 'signin', 'With username and password', { ip: ip(req) })
+        return send(res, 200, { user: u })
       } catch (e) {
+        team.audit({ name: String(body.username || 'unknown').slice(0, 60) }, 'signin_failed', e.code === 429 ? 'Sign-in locked after too many attempts' : 'Failed sign-in (wrong username or password)', { ip: ip(req) })
         return send(res, e.code || 400, { error: e.message })
       }
     }
+    // ---- Invite links: an Admin creates one in Team; the person opens it and makes their own account ----
+    if (p === '/api/auth/invite') {
+      if (req.method === 'GET') {
+        const inv = team.findInvite(url.searchParams.get('t'))
+        return inv ? send(res, 200, { ok: true, role: inv.role, name: inv.name, by: inv.by }) : send(res, 404, { error: 'This invite link has expired or was already used. Ask an Admin for a new one.' })
+      }
+      if (req.method !== 'POST') return send(res, 405, { error: 'GET or POST' })
+      const b = await readJson(req)
+      try {
+        if (!team.findInvite(b.token)) throw new Error('This invite link has expired or was already used. Ask an Admin for a new one.')
+        const inv = team.findInvite(b.token)
+        if (!team.domainOk(b.username)) throw new Error(`Use your work email (${team.settings().allowedDomains.map((d) => '@' + d).join(' or ')}).`)
+        const u = auth.join(res, { name: b.name || inv.name, username: b.username, password: b.password }, inv.role, SECURE_COOKIE)
+        team.useInvite(b.token)
+        team.audit(u, 'joined', `Joined from an invite by ${inv.by} as ${{ owner: 'Admin', lead: 'Lead', viewer: 'Viewer' }[u.role] || 'Designer'}`, { ip: ip(req) })
+        for (const slug of inv.projects) {
+          const job = store.get(slug)
+          if (job) store.update(slug, { assignees: [...new Set([...(job.assignees || []), u.id])] })
+        }
+        team.notify(admins(), { type: 'joined', text: `${u.name} joined the studio as ${{ owner: 'Admin', lead: 'Lead', viewer: 'Viewer' }[u.role] || 'Designer'}.`, by: u.name, byId: u.id })
+        broadcast({ type: 'team' })
+        return send(res, 200, { user: u })
+      } catch (e) {
+        return send(res, 400, { error: e.message })
+      }
+    }
     if (p === '/api/auth/logout' && req.method === 'POST') {
+      if (req.user) team.audit(req.user, 'signout', '', { ip: ip(req) })
       auth.logout(req, res)
       return send(res, 200, { ok: true })
     }
@@ -497,7 +617,7 @@ const server = http.createServer(async (req, res) => {
     // ---- Dev agents (other repos): handover download + design questions. Intake token, or a signed-in person, or this computer. ----
     const dv = /^\/api\/jobs\/([a-z0-9-]+)\/(dev-questions|handover|handover\.tar\.gz)$/.exec(p)
     if (dv) {
-      const okDev = req.user || (INTAKE_TOKEN ? req.headers.authorization === `Bearer ${INTAKE_TOKEN}` : isLocal(req))
+      const okDev = (req.user && (!store.get(dv[1]) || team.canSee(req.user, store.get(dv[1])))) || (INTAKE_TOKEN ? req.headers.authorization === `Bearer ${INTAKE_TOKEN}` : isLocal(req))
       if (!okDev) return send(res, 401, { error: 'Bad or missing token (set STUDIO_INTAKE_TOKEN and send it as Bearer).' })
       const [, slug, what] = dv
       const job = store.get(slug)
@@ -588,11 +708,115 @@ const server = http.createServer(async (req, res) => {
         else if (p === '/api/users/remove') auth.removeUser(body.id, req.user.id)
         else if (p === '/api/users/password') auth.setPassword(body.id, body.password)
         else if (p === '/api/users/role') auth.setRole(body.id, body.role, req.user.id)
+        else if (p === '/api/users/signoff') {
+          auth.setSignoff(body.id, body.on, body.until)
+          const u = auth.raw().find((x) => x.id === body.id)
+          team.notify([body.id], { type: 'assigned', text: body.on ? `${req.user.name} gave you sign-off rights${u?.signoffUntil ? ` until ${new Date(u.signoffUntil).toLocaleDateString('en-GB')}` : ''}. You can approve directions and give Final sign-off on your projects.` : `${req.user.name} removed your sign-off rights.`, by: req.user.name, byId: req.user.id })
+        } else if (p === '/api/users/away') auth.setAway(body.id, body.until)
+        else if (p === '/api/users/signout') {
+          if (body.id === req.user.id) throw new Error('Use Sign out in your account menu.')
+          auth.signOutUser(body.id)
+        }
         else return send(res, 404, { error: 'Unknown action' })
       } catch (e) {
         return send(res, 400, { error: e.message })
       }
+      {
+        const target = auth.raw().find((u) => u.id === body.id)?.name || body.name || 'someone'
+        const what = {
+          '/api/users': `Added ${body.name || body.username} as ${body.role || 'designer'}`,
+          '/api/users/remove': `Removed ${target}`,
+          '/api/users/password': `Reset ${target}’s password`,
+          '/api/users/role': `Changed ${target}’s role to ${{ owner: 'Admin', lead: 'Lead', viewer: 'Viewer' }[body.role] || 'Designer'}`,
+          '/api/users/signoff': body.on ? `Gave ${target} sign-off rights${body.until ? ` until ${body.until}` : ''}` : `Removed ${target}’s sign-off rights`,
+          '/api/users/away': `Set ${target} away`,
+          '/api/users/signout': `Signed ${target} out of all devices`,
+        }[p]
+        if (what) team.audit(req.user, 'access', what, { ip: ip(req) })
+      }
+      broadcast({ type: 'team' })
       return send(res, 200, auth.list())
+    }
+    // ---- Team: members, who's online, assignments, invites, activity ----
+    if (p === '/api/me/name' && req.method === 'POST') {
+      try {
+        auth.setName(req.user.id, (await readJson(req)).name)
+      } catch (e) {
+        return send(res, 400, { error: e.message })
+      }
+      broadcast({ type: 'team' })
+      return send(res, 200, { user: auth.publicUser(auth.raw().find((u) => u.id === req.user.id)) })
+    }
+    if (p === '/api/security/signout-all' && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin can do that.' })
+      auth.signOutAllExcept(req)
+      team.audit(req.user, 'security', 'Signed everyone out', { ip: ip(req) })
+      return send(res, 200, { ok: true })
+    }
+    if (p === '/api/me/away' && req.method === 'POST') {
+      auth.setAway(req.user.id, (await readJson(req)).until || null)
+      broadcast({ type: 'team' })
+      return send(res, 200, { ok: true })
+    }
+    if (p === '/api/team' && req.method === 'GET') {
+      const jobs = store.list().filter((j) => !['maintenance', 'recommendation'].includes(j.source) && team.canSee(req.user, j))
+      const members = auth.raw().map((u) => {
+        const mine = jobs.filter((j) => team.assigned(u, j))
+        const w = team.where(u.id)
+        const at = w?.slug && jobs.find((j) => j.slug === w.slug)
+        return { ...u, ...(role(req) === 'owner' ? { sessions: auth.sessionCount(u.id) } : {}), online: team.onlineNow(u.id), lastSeen: team.lastSeen(u.id), color: colorFor(u.id), signoffNow: team.signoffActive(u), where: team.onlineNow(u.id) ? (at ? { slug: at.slug, title: at.title } : w?.view ? { view: w.view } : null) : null, projects: mine.map((j) => ({ slug: j.slug, title: j.title, status: j.status })) }
+      })
+      // Recent activity across the projects you can see (people only, not the agent's steps).
+      const activity = jobs
+        .flatMap((j) => store.events(j.slug).filter((e) => e.who === 'human' && e.data?.by).slice(-12).map((e) => ({ at: e.t, by: e.data.by, text: e.text.slice(0, 160), slug: j.slug, title: j.title })))
+        .sort((a, b) => (a.at < b.at ? 1 : -1))
+        .slice(0, 30)
+      const waiting = jobs.filter((j) => j.status === 'awaiting_signoff' || j.status === 'direction').map((j) => ({ slug: j.slug, title: j.title, status: j.status, since: j.signoffRequestedAt || j.updatedAt, by: j.signoffRequestedBy || null, signers: team.signers(j).map((u) => u.name) }))
+      const admin = role(req) === 'owner'
+      return send(res, 200, { members, activity, waiting, settings: team.settings(), access: { host: HOST === '127.0.0.1' ? 'local' : 'network', secureCookie: SECURE_COOKIE, publicUrl: process.env.STUDIO_PUBLIC_URL || null }, ...(admin ? { invites: team.invites(), projects: jobs.map((j) => ({ slug: j.slug, title: j.title, assignees: j.assignees || [], status: j.status })) } : {}) })
+    }
+    if (p === '/api/team/settings' && req.method === 'POST') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin can change team settings.' })
+      const ch = await readJson(req)
+      team.setSettings(ch)
+      team.audit(req.user, 'security', `Changed settings: ${Object.entries(ch).map(([k, v]) => `${k} = ${Array.isArray(v) ? v.join(', ') : v}`).join('; ')}`, { ip: ip(req) })
+      broadcast({ type: 'team' })
+      return send(res, 200, team.settings())
+    }
+    if (p === '/api/invites') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin can invite people.' })
+      const b = req.method === 'POST' ? await readJson(req) : {}
+      if (b.action === 'revoke') team.revokeInvite(String(b.id)), team.audit(req.user, 'access', 'Revoked an invite link', { ip: ip(req) })
+      else if (req.method === 'POST') {
+        const made = team.createInvite(b, req.user)
+        team.audit(req.user, 'access', `Created an invite link for ${b.name || 'someone'} as ${{ owner: 'Admin', lead: 'Lead', viewer: 'Viewer' }[made.invite.role] || 'Designer'}`, { ip: ip(req) })
+        return send(res, 200, made)
+      }
+      return send(res, 200, team.invites())
+    }
+    // ---- Activity (Admin): BRDs in, who's working on what, every piece of feedback with timestamps ----
+    if (p === '/api/activity') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin can see activity.' })
+      const A = buildActivity()
+      if (url.searchParams.get('format') === 'csv') {
+        const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+        const rows = [['Date', 'Person', 'Event', 'Details', 'Project', 'Stage', 'Round', 'IP'], ...A.items.map((e) => [e.at, e.by, e.label, e.text, e.title || '', e.stage || '', e.round ?? '', e.ip || ''])]
+        res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="studio-activity-${new Date().toISOString().slice(0, 10)}.csv"` })
+        return res.end(rows.map((r) => r.map(q).join(',')).join('\n'))
+      }
+      return send(res, 200, A)
+    }
+    // ---- In-app notifications (the bell) ----
+    if (p === '/api/inbox') {
+      if (req.method === 'POST') {
+        const b = await readJson(req)
+        team.markRead(req.user.id, b.all ? 'all' : (b.ids || []).map(String))
+      }
+      const box = team.inboxFor(req.user.id)
+      const seen = new Map(store.list().map((j) => [j.slug, j]))
+      box.items = box.items.filter((n) => !n.slug || (seen.get(n.slug) && team.canSee(req.user, seen.get(n.slug))))
+      box.unread = box.items.filter((n) => !n.read).length
+      return send(res, 200, box)
     }
     if (p === '/api/me/password' && req.method === 'POST') {
       try {
@@ -603,7 +827,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
     if (p === '/api/config') {
-      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), lumen, research, figma: figmaStatus, restartNeeded: codeChanged(), setup: { ...setupState(), figmaToken: !!process.env.FIGMA_TOKEN, people: auth.list().length }, me: req.user ? { id: req.user.id, color: colorFor(req.user.id) } : null, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
+      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), lumen, research, figma: figmaStatus, restartNeeded: codeChanged(), setup: { ...setupState(), figmaToken: !!process.env.FIGMA_TOKEN, people: auth.list().length }, me: req.user ? { ...auth.raw().find((u) => u.id === req.user.id), color: colorFor(req.user.id), signoffNow: team.signoffActive(auth.raw().find((u) => u.id === req.user.id)) } : null, online: team.presence(), repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
     }
     if (p === '/api/lane') {
       if (req.method === 'POST') lane.ensure()
@@ -613,7 +837,8 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
       res.write('retry: 2000\n\n')
       clients.add(res)
-      req.on('close', () => clients.delete(res))
+      team.tab(req.user, 1)
+      req.on('close', () => (clients.delete(res), team.tab(req.user, -1)))
       return
     }
     // ---- API keys (Settings) — this computer only, Owner only for changes ----
@@ -752,6 +977,10 @@ const server = http.createServer(async (req, res) => {
     // ---- Live cursors on screenshots ----
     if (p === '/api/presence' && req.method === 'POST') {
       const b = await readJson(req)
+      if (b.where) {
+        team.touch(req.user, { slug: b.where.slug ? String(b.where.slug).slice(0, 80) : null, view: String(b.where.view || '').slice(0, 20) })
+        return send(res, 200, { ok: true })
+      }
       broadcast({ type: 'cursor', slug: String(b.slug || ''), image: String(b.image || ''), x: Number(b.x), y: Number(b.y), leave: !!b.leave, user: { id: req.user.id, name: req.user.name, color: colorFor(req.user.id) } })
       return send(res, 200, { ok: true })
     }
@@ -759,15 +988,25 @@ const server = http.createServer(async (req, res) => {
     const cm = /^\/api\/jobs\/([a-z0-9-]+)\/comments(?:\/(reply|resolve|delete|send))?$/.exec(p)
     if (cm) {
       const [, slug, op] = cm
-      if (!store.get(slug)) return send(res, 404, { error: 'No such job' })
+      const cjob = store.get(slug)
+      if (!cjob || !team.canSee(req.user, cjob)) return send(res, 404, { error: 'No such job' })
       if (req.method === 'GET') return send(res, 200, comments.list(slug).map((c) => ({ ...c, color: colorFor(c.byId) })))
       const b = await readJson(req)
       try {
-        if (!op) comments.add(slug, b, req.user)
-        else if (op === 'reply') comments.reply(slug, String(b.id), b.text, req.user)
+        if (!op) {
+          const c = comments.add(slug, b, req.user)
+          const named = mentionNotify(slug, c.text, req.user, `on comment #${c.n}`)
+          team.notify(peopleOn(cjob).filter((id) => !named.includes(id)), { type: 'comment', slug, title: cjob.title, text: `${req.user.name} commented: “${c.text.slice(0, 160)}”`, by: req.user.name, byId: req.user.id })
+        } else if (op === 'reply') {
+          const c = comments.reply(slug, String(b.id), b.text, req.user)
+          const named = mentionNotify(slug, String(b.text), req.user, `in a reply on comment #${c.n}`)
+          const thread = [c.byId, ...c.replies.map((r) => r.byId)].filter((id) => id && !named.includes(id))
+          team.notify(thread, { type: 'comment', slug, title: cjob.title, text: `${req.user.name} replied on #${c.n}: “${String(b.text).slice(0, 160)}”`, by: req.user.name, byId: req.user.id })
+        }
         else if (op === 'resolve') comments.resolve(slug, String(b.id), b.value, req.user)
         else if (op === 'delete') comments.remove(slug, String(b.id), req.user, role(req) === 'owner')
         else if (op === 'send') {
+          if (!team.canWork(req.user, cjob)) return send(res, 403, { error: 'Only people on this project can send comments to the agent. Ask an Admin to add you.' })
           const list = comments.unsent(slug)
           if (!list.length) return send(res, 400, { error: 'No new comments to send.' })
           const byImage = new Map()
@@ -791,7 +1030,7 @@ const server = http.createServer(async (req, res) => {
           ].join('\n\n')
           const job = store.get(slug)
           if (job.status === 'direction') {
-            if (role(req) !== 'owner') return send(res, 403, { error: 'During direction review only the Owner sends changes. Leave comments; the Owner sends them.' })
+            if (!team.canSignoff(req.user, job)) return send(res, 403, { error: 'During direction review only someone who can sign off sends changes. Leave comments; they send them.' })
             orch.direction(slug, 'changes', text, who(req), shots)
           } else orch.message(slug, text, shots, who(req))
           comments.markSent(slug, list.map((c) => c.id))
@@ -802,14 +1041,17 @@ const server = http.createServer(async (req, res) => {
       broadcast({ type: 'comments', slug })
       return send(res, 200, comments.list(slug).map((c) => ({ ...c, color: colorFor(c.byId) })))
     }
-    if (p === '/api/jobs' && req.method === 'GET') return send(res, 200, store.list())
+    if (p === '/api/jobs' && req.method === 'GET') return send(res, 200, store.list().filter((j) => team.canSee(req.user, j)))
     if (p === '/api/skills') return send(res, 200, listKnowledge())
     if (p === '/api/jobs' && req.method === 'POST') {
       { const nr = notReady(); if (nr) return send(res, 423, nr) }
       const body = await readJson(req)
       if (!body.title?.trim()) return send(res, 400, { error: 'Add a title' })
       if (!body.brief?.trim() && !(body.files || []).length) return send(res, 400, { error: 'Paste the BRD or attach a PDF' })
+      if (req.user.role === 'viewer') return send(res, 403, { error: 'Viewers can comment but not start projects. Ask an Admin to make you a Designer.' })
       const job = store.create({ title: body.title.trim(), surface: body.surface, brief: body.brief || '', source: 'dashboard', requester: who(req) })
+      store.update(job.slug, { createdById: req.user.id, assignees: [req.user.id] })
+      if (role(req) !== 'owner') team.notify(admins(), { type: 'assigned', slug: job.slug, title: job.title, text: `${req.user.name} started a new project.`, by: req.user.name, byId: req.user.id })
       const saved = saveUploads(job.slug, body.files)
       if (saved.length) store.event(job.slug, 'system', `Attached: ${saved.map((s) => path.basename(s)).join(', ')}`)
       orch.start(job.slug)
@@ -830,12 +1072,29 @@ const server = http.createServer(async (req, res) => {
     if (m) {
       const [, slug, action] = m
       const job = store.get(slug)
-      if (!job) return send(res, 404, { error: 'No such job' })
+      if (!job || !team.canSee(req.user, job)) return send(res, 404, { error: 'No such job' })
       if (!action && req.method === 'GET') return send(res, 200, { ...job, events: store.events(slug), running: orch.isRunning(slug) })
       if (req.method !== 'POST') return send(res, 405, { error: 'POST only' })
       // Setup gate: only deleting a project works before setup is finished.
       if (action !== 'delete') { const nr = notReady(); if (nr) return send(res, 423, nr) }
       const body = await readJson(req)
+      // Assign people to the project (Admin).
+      if (action === 'assign') {
+        if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin assigns people.' })
+        const valid = new Set(auth.raw().map((u) => u.id))
+        const next = [...new Set((body.assignees || []).map(String))].filter((id) => valid.has(id))
+        const added = next.filter((id) => !(job.assignees || []).includes(id))
+        store.update(slug, { assignees: next })
+        store.event(slug, 'human', `Team: ${next.map((id) => auth.raw().find((u) => u.id === id)?.name).filter(Boolean).join(', ') || 'nobody'}.`, { by: who(req) })
+        team.notify(added, { type: 'assigned', slug, title: job.title, text: `${req.user.name} added you to this project.`, by: req.user.name, byId: req.user.id })
+        broadcast({ type: 'team' })
+        return send(res, 200, store.get(slug))
+      }
+      // Who may do what: Viewers comment only; Designers work on their projects; sign-off needs sign-off rights.
+      const SIGN = ['direction', 'signoff', 'back-to-refine']
+      if (action !== 'delete' && !SIGN.includes(action) && !team.canWork(req.user, job)) return send(res, 403, { error: req.user.role === 'viewer' ? 'Viewers can comment but not change the project.' : 'You’re not on this project. Ask an Admin to add you.' })
+      if (SIGN.includes(action) && !team.canSignoff(req.user, job)) return send(res, 403, { error: 'You don’t have sign-off rights on this project. Request sign-off instead.' })
+      for (const t of [body.text, body.note]) if (t && String(t).includes('@')) mentionNotify(slug, String(t), req.user, 'in feedback')
       if (action === 'react') {
         const value = body.value === 'like' ? 'like' : 'dislike'
         orch.react(slug, body.target === 'proposal' ? 'proposal' : 'prototype', value, String(body.note || '').trim().slice(0, 1200), who(req))
@@ -856,19 +1115,22 @@ const server = http.createServer(async (req, res) => {
           break
         }
         case 'direction':
-          if (role(req) !== 'owner') return send(res, 403, { error: 'Only the Owner approves direction' })
           if (body.decision !== 'approve' && !body.note?.trim()) return send(res, 400, { error: 'Say what to change' })
           orch.direction(slug, body.decision === 'approve' ? 'approve' : 'changes', body.note?.trim() || '', who(req), saveUploads(slug, body.files, 'feedback'))
           break
         case 'figma':
           orch.figma(slug, who(req))
           break
-        case 'request-signoff':
+        case 'request-signoff': {
           orch.requestSignoff(slug, who(req))
+          store.update(slug, { signoffRequestedBy: who(req), signoffRequestedAt: new Date().toISOString() })
+          const to = signerIds(job)
+          team.notify(to, { type: 'signoff', slug, title: job.title, text: `${req.user.name} requested your sign-off on the prototype.${body.note ? ` “${String(body.note).slice(0, 200)}”` : ''}`, by: req.user.name, byId: req.user.id })
           break
+        }
         case 'signoff':
-          if (role(req) !== 'owner') return send(res, 403, { error: 'Only Chris (Owner) can give Final sign-off' })
           orch.signoff(slug, who(req))
+          team.notify(peopleOn(job), { type: 'signoff', slug, title: job.title, text: `${req.user.name} gave Final sign-off. The handover is being packaged.`, by: req.user.name, byId: req.user.id })
           break
         case 'back-to-refine':
           orch.backToRefine(slug, who(req))
@@ -886,6 +1148,8 @@ const server = http.createServer(async (req, res) => {
     }
     if (p.startsWith('/files/')) {
       const rel = decodeURIComponent(p.slice(7))
+      const sp = /^specs\/([a-z0-9-]+)\//.exec(rel)
+      if (sp && store.get(sp[1]) && !team.canSee(req.user, store.get(sp[1]))) return send(res, 404, { error: 'Not found' })
       const full = path.resolve(REPO_ROOT, rel)
       const ok = PUBLIC_ROOTS.some((r) => full.startsWith(path.join(REPO_ROOT, r) + path.sep))
       return ok ? serveFile(res, full) : send(res, 403, { error: 'Not shared' })

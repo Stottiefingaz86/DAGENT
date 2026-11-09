@@ -1,17 +1,20 @@
 ---
 name: Peer benchmark
-description: The brands Chris benchmarks against: Rainbet and Winna (patterns we like), Stake (our main influence), Kalshi and Polymarket (where the sportsbook is heading). Read before any research step.
+description: The growing set of peers we benchmark against, by area (casino, rewards, sportsbook…), with what we borrow and avoid. Read before any research step.
 ---
 
 # Peer benchmark — who we learn from, and what
 
-**Set by Chris, Nov 2026.**
+**Started Nov 2026. This list grows.** New peers are added as research expands (for example a sportsbook leader for sports, or a specialist crypto casino for one feature). Peers can be benchmarked for the whole product or for a single piece.
+
+**Adding a peer:** add a row to the table below, then a section with the same shape (What we like · Product facts with a confidence label · Borrow · Avoid · sources). New captures go in the research Figma folder; the watcher picks them up and logs them in `knowledge/research/CHANGELOG.md`.
 
 | Area | Peers | Role |
 |---|---|---|
 | Casino, rewards, community | **Rainbet**, **Winna** | Patterns we like and have already studied (see `COMPETITOR_RESEARCH.md`) |
 | Whole product | **Stake** | Our main influence: the benchmark for polish, density and scale |
 | Sportsbook | **Kalshi**, **Polymarket** | Where we're aiming: sports as simple, market-style trading |
+| *(next)* | *added as research expands* | *whole product or a single piece* |
 
 **How agents use this file**
 1. Check our live site first (`capture_site`). We may already have the thing (e.g. Originals).

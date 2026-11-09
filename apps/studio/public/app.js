@@ -37,7 +37,7 @@ const ls = {
   },
 }
 // Who you are comes from your studio login (the server decides your role).
-const me = () => ({ role: S.user?.role === 'owner' ? 'owner' : 'requester', name: S.user?.name || '', id: S.user?.id })
+const me = () => ({ role: S.user?.role === 'requester' ? 'designer' : S.user?.role || 'designer', name: S.user?.name || '', id: S.user?.id })
 const $ = (s, el = document) => el.querySelector(s)
 const LOGO = '/files/apps/live-site/public/shell/design-agent/logo-mark.png'
 const SURFACES = ['Rewards', 'Casino', 'Sports', 'Cashier', 'Account', 'Promotions', 'Poker', 'Marketing']
@@ -107,8 +107,10 @@ const isWorking = (j) => j.running || j.status === 'working' || j.status === 'pa
 const dot = (j) => (isWorking(j) ? 'working' : j.status === 'ready_for_dev' ? 'done' : j.status === 'error' ? 'error' : needsMe(j) ? 'gate' : '')
 function needsMe(j) {
   if (isWorking(j)) return false
-  if (j.status === 'direction' || j.status === 'awaiting_signoff') return me().role === 'owner'
-  return ['questions', 'refine', 'idle', 'error'].includes(j.status)
+  if (j.status === 'direction' || j.status === 'awaiting_signoff') return canSign(j)
+  // Everything else needs the people on the project (Admins pick up projects nobody is on yet).
+  if (!['questions', 'refine', 'idle', 'error'].includes(j.status)) return false
+  return onProject(j) || (me().role === 'owner' && !(j.assignees || []).length)
 }
 function toast(title, text, onClick) {
   const el = document.createElement('div')
@@ -174,17 +176,19 @@ function parse() {
   const [a, b, c] = location.hash.replace(/^#/, '').split('/')
   if (a === 'j' && b) return { view: 'job', slug: b, panel: c || null }
   if (a === 'skills') return { view: 'skills' }
-  if (a === 'settings') return { view: 'settings' }
+  if (a === 'settings') return { view: 'settings', section: b || 'account' }
   if (a === 'taste') return { view: 'taste' }
   if (a === 'ideas') return { view: 'ideas' }
   if (a === 'resources') return { view: 'resources' }
-  if (a === 'notifications') return { view: 'notifications' }
+  if (a === 'notifications') return { view: 'settings', section: 'notifications' }
+  if (a === 'team') return { view: 'team' }
   return { view: 'home' }
 }
 async function route() {
   const r = parse()
   const changed = r.slug !== S.slug
   S.view = r.view
+  if (r.section) S.settingsSec = r.section
   S.slug = r.slug || null
   if (changed) Object.assign(S, { job: null, liveKey: '', liveUrl: null, liveFor: null, qDraft: {}, qStep: 0, qMore: {}, docs: {}, openSteps: new Set(), panel: r.panel })
   else if (r.panel !== undefined) S.panel = r.panel
@@ -192,8 +196,11 @@ async function route() {
   if (S.view === 'skills' && !S.skills) S.skills = await api('/api/skills')
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
+  if (S.view === 'team' || S.view === 'settings') await loadTeam()
+  if (S.view === 'settings' && settingsSection() === 'activity') S.activity = await api('/api/activity').catch(() => null)
+  sayWhere()
   if (S.view === 'home' && S.config.setup && !S.config.setup.ready && !S.figmaToken) S.figmaToken = await api('/api/figma-token').catch(() => null)
-  if (S.view === 'notifications' && S.user?.role === 'owner') S.notify = await api('/api/notify').catch(() => null)
+  if (S.view === 'settings' && settingsSection() === 'notifications' && S.user?.role === 'owner') S.notify = await api('/api/notify').catch(() => null)
   if (S.view === 'settings') S.figmaToken = await api('/api/figma-token').catch(() => ({}))
   if (S.view === 'settings') {
     S.keys = await api('/api/keys').catch((e) => ({ error: e.message, keys: [] }))
@@ -230,7 +237,7 @@ function renderSide() {
   // Links to the demo site, Lumen and Figma live in the account menu (Resources).
   const u = me()
   $('#me-name').textContent = u.name
-  $('#me-role').textContent = u.role === 'owner' ? 'Owner · signs off' : 'Requester'
+  $('#me-role').textContent = ['owner', 'lead'].includes(u.role) ? `${roleLabel(u)} · signs off` : S.config.me?.signoffNow ? `${roleLabel(u)} · can sign off` : roleLabel(u)
   $('#me-avatar').textContent = (u.name[0] || '?').toUpperCase()
   const q = S.search.toLowerCase()
   const list = S.jobs.filter((j) => !q || `${j.title} ${j.surface}`.toLowerCase().includes(q))
@@ -240,7 +247,7 @@ function renderSide() {
     ['Ready for dev', list.filter((j) => j.status === 'ready_for_dev')],
   ]
   const item = (j) =>
-    `<a class="proj ${j.slug === S.slug ? 'is-active' : ''}" href="#j/${j.slug}"><span class="dot ${dot(j)}"></span><span class="name">${esc(j.title)}</span><span class="meta">${ago(j.updatedAt)}</span></a>`
+    `<a class="proj ${j.slug === S.slug ? 'is-active' : ''}" href="#j/${j.slug}"><span class="dot ${dot(j)}"></span><span class="name">${esc(j.title)}</span>${(j.assignees || []).length && members().length > 1 ? `<span class="tm-stack xs">${j.assignees.slice(0, 2).map(member).filter(Boolean).map((u) => avatarHTML(u, 'xs')).join('')}</span>` : ''}<span class="meta">${ago(j.updatedAt)}</span></a>`
   $('#projects').innerHTML = list.length
     ? groups
         .filter(([, js]) => js.length)
@@ -257,7 +264,7 @@ function renderTop() {
   const sideBtn = `<button class="icon-btn side-open" data-act="side" aria-label="Show sidebar">${ic.side}</button>`
   if (S.view !== 'job' || !S.job) {
     top.className = 'top'
-    top.innerHTML = `${sideBtn}<span class="spacer"></span>${S.config.connected ? '' : '<a class="demo-flag" href="#settings" style="text-decoration:none">Agent not connected</a>'}`
+    top.innerHTML = `${sideBtn}<span class="spacer"></span>${S.config.connected ? '' : '<a class="demo-flag" href="#settings/integrations" style="text-decoration:none">Agent not connected</a>'}${topRight()}`
     return
   }
   const j = S.job
@@ -268,7 +275,8 @@ function renderTop() {
   top.className = 'top has-border'
   top.innerHTML = `${sideBtn}<span class="dot ${dot(j)}"></span><h1>${esc(j.title)}</h1><span class="spacer"></span>
     <span class="progress" title="${esc(S.config.stages.map((s) => s.label).join(' → '))}"><span class="label">${esc(S.config.stages[i]?.label || j.stage)} · ${i + 1} of ${n}</span><span class="bar">${bar}</span></span>
-    ${S.config.connected ? '' : '<a class="demo-flag" href="#settings" style="text-decoration:none">Not connected</a>'}
+    ${S.config.connected ? '' : '<a class="demo-flag" href="#settings/integrations" style="text-decoration:none">Not connected</a>'}
+    ${assigneesHTML(j)}${topRight(true)}
     ${hasWork && !S.panel ? `<button class="pill-btn" data-panel="${j.previewUrl ? 'prototype' : j.files.proposal ? 'proposal' : 'spec'}">${ic.work}Work</button>` : ''}
     <button class="icon-btn" data-act="job-menu" aria-label="More">${ic.more}</button>`
 }
@@ -320,7 +328,7 @@ function liveHTML(j) {
     <div class="live-bar"><span class="seg"><button type="button" data-dev="desktop" aria-pressed="${!mobile}">Desktop</button><button type="button" data-dev="mobile" aria-pressed="${mobile}">390</button></span>
       <span class="live-lane" id="live-lane"></span>
       ${reactHTML('prototype')}
-      ${j.figma?.url ? `<a class="btn ghost" href="${esc(j.figma.url)}" target="_blank" rel="noreferrer">${ic.figma}Figma</a>` : me().role === 'owner' && !j.running ? `<button type="button" class="btn ghost" data-act="figma">${ic.figma}Build in Figma</button>` : ''}
+      ${j.figma?.url ? `<a class="btn ghost" href="${esc(j.figma.url)}" target="_blank" rel="noreferrer">${ic.figma}Figma</a>` : canWork(j) && !j.running ? `<button type="button" class="btn ghost" data-act="figma">${ic.figma}Build in Figma</button>` : ''}
       <button type="button" class="icon-btn" data-act="live-reload" aria-label="Reload prototype">${ic.reload}</button>
       <a class="icon-btn" href="${esc(url)}" target="_blank" rel="noreferrer" aria-label="Open full window">${ic.open}</a></div>
     ${states.length ? `<div class="live-states">${[{ label: 'Default', url: v.previewUrl }, ...states].map((st) => `<button type="button" class="chip" data-live-url="${esc(absProto(st.url))}" aria-pressed="${absProto(st.url) === url}">${esc(st.label)}</button>`).join('')}</div>` : ''}
@@ -556,6 +564,7 @@ function renderReview() {
   const im = cur()
   const list = here()
   const owner = me().role === 'owner'
+  const signer = canSign(S.job)
   const viewers = [...new Map([[me().id, { name: me().name, color: S.config.me?.color || 'var(--accent)' }], ...[...R.cursors].filter(([, c]) => Date.now() - c.t < 15000).map(([id, c]) => [id, c])]).values()]
   const pending = unsent().length
   const job = S.job
@@ -566,7 +575,7 @@ function renderReview() {
       <div class="rv-tools">
         ${R.images.length > 1 ? `<button class="icon-btn" data-rv="prev" aria-label="Previous screenshot">‹</button><button class="icon-btn" data-rv="next" aria-label="Next screenshot">›</button>` : ''}
         <span class="rv-viewers" aria-label="Viewing now">${viewers.map((v) => `<span class="rv-av" style="--c:${v.color}" title="${esc(v.name)}">${esc(initials(v.name))}</span>`).join('')}</span>
-        <button class="btn primary" data-rv="send" ${pending && (job?.status !== 'direction' || owner) ? '' : 'disabled'} title="${job?.status === 'direction' && !owner ? 'The Owner sends changes during direction review' : ''}">${sendLabel}${pending ? ` · ${pending}` : ''}</button>
+        <button class="btn primary" data-rv="send" ${pending && (job?.status !== 'direction' ? canWork(job) : signer) ? '' : 'disabled'} title="${job?.status === 'direction' && !signer ? 'Someone with sign-off rights sends changes during direction review' : !canWork(job) ? 'Only people on this project send comments to the agent' : ''}">${sendLabel}${pending ? ` · ${pending}` : ''}</button>
         <button class="icon-btn" data-rv="close" aria-label="Close">${ic.x}</button>
       </div>
     </header>
@@ -576,7 +585,7 @@ function renderReview() {
           <img src="${esc(im.url)}" alt="${esc(im.caption || 'Screenshot')}" id="rv-img" draggable="false">
           ${list.map((c) => `<button class="rv-pin ${c.resolved ? 'done' : ''} ${R.focus === c.id ? 'on' : ''}" style="left:${c.x * 100}%;top:${c.y * 100}%;--c:${c.color}" data-pin="${c.id}" aria-label="Comment ${c.n} by ${esc(c.by)}">${c.n}</button>`).join('')}
           ${R.draft ? `<div class="rv-pin draft" style="left:${R.draft.x * 100}%;top:${R.draft.y * 100}%;--c:${S.config.me?.color || 'var(--accent)'}">+</div>
-            <form class="rv-pop" id="rv-pop" style="left:${R.draft.x * 100}%;top:${R.draft.y * 100}%" data-flip="${R.draft.x > 0.62 ? 'l' : 'r'}" data-up="${R.draft.y > 0.7 ? '1' : ''}"><textarea id="rv-text" rows="3" placeholder="What should change here?" aria-label="Comment"></textarea><div class="rv-pop-foot"><span>Enter to post · Esc to cancel</span><button type="button" class="btn ghost" data-rv="cancel">Cancel</button><button type="button" class="btn primary" data-rv="post">Comment</button></div></form>` : ''}
+            <form class="rv-pop" id="rv-pop" style="left:${R.draft.x * 100}%;top:${R.draft.y * 100}%" data-flip="${R.draft.x > 0.62 ? 'l' : 'r'}" data-up="${R.draft.y > 0.7 ? '1' : ''}"><textarea id="rv-text" rows="3" placeholder="What should change here? Type @ to mention someone" aria-label="Comment"></textarea><div class="rv-pop-foot"><span>Enter to post · Esc to cancel</span><button type="button" class="btn ghost" data-rv="cancel">Cancel</button><button type="button" class="btn primary" data-rv="post">Comment</button></div></form>` : ''}
           <div class="rv-cursors" id="rv-cursors"></div>
         </div>
       </div>
@@ -585,9 +594,9 @@ function renderReview() {
         <div class="rv-list">
           ${list.length ? list.map((c) => `<article class="rv-c ${c.resolved ? 'done' : ''} ${R.focus === c.id ? 'on' : ''}" data-cid="${c.id}">
               <div class="rv-c-head"><span class="rv-av sm" style="--c:${c.color}">${esc(initials(c.by))}</span><b>${esc(c.by)}</b><span class="rv-n">#${c.n}</span><span class="rv-t">${rvAgo(c.at)}</span>${c.sentAt ? '<span class="rv-sent">sent</span>' : ''}</div>
-              <div class="rv-c-text">${esc(c.text)}</div>
-              ${c.replies.map((r) => `<div class="rv-r"><b>${esc(r.by)}</b> ${esc(r.text)} <span class="rv-t">${rvAgo(r.at)}</span></div>`).join('')}
-              <div class="rv-c-act"><input class="rv-reply" data-reply="${c.id}" placeholder="Reply" aria-label="Reply to comment ${c.n}"><button class="btn ghost" data-resolve="${c.id}">${c.resolved ? 'Reopen' : 'Resolve'}</button>${c.byId === me().id || owner ? `<button class="btn ghost" data-del="${c.id}" aria-label="Delete comment ${c.n}">Delete</button>` : ''}</div>
+              <div class="rv-c-text">${hl(esc(c.text))}</div>
+              ${c.replies.map((r) => `<div class="rv-r"><b>${esc(r.by)}</b> ${hl(esc(r.text))} <span class="rv-t">${rvAgo(r.at)}</span></div>`).join('')}
+              <div class="rv-c-act"><input class="rv-reply" data-reply="${c.id}" placeholder="Reply · @ to mention" aria-label="Reply to comment ${c.n}"><button class="btn ghost" data-resolve="${c.id}">${c.resolved ? 'Reopen' : 'Resolve'}</button>${c.byId === me().id || owner ? `<button class="btn ghost" data-del="${c.id}" aria-label="Delete comment ${c.n}">Delete</button>` : ''}</div>
             </article>`).join('') : '<p class="rv-empty">Click a spot on the screenshot to leave the first comment. Everyone on this project sees it live, and the agent gets the exact spot.</p>'}
         </div>
         ${pending ? `<div class="rv-foot">${pending} comment${pending === 1 ? '' : 's'} not sent yet. ${job?.status === 'direction' ? 'Sending asks the agent to revise the proposal.' : 'Sending gives them to the agent as feedback.'}</div>` : ''}
@@ -764,6 +773,9 @@ function answerFor(q) {
 function gateCard(j) {
   if (isWorking(j)) return ''
   const owner = me().role === 'owner'
+  const signer = canSign(j)
+  const signers = members().filter((u) => u.signoffNow && (['owner', 'lead'].includes(u.role) || (j.assignees || []).includes(u.id)))
+  const waitingOn = signers.length ? signers.map((u) => u.name.split(' ')[0] + (u.away ? ' (away)' : '')).join(' or ') : 'an Admin'
   const open = (j.questions || []).filter((q) => !q.answer)
   if (j.status === 'questions' && open.length) {
     const i = Math.min(S.qStep || 0, open.length - 1)
@@ -790,16 +802,16 @@ function gateCard(j) {
     </form>`
   }
   if (j.status === 'direction') {
-    return `<div class="card is-gate gate-slim"><div class="gate-text"><b>${owner ? 'Happy with this direction?' : 'Waiting for Chris'}</b><span>${owner ? 'Approve and the agent builds the working prototype. Not quite? Say what to change in the box below and paste screenshots for reference.' : 'Chris approves the direction before anything is built.'}</span></div>
-      ${owner ? `<div class="gate-actions">${j.files.proposal ? '<button class="btn ghost" data-panel="proposal">Full board</button>' : ''}<button class="btn primary" data-act="approve">Approve direction</button></div>` : ''}</div>`
+    return `<div class="card is-gate gate-slim"><div class="gate-text"><b>${signer ? 'Happy with this direction?' : `Waiting for ${esc(waitingOn)}`}</b><span>${signer ? 'Approve and the agent builds the working prototype. Not quite? Say what to change in the box below and paste screenshots for reference.' : `${esc(waitingOn)} approves the direction before anything is built. Leave comments on the board meanwhile; type @ to mention someone.`}</span></div>
+      ${signer ? `<div class="gate-actions">${j.files.proposal ? '<button class="btn ghost" data-panel="proposal">Full board</button>' : ''}<button class="btn primary" data-act="approve">Approve direction</button></div>` : ''}</div>`
   }
   if (j.status === 'refine') {
     return `<div class="card is-gate gate-slim"><div class="gate-text"><b>Looks right?</b><span>Not yet? Type feedback below and paste screenshots — each message is round ${(j.round || 0) + 1}, logged and learned.</span></div>
-      <div class="gate-actions"><button class="btn" data-act="request-signoff">Request sign-off</button>${owner ? '<button class="btn primary" data-act="signoff">Final sign-off</button>' : ''}</div></div>`
+      <div class="gate-actions">${canWork(j) && !signer ? '<button class="btn primary" data-act="request-signoff">Request sign-off</button>' : canWork(j) ? '<button class="btn" data-act="request-signoff">Request sign-off</button>' : ''}${signer ? '<button class="btn primary" data-act="signoff">Final sign-off</button>' : ''}</div></div>`
   }
   if (j.status === 'awaiting_signoff') {
-    return `<div class="card is-gate"><div class="card-head"><span class="card-icon">${ic.sign}</span><div><div class="card-title">${owner ? 'Sign-off requested' : 'Waiting for Chris’s sign-off'}</div><div class="card-sub">Final sign-off packages the handoff for the dev repo.</div></div><button class="btn open" data-panel="prototype">Open prototype</button></div>
-      ${owner ? '<div class="card-actions"><button class="btn" data-act="back-to-refine">Back to refine</button><button class="btn primary" data-act="signoff">Final sign-off</button></div>' : ''}</div>`
+    return `<div class="card is-gate"><div class="card-head"><span class="card-icon">${ic.sign}</span><div><div class="card-title">${signer ? `Sign-off requested${j.signoffRequestedBy ? ` by ${esc(j.signoffRequestedBy)}` : ''}` : `Waiting for ${esc(waitingOn)}’s sign-off`}</div><div class="card-sub">Final sign-off packages the handoff for the dev repo.${!signer && j.signoffRequestedAt ? ` Requested ${ago(j.signoffRequestedAt)} ago; they’ve been notified.` : ''}</div></div><button class="btn open" data-panel="prototype">Open prototype</button></div>
+      ${signer ? '<div class="card-actions"><button class="btn" data-act="back-to-refine">Back to refine</button><button class="btn primary" data-act="signoff">Final sign-off</button></div>' : ''}</div>`
   }
   if (j.status === 'error') {
     return `<div class="card is-gate"><div class="card-head"><span class="card-icon">${ic.warn}</span><div><div class="card-title">The run stopped</div><div class="card-sub">See the last lines above. Retry picks up the last step.</div></div></div><div class="card-actions"><button class="btn primary" data-act="retry">Retry</button></div></div>`
@@ -938,7 +950,7 @@ function notificationsHTML() {
       <div class="card-body nf-events">${Object.entries(evs).map(([k, d]) => `<label class="card-sub"><input type="checkbox" data-nf-ev="${c.id}" value="${k}" ${c.events.includes(k) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
       <div class="card-actions"><button class="btn" data-nf-test="${c.id}">Send a test</button><button class="btn ghost" data-nf-remove="${c.id}">Remove</button></div></div>`)
     .join('')
-  return `<div class="skills"><div><h2>Notifications</h2><p>How the studio tells you a project needs you, and how to answer the agent from chat.</p></div>
+  return `<div class="skills">${stHead('Notifications', 'Sound and desktop alerts for the bell are yours, per browser.' + (owner ? ' Chat channels and replying from chat apply to the whole studio.' : ''))}
     <div class="skill-group"><h3>In this browser</h3>
       <div class="card" style="max-width:640px"><div class="card-head"><div><div class="card-title">Desktop alerts</div><div class="card-sub">${esc(desk)}</div></div></div>
         <div class="card-actions">${perm === 'default' ? '<button class="btn primary" data-nf-desk>Turn on</button>' : perm === 'granted' ? '<button class="btn" data-nf-desk>Send a test</button>' : ''}</div></div>
@@ -955,13 +967,17 @@ function notificationsHTML() {
         <div class="card-actions"><button class="btn primary" type="submit">Add channel</button></div></form>
     </div>
     <div class="skill-group"><h3>Answer the agent from chat</h3>
-      <div class="card" style="max-width:640px"><div class="card-body">
-        <p>Send <code>&lt;project&gt; &lt;message&gt;</code> from chat and it reaches that project’s agent like feedback typed here. Send <code>list</code> to see what needs you.</p>
-        <p class="card-sub"><b>Mattermost:</b> Integrations → Outgoing Webhooks → Add → trigger word <code>design</code> → callback URL below → paste the token below as the webhook token (or add <code>?token=…</code> to the URL).<br>
-        <b>Slack:</b> create an app at api.slack.com/apps → Slash Commands → <code>/design</code> → request URL below with <code>?token=…</code>.<br>
-        Slack and Mattermost cloud must be able to reach the studio, so this works once the studio is hosted (see Resources → Setup & hosting; set <code>STUDIO_PUBLIC_URL</code>).</p>
-        <div class="nf-copy"><span class="card-sub">URL</span><code>${esc(N?.inboundUrl || '')}</code><button class="btn ghost" data-nf-copy="${esc(N?.inboundUrl || '')}">Copy</button></div>
-        <div class="nf-copy"><span class="card-sub">Token</span><code>${N ? '•'.repeat(12) + esc(N.inboundToken.slice(-4)) : ''}</code><button class="btn ghost" data-nf-copy="${esc(N?.inboundToken || '')}">Copy</button><button class="btn ghost" data-nf-rotate>New token</button></div>
+      <div class="card" style="max-width:640px"><div class="card-head"><div><div class="card-title">Reply from Slack or Mattermost</div><div class="card-sub">Send <code>&lt;project&gt; &lt;message&gt;</code> and it reaches that project’s agent like feedback typed here. Send <code>list</code> to see what needs you.</div></div></div>
+      <div class="card-body">
+        <div class="nf-fields">
+          <div class="nf-copy"><span class="nf-k">URL</span><code>${esc(N?.inboundUrl || '')}</code><button class="btn ghost" data-nf-copy="${esc(N?.inboundUrl || '')}">Copy</button></div>
+          <div class="nf-copy"><span class="nf-k">Token</span><code>${N ? '•'.repeat(12) + esc(N.inboundToken.slice(-4)) : ''}</code><button class="btn ghost" data-nf-copy="${esc(N?.inboundToken || '')}">Copy</button><button class="btn ghost" data-nf-rotate>New token</button></div>
+        </div>
+        <details class="nf-how"><summary>How to connect</summary>
+          <ul class="nf-steps"><li><b>Mattermost</b> Integrations → Outgoing Webhooks → Add → trigger word <code>design</code> → callback URL above → paste the token as the webhook token.</li>
+          <li><b>Slack</b> Create an app at api.slack.com/apps → Slash Commands → <code>/design</code> → request URL above with <code>?token=…</code> on the end.</li>
+          <li>Slack and Mattermost cloud need to reach the studio, so this works once it’s hosted (Resources → Setup &amp; hosting, set <code>STUDIO_PUBLIC_URL</code>).</li></ul>
+        </details>
       </div></div></div>` : '<p class="card-sub">The Owner sets up chat channels.</p>'}
   </div>`
 }
@@ -1094,7 +1110,7 @@ function connectHTML() {
     <div class="card-sub" id="connect-err" style="color:var(--err)" hidden></div></div>
     <div class="card-actions"><button class="btn primary" type="submit">Connect</button></div></form>`
 }
-function settingsHTML() {
+function integrationsHTML() {
   const K = S.keys || { keys: [] }
   const owner = me().role === 'owner'
   const rows = K.keys.length
@@ -1114,7 +1130,10 @@ function settingsHTML() {
       <div class="card-body"><input class="field-in" id="nu-name" placeholder="Name" maxlength="40" required aria-label="Name"><input class="field-in" id="nu-user" placeholder="Username or email" required aria-label="Username or email"><input class="field-in" id="nu-pass" type="password" autocomplete="new-password" placeholder="Temporary password (10+ characters)" required aria-label="Temporary password">
       <label class="card-sub" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="nu-owner"> Owner (can approve, sign off, delete and manage people)</label><div class="card-sub" id="nu-err" style="color:var(--err)" hidden></div></div>
       <div class="card-actions"><button class="btn primary" type="submit">Add person</button></div></form>` : ''}`
-  return `<div class="skills"><div><h2>Settings</h2><p>Who can use the studio, and the API keys the agent uses.</p></div>${people}<div><p>API keys the design agent uses to call Claude. Stored on this Mac in <code>apps/studio/.env.keys</code> (git-ignored). The active key is used for every run.</p></div>
+  void people
+  const teamLink = `<div class="skill-group"><h3>People</h3><a class="gate-row" href="#team"><span class="avatar-sm">${P.length}</span><div style="min-width:0"><b>Team</b><span class="s">Roles, invites, who’s on which project, sign-off rights, who’s online</span></div><span class="go">Open</span></a></div>`
+  void teamLink
+  return `<div class="skills">${stHead('Keys & integrations', 'The Anthropic API key the agent runs on, and the Figma token for the research folder. Both stay on the studio’s computer (git-ignored).')}
     ${K.error ? `<div class="card-sub" style="color:var(--err)">${esc(K.error)}</div>` : ''}
     <div class="skill-group"><h3>API keys</h3><div class="home-cards">${rows}</div></div>
     ${owner ? `<form class="card" id="key-form" style="max-width:560px"><div class="card-head"><div><div class="card-title">Add a key</div><div class="card-sub">e.g. a business key. Create keys at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a>.</div></div></div>
@@ -1151,7 +1170,7 @@ function placeComposer() {
   const slot = $('#home-slot')
   if (S.view === 'home' && slot) slot.append(composer)
   else if (composer.parentElement !== $('#main')) $('#main').append(composer)
-  composer.classList.toggle('is-home', S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'resources' || S.view === 'notifications' || (S.view === 'job' && !S.job) || (S.view === 'home' && (!S.config.connected || (S.config.setup && !S.config.setup.ready))))
+  composer.classList.toggle('is-home', S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'resources' || S.view === 'notifications' || S.view === 'team' || (S.view === 'job' && (!S.job || !canWork(S.job))) || (S.view === 'home' && (!S.config.connected || (S.config.setup && !S.config.setup.ready))))
   const j = S.job
   const home = S.view === 'home'
   input.placeholder = home
@@ -1318,12 +1337,15 @@ function menu(anchor, html, bind) {
   m.style.top = below ? r.bottom + 6 + 'px' : ''
   m.style.bottom = below ? '' : innerHeight - r.top + 6 + 'px'
   bind?.(m)
-  setTimeout(() => document.addEventListener('click', function off(e) {
+  // One outside-click closer at a time (a menu closed with Esc must not close the next one).
+  if (menu.off) document.removeEventListener('click', menu.off)
+  setTimeout(() => document.addEventListener('click', (menu.off = function off(e) {
     if (!m.contains(e.target)) {
       m.hidden = true
       document.removeEventListener('click', off)
+      menu.off = null
     }
-  }))
+  })))
 }
 function meMenu(anchor) {
   const u = me()
@@ -1337,18 +1359,20 @@ function meMenu(anchor) {
     bell: I('<path d="M6 16V11a6 6 0 1112 0v5l2 2H4zM10 20a2 2 0 004 0"/>'),
     key: I('<circle cx="8" cy="14" r="4"/><path d="M11 11l9-9M17 5l2 2"/>'),
     out: I('<path d="M15 4h4v16h-4M10 16l-4-4 4-4M6 12h10"/>'),
+    team: I('<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.2a3 3 0 010 5.6M18 14c1.6.6 2.6 2.3 3 5"/>'),
   }
+  const nOnline = (S.config.online || []).length
   menu(
     anchor,
-    `<div class="mm-head"><span class="avatar">${esc((u.name || '?').slice(0, 2).toUpperCase())}</span><div><b>${esc(u.name)}</b><span>${u.role === 'owner' ? 'Owner' : 'Requester'}</span></div></div>
+    `<div class="mm-head"><span class="avatar">${esc((u.name || '?').slice(0, 2).toUpperCase())}</span><div><b>${esc(u.name)}</b><span>${roleLabel(u)}${S.config.me?.signoffNow && u.role === 'designer' ? ' · can sign off' : ''}</span></div></div>
     <hr>
+    <a class="mi" href="#team">${icons.team}Team<span class="check">${nOnline} online</span></a>
     <a class="mi" href="#ideas">${icons.ideas}Ideas</a>
     <a class="mi" href="#taste">${icons.taste}Taste</a>
     <a class="mi" href="#skills">${icons.skills}Skills</a>
-    <a class="mi" href="#settings">${icons.settings}Settings</a>
+    <a class="mi" href="#settings/${me().role === 'owner' ? 'people' : 'account'}">${icons.settings}${me().role === 'owner' ? 'Settings & admin' : 'Settings'}</a>
     <a class="mi" href="#resources">${icons.res}Resources</a>
     <hr>
-    <a class="mi" href="#notifications">${icons.bell}Notifications</a>
     <button class="mi" id="mm-pass">${icons.key}Change password</button>
     <button class="mi" id="mm-out">${icons.out}Sign out</button>`,
     (m) => {
@@ -1699,7 +1723,10 @@ document.addEventListener('click', async (e) => {
   }
   if (a === 'panel-wide') return ((S.panelWide = !S.panelWide), ls.set('panelWide', S.panelWide), renderPanel(true))
   if (a === 'approve') return act('direction', { decision: 'approve' })
-  if (['stop', 'retry', 'request-signoff', 'signoff', 'back-to-refine', 'figma'].includes(a)) return act(a)
+  if (a === 'inbox') return e.stopPropagation(), loadInbox().then(() => inboxPanel($('.tm-bell')))
+  if (a === 'assign') return e.stopPropagation(), assignMenu(t)
+  if (a === 'request-signoff') return requestSignoffModal()
+  if (['stop', 'retry', 'signoff', 'back-to-refine', 'figma'].includes(a)) return act(a)
 })
 $('#side-close').onclick = () => {
   const app = $('#app')
@@ -1741,9 +1768,10 @@ document.addEventListener('submit', async (e) => {
   if (e.target.id === 'user-form') {
     e.preventDefault()
     try {
-      S.people = await api('/api/users', { name: $('#nu-name').value, username: $('#nu-user').value, password: $('#nu-pass').value, role: $('#nu-owner').checked ? 'owner' : 'requester' })
-      toast('Person added', $('#nu-name').value)
-      renderAll()
+      S.people = await api('/api/users', { name: $('#nu-name').value, username: $('#nu-user').value, password: $('#nu-pass').value, role: $('#nu-role').value })
+      toast('Person added', `${$('#nu-name').value} can sign in with the username and password you set.`)
+      await loadTeam()
+      renderAll(false)
     } catch (x) {
       $('#nu-err').hidden = false
       $('#nu-err').textContent = x.message
@@ -1829,7 +1857,7 @@ function renderThread(scrollToEnd) {
       }
     }
   } else {
-    th.innerHTML = S.view === 'home' ? homeHTML() : S.view === 'skills' ? skillsHTML() : S.view === 'taste' ? tasteHTML() : S.view === 'ideas' ? ideasHTML() : S.view === 'resources' ? resourcesHTML() : S.view === 'notifications' ? notificationsHTML() : S.view === 'settings' ? settingsHTML() : '<div class="sys" style="margin-top:20vh">Project not found.</div>'
+    th.innerHTML = S.view === 'home' ? homeHTML() : S.view === 'skills' ? skillsHTML() : S.view === 'taste' ? tasteHTML() : S.view === 'ideas' ? ideasHTML() : S.view === 'resources' ? resourcesHTML() : S.view === 'notifications' ? notificationsHTML() : S.view === 'settings' ? settingsHTML() : S.view === 'team' ? teamHTML() : '<div class="sys" style="margin-top:20vh">Project not found.</div>'
   }
   placeComposer()
   if (active) {
@@ -1841,7 +1869,7 @@ function renderThread(scrollToEnd) {
     input.focus()
     input.setSelectionRange(inputCaret, inputCaret)
   }
-  if (S.view === 'home' || S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas') sc.scrollTop = 0
+  if (S.view === 'home' || S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'team') sc.scrollTop = 0
   else if (scrollToEnd || nearEnd) sc.scrollTop = sc.scrollHeight
 }
 function renderAll(scrollToEnd = true) {
@@ -1881,7 +1909,32 @@ function connect() {
   es.onerror = () => api('/api/auth/me').then((r) => !r.user && authScreen(r.setup ? 'setup' : 'login')).catch(() => {})
   es.onmessage = (m) => {
     const msg = JSON.parse(m.data)
+    // Activity page stays live: new BRDs, feedback and comments appear as they happen.
+    if (S.view === 'settings' && settingsSection() === 'activity' && ['event', 'comments', 'deleted', 'team'].includes(msg.type) && (msg.type !== 'event' || msg.event?.who !== 'agent')) {
+      clearTimeout(S.actT)
+      S.actT = setTimeout(async () => ((S.activity = await api('/api/activity').catch(() => S.activity)), renderThread(false)), 800)
+    }
     if (msg.type === 'cursor') return onCursor(msg)
+    if (msg.type === 'online') {
+      S.config.online = msg.online
+      renderTop()
+      if (S.view === 'team') clearTimeout(S.teamT), (S.teamT = setTimeout(() => loadTeam().then(() => renderThread(false)), 400))
+      return
+    }
+    if (msg.type === 'team') return loadTeam().then(async () => ((S.config = await api('/api/config')), refresh()))
+    if (msg.type === 'inbox') {
+      if (!msg.users?.includes(me().id)) return
+      loadInbox()
+      chime()
+      const open = () => go(msg.slug ? `#j/${msg.slug}` : '#team')
+      if (msg.slug !== S.slug || document.hidden) toast(msg.title || TYPE_LABEL[msg.kind] || 'Notification', msg.text, open)
+      if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        const n = new Notification(msg.title || 'Design Studio', { body: msg.text, icon: LOGO })
+        n.onclick = () => (window.focus(), open())
+      }
+      if (['assigned', 'signoff'].includes(msg.kind)) refresh()
+      return
+    }
     if (msg.type === 'comments') return msg.slug === R.slug && R.open ? loadComments().then(renderReview) : undefined
     if (msg.type === 'research' && msg.research?.checkedAt) {
       if (S.figmaToken) S.figmaToken.research = msg.research
@@ -1914,32 +1967,758 @@ function connect() {
       if (f && msg.lane.status === 'running' && was !== 'running') f.src = f.src
       return
     }
-    if (msg.type === 'notify') {
-      const j = S.jobs.find((x) => x.slug === msg.slug) || {}
-      if (needsMe({ ...j, running: false, status: msg.status })) {
-        chime()
-        if (msg.slug !== S.slug || document.hidden) toast(msg.title, msg.gate, () => go(`#j/${msg.slug}`))
-        if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-          const n = new Notification(msg.title, { body: msg.gate, icon: LOGO })
-          n.onclick = () => (window.focus(), go(`#j/${msg.slug}`))
-        }
-      }
-    }
+    // Gate changes reach the right people through the inbox (see 'inbox' above); here we only refresh.
     refresh()
   }
 }
+
+
+// ================= team: roles, bell, who's online, assignment, Team page, invites, @mentions =================
+const ROLE_LABEL = { owner: 'Admin', lead: 'Lead', designer: 'Designer', viewer: 'Viewer' }
+const roleLabel = (u) => ROLE_LABEL[u?.role] || 'Designer'
+const members = () => S.team?.members || []
+const member = (id) => members().find((m) => m.id === id)
+const avatarHTML = (u, cls = '') => `<span class="tm-av ${cls}" style="--c:${esc(u?.color || 'var(--line-2)')}" title="${esc(u?.name || '')}">${esc(initials(u?.name))}</span>`
+const onProject = (j) => !!j && ((j.assignees || []).includes(me().id) || j.createdById === me().id)
+// Approve direction / Final sign-off: Admins, or a Designer with sign-off rights on this project.
+const canSign = (j) => ['owner', 'lead'].includes(me().role) || (!!S.config?.me?.signoffNow && onProject(j))
+const canWork = (j) => ['owner', 'lead'].includes(me().role) || (me().role === 'designer' && onProject(j))
+const dateIn = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '')
+const seen = (m) => (m.online ? (m.where?.title ? `Viewing ${m.where.title}` : 'Online') : m.lastSeen ? `Last seen ${ago(m.lastSeen)}${ago(m.lastSeen) === 'now' ? '' : ' ago'}` : 'Not signed in yet')
+
+async function loadTeam() {
+  S.team = await api('/api/team').catch(() => S.team || { members: [] })
+  return S.team
+}
+async function loadInbox() {
+  S.inbox = await api('/api/inbox').catch(() => S.inbox || { items: [], unread: 0 })
+  renderTop()
+}
+// Tell the team where you are (project or page), so the Team page and project bar can show it.
+function sayWhere() {
+  fetch('/api/presence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ where: { view: S.view, slug: S.view === 'job' ? S.slug : null } }) }).catch(() => {})
+}
+
+// ---- top bar: who's online + the bell ----
+function topRight(inJob = false) {
+  const online = (S.config.online || []).filter((o) => o.id !== me().id).map((o) => ({ ...member(o.id), ...o })).filter((o) => o.name)
+  const here = []
+  const shown = online.slice(0, 4)
+  const more = online.length - shown.length
+  const who = online.length && !inJob
+    ? `<a class="tm-online" href="#team" title="${esc(online.map((o) => `${o.name}${o.slug && member(o.id) ? ` · ${o.slug === S.slug ? 'here' : 'online'}` : ''}`).join('\n'))}" aria-label="${online.length} online">${shown.map((o) => avatarHTML(o, o.slug === S.slug && S.view === 'job' ? 'here' : '')).join('')}${more > 0 ? `<span class="tm-av more">+${more}</span>` : ''}</a>`
+    : ''
+  const n = S.inbox?.unread || 0
+  return `${who}<button class="icon-btn tm-bell" data-act="inbox" aria-label="Notifications${n ? `, ${n} unread` : ''}" title="Notifications"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 1112 0v5l2 2H4zM10 20a2 2 0 004 0"/></svg>${n ? `<span class="tm-badge">${n > 9 ? '9+' : n}</span>` : ''}</button>`
+}
+// Project bar: the people on it (green dot = online, pink ring = looking at this project now),
+// plus anyone else viewing it right now.
+function assigneesHTML(j) {
+  const online = new Map((S.config.online || []).map((o) => [o.id, o]))
+  const isHere = (id) => id !== me().id && online.get(id)?.slug === j.slug
+  const team = (j.assignees || []).map(member).filter(Boolean)
+  const visitors = [...online.keys()].filter((id) => isHere(id) && !(j.assignees || []).includes(id)).map(member).filter(Boolean)
+  const list = [...team, ...visitors]
+  if (!list.length && me().role !== 'owner') return ''
+  const cls = (u) => [online.has(u.id) ? 'on' : '', isHere(u.id) ? 'here' : ''].join(' ')
+  const tip = [team.length ? `On this project: ${team.map((u) => u.name + (isHere(u.id) ? ' (here now)' : online.has(u.id) ? ' (online)' : '')).join(', ')}` : 'Nobody assigned yet', visitors.length ? `Also here: ${visitors.map((u) => u.name).join(', ')}` : ''].filter(Boolean).join('\n')
+  return `<button class="tm-assignees" data-act="assign" title="${esc(tip)}" aria-label="${esc(tip)}">${list.slice(0, 4).map((u) => avatarHTML(u, cls(u))).join('')}${list.length > 4 ? `<span class="tm-av more">+${list.length - 4}</span>` : ''}${team.length ? '' : `<span class="tm-assign-empty">+ Assign</span>`}</button>`
+}
+const TYPE_LABEL = { signoff: 'Sign-off', direction: 'Direction', mention: 'Mention', assigned: 'Team', comment: 'Comment', gate: 'Needs you', handover: 'Handover', dev_question: 'Dev question', joined: 'Team' }
+function inboxPanel(anchor) {
+  const tab = S.inboxTab || 'all'
+  const all = S.inbox?.items || []
+  const items = all.filter((n) => tab === 'all' || (tab === 'signoff' ? ['signoff', 'direction'].includes(n.type) : n.type === 'mention'))
+  const count = (f) => all.filter((n) => !n.read && f(n)).length
+  const tabs = [
+    ['all', 'All', count(() => true)],
+    ['signoff', 'Sign-off', count((n) => ['signoff', 'direction'].includes(n.type))],
+    ['mention', 'Mentions', count((n) => n.type === 'mention')],
+  ]
+  menu(
+    anchor,
+    `<div class="ib-head"><b>Notifications</b><span class="ib-tabs">${tabs.map(([k, l, c]) => `<button class="ib-tab${tab === k ? ' on' : ''}" data-ib-tab="${k}">${l}${c ? ` <i>${c}</i>` : ''}</button>`).join('')}</span></div>
+    <div class="ib-list">${items.length ? items.map((n) => `<button class="ib-item${n.read ? '' : ' unread'}" data-ib="${n.id}" data-ib-slug="${esc(n.slug || '')}">
+        ${n.by ? avatarHTML(members().find((m) => m.name === n.by) || { name: n.by }) : `<span class="tm-av sys">${esc(initials('Design Agent'))}</span>`}
+        <span class="ib-body"><span class="ib-meta"><span class="ib-type t-${n.type}">${TYPE_LABEL[n.type] || 'Update'}</span>${n.title ? `<b>${esc(n.title)}</b>` : ''}<span class="ib-t">${ago(n.at)}</span></span><span class="ib-text">${hl(esc(n.text))}</span></span></button>`).join('') : `<p class="ib-empty">${tab === 'signoff' ? 'Nothing waiting for sign-off.' : tab === 'mention' ? 'Nobody has mentioned you yet.' : 'You’re all caught up.'}</p>`}</div>
+    <div class="ib-foot"><button class="btn ghost" data-ib-all ${S.inbox?.unread ? '' : 'disabled'}>Mark all read</button><a class="btn ghost" href="#settings/notifications">Settings</a></div>`,
+    (m) => {
+      m.classList.add('ib-menu')
+      const bell = $('.tm-bell') || anchor
+      m.style.left = Math.max(8, Math.min(bell.getBoundingClientRect().right - 380, innerWidth - 388)) + 'px'
+      m.style.top = bell.getBoundingClientRect().bottom + 6 + 'px'
+      m.style.bottom = ''
+      m.onclick = async (e) => {
+        const tb = e.target.closest('[data-ib-tab]')
+        if (tb) return e.stopPropagation(), (S.inboxTab = tb.dataset.ibTab), inboxPanel(anchor)
+        if (e.target.closest('[data-ib-all]')) {
+          e.stopPropagation()
+          S.inbox = await api('/api/inbox', { all: true })
+          renderTop()
+          return inboxPanel(anchor)
+        }
+        const it = e.target.closest('[data-ib]')
+        if (!it) return
+        m.hidden = true
+        api('/api/inbox', { ids: [it.dataset.ib] }).then((r) => ((S.inbox = r), renderTop())).catch(() => {})
+        if (it.dataset.ibSlug) go(`#j/${it.dataset.ibSlug}`)
+        else go('#team')
+      }
+    },
+  )
+}
+function assignMenu(anchor, j = S.job) {
+  const admin = me().role === 'owner'
+  const on = new Set(j.assignees || [])
+  const rows = members().map((u) => `<label class="mi tm-pick">${admin ? `<input type="checkbox" value="${u.id}" ${on.has(u.id) ? 'checked' : ''}>` : ''}${avatarHTML(u, u.online ? 'on' : '')}<span class="tm-pick-t"><b>${esc(u.name)}${u.id === me().id ? ' · you' : ''}</b><span>${roleLabel(u)}${u.signoffNow ? ' · can sign off' : ''}${u.away ? ` · away until ${dateIn(u.away.until)}` : ''}</span></span></label>`)
+  menu(
+    anchor,
+    `<div class="ml">${admin ? 'Who’s on this project' : 'On this project'}</div>${admin ? rows.join('') : rows.filter((_, i) => on.has(members()[i].id)).join('') || '<div class="ml">Nobody yet</div>'}
+    ${admin ? '<hr><div class="tm-pick-foot"><span class="card-sub">They get notified and can work on it.</span><button class="btn primary" id="as-save">Save</button></div>' : ''}`,
+    (m) => {
+      m.classList.add('tm-pick-menu')
+      m.style.left = Math.max(8, Math.min(anchor.getBoundingClientRect().left, innerWidth - 308)) + 'px'
+      const b = $('#as-save', m)
+      if (b)
+        b.onclick = async () => {
+          const ids = [...m.querySelectorAll('input:checked')].map((i) => i.value)
+          m.hidden = true
+          try {
+            const updated = await api(`/api/jobs/${j.slug}/assign`, { assignees: ids })
+            if (S.job?.slug === j.slug) S.job = { ...S.job, ...updated }
+            await loadTeam()
+            await loadJobs()
+            toast('Team updated', ids.length ? ids.map((id) => member(id)?.name).join(', ') : 'Nobody assigned')
+            renderAll(false)
+          } catch (x) {
+            toast('Couldn’t do that', x.message)
+          }
+        }
+    },
+  )
+}
+
+// ---- @mentions: highlight + autocomplete in every feedback box ----
+function hl(html) {
+  const handles = new Set(members().flatMap((m) => [m.handle, m.name.toLowerCase().split(/\s+/)[0]]))
+  return html.replace(/(^|[\s(])@([a-z0-9._-]{2,40})/gi, (all, pre, h) => (handles.has(h.toLowerCase().replace(/[._-]+$/, '')) ? `${pre}<span class="mention">@${h}</span>` : all))
+}
+const MN = { el: null, start: 0, list: [], i: 0 }
+const MENTION_SEL = '#input, #rv-text, .rv-reply, #ch-note, #re-note, #rs-note'
+function mentionClose() {
+  MN.el = null
+  $('#mention-pop')?.remove()
+}
+function mentionOpen(el) {
+  const caret = el.selectionStart
+  const m = /(^|[\s(])@([a-z0-9._-]{0,30})$/i.exec(el.value.slice(0, caret))
+  if (!m || !members().length) return mentionClose()
+  const q = m[2].toLowerCase()
+  MN.list = members().filter((u) => u.id !== me().id && (!q || u.handle.toLowerCase().startsWith(q) || u.name.toLowerCase().split(/\s+/).some((w) => w.startsWith(q)))).slice(0, 6)
+  if (!MN.list.length) return mentionClose()
+  MN.el = el
+  MN.start = caret - m[2].length - 1
+  MN.i = Math.min(MN.i, MN.list.length - 1)
+  let pop = $('#mention-pop')
+  if (!pop) {
+    pop = document.createElement('div')
+    pop.id = 'mention-pop'
+    pop.className = 'mention-pop'
+    pop.setAttribute('role', 'listbox')
+    document.body.append(pop)
+    pop.addEventListener('mousedown', (e) => {
+      const b = e.target.closest('[data-mn]')
+      if (b) e.preventDefault(), mentionPick(Number(b.dataset.mn))
+    })
+  }
+  pop.innerHTML = `<div class="ml">Mention someone · they get notified</div>${MN.list.map((u, k) => `<button type="button" class="mn-item${k === MN.i ? ' on' : ''}" data-mn="${k}" role="option" aria-selected="${k === MN.i}">${avatarHTML(u, u.online ? 'on' : '')}<b>${esc(u.name)}</b><span>@${esc(u.handle)} · ${roleLabel(u)}</span></button>`).join('')}`
+  const r = el.getBoundingClientRect()
+  const h = pop.offsetHeight
+  pop.style.left = Math.min(r.left, innerWidth - 300) + 'px'
+  pop.style.top = (r.top - h - 6 > 8 ? r.top - h - 6 : r.bottom + 6) + 'px'
+}
+function mentionPick(k) {
+  const u = MN.list[k]
+  const el = MN.el
+  if (!u || !el) return mentionClose()
+  const end = el.selectionStart
+  el.value = el.value.slice(0, MN.start) + `@${u.handle} ` + el.value.slice(end)
+  const pos = MN.start + u.handle.length + 2
+  el.setSelectionRange(pos, pos)
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+  mentionClose()
+  el.focus()
+}
+document.addEventListener('input', (e) => (e.target.matches?.(MENTION_SEL) ? mentionOpen(e.target) : undefined))
+document.addEventListener('focusout', (e) => (e.target === MN.el ? setTimeout(() => document.activeElement !== MN.el && mentionClose(), 120) : undefined))
+// Runs before the box's own Enter-to-send, so picking a name never sends the message.
+document.addEventListener(
+  'keydown',
+  (e) => {
+    if (!MN.el || e.target !== MN.el) return
+    const stop = () => (e.preventDefault(), e.stopImmediatePropagation())
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') return stop(), (MN.i = (MN.i + (e.key === 'ArrowDown' ? 1 : -1) + MN.list.length) % MN.list.length), mentionOpen(MN.el)
+    if (e.key === 'Enter' || e.key === 'Tab') return stop(), mentionPick(MN.i)
+    if (e.key === 'Escape') return stop(), mentionClose()
+  },
+  true,
+)
+
+// ---- Request sign-off with a note (and an @mention) ----
+function requestSignoffModal() {
+  const root = $('#modal-root')
+  const j = S.job
+  const signers = members().filter((u) => u.signoffNow && (['owner', 'lead'].includes(u.role) || (j.assignees || []).includes(u.id)))
+  root.innerHTML = `<form class="modal" role="dialog" aria-modal="true" aria-labelledby="rs-t" id="rs-form"><h2 id="rs-t">Request sign-off</h2>
+    <p>${signers.length ? `${esc(signers.map((u) => u.name + (u.away ? ' (away)' : '')).join(', '))} ${signers.length === 1 ? 'gets' : 'get'} a notification.` : 'The Admins get a notification.'} Add a note if there’s anything to look at first. Type @ to mention someone.</p>
+    <textarea class="field-in" id="rs-note" rows="3" placeholder="e.g. Mobile states are done; check the error banner"></textarea>
+    <div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Request sign-off</button></div></form>`
+  root.hidden = false
+  $('#rs-note').focus()
+  const close = () => ((root.hidden = true), (root.innerHTML = ''))
+  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  $('#rs-form').onsubmit = async (e) => {
+    e.preventDefault()
+    const note = $('#rs-note').value.trim()
+    close()
+    await act('request-signoff', { note })
+    toast('Sign-off requested', 'They’ll get a notification.')
+  }
+}
+
+// ---- Team page ----
+function teamHTML() {
+  const T = S.team || { members: [] }
+  const admin = me().role === 'owner'
+  const self = member(me().id) || {}
+  const online = T.members.filter((m) => m.online)
+  const awayCard = `<div class="card tm-away"><div class="card-head"><span class="card-icon">${ic.sign}</span><div><div class="card-title">${self.away ? `You’re away until ${dateIn(self.away.until)}` : 'Going away?'}</div><div class="card-sub">${self.away ? 'The team sees this. Sign-off requests also reach everyone with sign-off rights.' : 'Mark yourself away so the team knows. Give someone sign-off rights below so work doesn’t wait for you.'}</div></div></div>
+    <div class="card-actions">${self.away ? '<button class="btn" data-tm-away="">I’m back</button>' : `<input class="field-in tm-date" type="date" id="tm-away-until" min="${new Date().toISOString().slice(0, 10)}" aria-label="Away until"><button class="btn" data-tm-away="set">Mark me away</button>`}</div></div>`
+  const waiting = (T.waiting || []).length
+    ? `<div class="skill-group"><h3>Waiting for sign-off · ${T.waiting.length}</h3><div class="home-cards">${T.waiting.map((w) => `<a class="gate-row" href="#j/${w.slug}"><span class="dot gate"></span><div style="min-width:0"><b>${esc(w.title)}</b><span class="s">${w.status === 'direction' ? 'Direction to approve' : `Prototype sign-off${w.by ? ` · requested by ${esc(w.by)}` : ''}`} · ${ago(w.since)} · ${w.signers.length ? `can sign: ${esc(w.signers.join(', '))}` : 'nobody can sign yet'}</span></div><span class="go">Open</span></a>`).join('')}</div></div>`
+    : ''
+  const row = (m) => {
+    const until = m.signoffUntil ? ` until ${dateIn(m.signoffUntil)}` : ''
+    return `<div class="tm-row" data-member="${m.id}">
+      <span class="tm-av-wrap">${avatarHTML(m, 'lg')}<i class="tm-dot ${m.online ? 'on' : ''}"></i></span>
+      <div class="tm-who"><b>${esc(m.name)}${m.id === me().id ? ' <span class="tm-you">you</span>' : ''}</b><span>@${esc(m.handle)} · ${esc(seen(m))}</span>
+        <span class="tm-tags"><span class="tm-tag r-${m.role}">${roleLabel(m)}</span>${m.role !== 'owner' && m.signoffNow ? `<span class="tm-tag sign">Can sign off${esc(until)}</span>` : ''}${m.away ? `<span class="tm-tag away">Away until ${dateIn(m.away.until)}</span>` : ''}</span></div>
+      <div class="tm-projects">${m.projects.length ? m.projects.slice(0, 4).map((p) => `<a class="tm-proj" href="#j/${p.slug}"><span class="dot ${p.status === 'ready_for_dev' ? 'done' : ['direction', 'awaiting_signoff'].includes(p.status) ? 'gate' : ''}"></span>${esc(p.title)}</a>`).join('') + (m.projects.length > 4 ? `<span class="card-sub">+${m.projects.length - 4} more</span>` : '') : '<span class="card-sub">No projects</span>'}</div>
+      ${admin && m.id !== me().id ? `<button class="icon-btn" data-tm-menu="${m.id}" aria-label="Manage ${esc(m.name)}">${ic.more}</button>` : '<span></span>'}
+    </div>`
+  }
+  const invites = admin
+    ? `<div class="skill-group" id="invite"><h3>Invite people</h3>
+      <form class="card" id="invite-form" ><div class="card-head"><div><div class="card-title">Create an invite link</div><div class="card-sub">Send the link to a designer. They open it, pick a username and password, and land on the projects you choose. Links work once and expire in 7 days.</div></div></div>
+        <div class="card-body"><div class="tm-inv-grid"><input class="field-in" id="iv-name" placeholder="Name (optional)" maxlength="40" aria-label="Name">
+          <select class="field-in" id="iv-role" aria-label="Role"><option value="designer">Designer · works on their projects</option><option value="viewer">Viewer · can see and comment</option><option value="owner">Admin · everything, incl. sign-off</option></select></div>
+          ${(T.projects || []).length ? `<div class="card-sub">Add them to projects (optional)</div><div class="tm-chips">${T.projects.map((p) => `<label class="chip"><input type="checkbox" value="${p.slug}" hidden>${esc(p.title)}</label>`).join('')}</div>` : ''}
+          ${S.lastInvite ? `<div class="tm-link"><code>${esc(S.lastInvite)}</code><button type="button" class="btn primary" data-copy-invite>Copy link</button></div>` : ''}
+          ${S.config.links && /localhost|127\.0\.0\.1/.test(location.host) ? '<div class="card-sub">This studio runs on your computer, so the link only works here. Host the studio (docs/SETUP.md → Hosting) for the team to join from their own machines.</div>' : ''}
+        </div><div class="card-actions"><button class="btn primary" type="submit">Create invite link</button></div></form>
+      ${(T.invites || []).length ? `<div class="home-cards" >${T.invites.map((i) => `<div class="gate-row" style="cursor:default"><span class="avatar-sm">✉</span><div style="min-width:0"><b>${esc(i.name || 'Invite')} · ${ROLE_LABEL[i.role]}</b><span class="s">by ${esc(i.by)} · expires ${dateIn(i.expires)}${i.projects.length ? ` · ${i.projects.length} project${i.projects.length === 1 ? '' : 's'}` : ''}</span></div><button class="btn ghost" style="margin-left:auto" data-iv-revoke="${i.id}">Revoke</button></div>`).join('')}</div>` : ''}
+      <details class="tm-direct" ><summary class="card-sub">Or add someone directly with a temporary password</summary>
+        <form class="card" id="user-form"><div class="card-body" style="padding-top:16px"><input class="field-in" id="nu-name" placeholder="Name" maxlength="40" required aria-label="Name"><input class="field-in" id="nu-user" placeholder="Username or email" required aria-label="Username or email"><input class="field-in" id="nu-pass" type="password" autocomplete="new-password" placeholder="Temporary password (10+ characters)" required aria-label="Temporary password">
+        <select class="field-in" id="nu-role" aria-label="Role"><option value="designer">Designer</option><option value="viewer">Viewer</option><option value="owner">Admin</option></select><div class="card-sub" id="nu-err" style="color:var(--err)" hidden></div></div>
+        <div class="card-actions"><button class="btn primary" type="submit">Add person</button></div></form></details></div>`
+    : ''
+  const assign = admin && (T.projects || []).length
+    ? `<div class="skill-group"><h3>Projects and who’s on them</h3><div class="home-cards" >${T.projects.map((p) => `<div class="gate-row" style="cursor:default"><span class="dot ${p.status === 'ready_for_dev' ? 'done' : ['direction', 'awaiting_signoff'].includes(p.status) ? 'gate' : ''}"></span><a href="#j/${p.slug}" style="min-width:0;text-decoration:none"><b>${esc(p.title)}</b><span class="s">${esc(S.config.statuses[p.status]?.label || p.status)}</span></a>
+        <span class="tm-stack" style="margin-left:auto">${p.assignees.map(member).filter(Boolean).map((u) => avatarHTML(u)).join('') || '<span class="card-sub">Nobody</span>'}</span><button class="btn ghost" data-tm-assign="${p.slug}">Assign</button></div>`).join('')}</div></div>`
+    : ''
+  const settings = admin
+    ? `<div class="skill-group"><h3>Access</h3><label class="card tm-setting" ><div class="card-head"><div><div class="card-title">Designers can see every project</div><div class="card-sub">Off: Designers and Viewers only see projects they’re on. On: Designers can open everything, but only change projects they’re on.</div></div><input type="checkbox" data-tm-see-all ${T.settings?.designersSeeAll ? 'checked' : ''} style="margin-left:auto"></div></label>
+      <div class="card-sub" style="max-width:720px;margin-top:8px"><b>Admin</b> everything: assign, sign off, delete, settings · <b>Designer</b> starts BRDs and works on their projects; sign-off only if you give them the right · <b>Viewer</b> sees their projects and comments.</div></div>`
+    : ''
+  const activity = (T.activity || []).length
+    ? `<div class="skill-group"><h3>Recent activity</h3><div class="tm-activity">${T.activity.map((a) => `<a class="tm-act" href="#j/${a.slug}">${avatarHTML(members().find((m) => m.name === a.by) || { name: a.by }, 'sm')}<span><b>${esc(a.by)}</b> ${esc(a.text.replace(/\s+/g, ' ').slice(0, 120))} <span class="card-sub">· ${esc(a.title)} · ${ago(a.at)}</span></span></a>`).join('')}</div></div>`
+    : ''
+  return `<div class="skills tm"><div class="tm-top"><div><h2>Team</h2><p>${T.members.length} ${T.members.length === 1 ? 'person' : 'people'} · ${online.length} online now</p></div>${admin ? '<button class="btn primary" data-invite-open>Invite people</button>' : ''}</div>
+    ${waiting}
+    <div class="skill-group"><h3>People</h3><div class="tm-list">${T.members.slice().sort((a, b) => b.online - a.online || (a.role === 'owner' ? -1 : 1)).map(row).join('')}</div></div>
+    ${awayCard}${admin ? '<a class="gate-row" href="#settings/people"><span class="avatar-sm">⚙</span><div style="min-width:0"><b>Manage people, roles, projects and security</b><span class="s">Settings → Admin</span></div><span class="go">Open</span></a>' : ''}${activity}</div>`
+  void assign, invites, settings
+}
+function memberMenu(anchor, m) {
+  const until = m.signoffUntil ? m.signoffUntil.slice(0, 10) : ''
+  menu(
+    anchor,
+    `<div class="ml">${esc(m.name)} · ${roleLabel(m)}</div>
+    ${['owner', 'lead', 'designer', 'viewer'].filter((r) => r !== m.role).map((r) => `<button class="mi" data-mm-role="${r}">Make ${ROLE_LABEL[r]}</button>`).join('')}
+    <hr>
+    ${m.role === 'designer' ? (m.canSignoff ? `<button class="mi" data-mm-sign="off">Remove sign-off rights</button>` : `<div class="ml">Sign-off rights (approve + Final sign-off)</div><div class="tm-sign-row"><input type="date" id="mm-until" value="${until}" min="${new Date().toISOString().slice(0, 10)}" aria-label="Until (optional)"><button class="btn primary" data-mm-sign="on">Give</button></div><div class="ml" style="font-weight:400">Leave the date empty for no end date.</div>`) + '<hr>' : ''}
+    <button class="mi" data-mm-pass>Reset password</button>
+    <button class="mi" data-mm-signout>Sign out of all devices${m.sessions ? ` <span class="check">${m.sessions}</span>` : ''}</button>
+    <button class="mi danger" data-mm-remove>Remove from studio</button>`,
+    (el) => {
+      el.classList.add('tm-pick-menu')
+      el.style.left = Math.max(8, Math.min(anchor.getBoundingClientRect().right - 300, innerWidth - 308)) + 'px'
+      el.onclick = async (e) => {
+        const b = e.target.closest('[data-mm-role],[data-mm-sign],[data-mm-pass],[data-mm-remove],[data-mm-signout]')
+        if (!b) return
+        el.hidden = true
+        if (b.dataset.mmPass != null) return passwordModal(m)
+        try {
+          if (b.dataset.mmRole) await api('/api/users/role', { id: m.id, role: b.dataset.mmRole })
+          else if (b.dataset.mmSign) await api('/api/users/signoff', { id: m.id, on: b.dataset.mmSign === 'on', until: $('#mm-until', el)?.value || null })
+          else if (b.dataset.mmRemove != null) await api('/api/users/remove', { id: m.id })
+          else if (b.dataset.mmSignout != null) await api('/api/users/signout', { id: m.id })
+          toast('Updated', m.name)
+          await loadTeam()
+          renderAll(false)
+        } catch (x) {
+          toast('Couldn’t do that', x.message)
+        }
+      }
+    },
+  )
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target
+  const chip = t.closest('.tm-chips label.chip')
+  if (chip) return setTimeout(() => chip.classList.toggle('on', chip.querySelector('input').checked))
+  if (t.closest('[data-tm-invite]')) return e.preventDefault(), $('#iv-name')?.focus(), $('#invite')?.scrollIntoView({ behavior: 'smooth' })
+  const mm = t.closest('[data-tm-menu]')
+  if (mm) return e.stopPropagation(), memberMenu(mm, member(mm.dataset.tmMenu))
+  const ta = t.closest('[data-tm-assign]')
+  if (ta) {
+    e.stopPropagation()
+    return assignMenu(ta, { slug: ta.dataset.tmAssign, assignees: S.team.projects.find((p) => p.slug === ta.dataset.tmAssign)?.assignees || [] })
+  }
+  const aw = t.closest('[data-tm-away]')
+  if (aw) {
+    const until = aw.dataset.tmAway ? $('#tm-away-until')?.value : null
+    if (aw.dataset.tmAway && !until) return toast('Pick a date', 'Choose when you’re back.')
+    await api('/api/me/away', { until }).catch((x) => toast('Couldn’t do that', x.message))
+    await loadTeam()
+    return renderAll(false)
+  }
+  const sa = t.closest('[data-tm-see-all]')
+  if (sa) {
+    await api('/api/team/settings', { designersSeeAll: sa.checked }).catch((x) => toast('Couldn’t do that', x.message))
+    return loadTeam()
+  }
+  const rv = t.closest('[data-iv-revoke]')
+  if (rv) {
+    await api('/api/invites', { action: 'revoke', id: rv.dataset.ivRevoke }).catch(() => {})
+    await loadTeam()
+    return renderAll(false)
+  }
+  if (t.closest('[data-copy-invite]')) {
+    try {
+      await navigator.clipboard.writeText(S.lastInvite)
+      toast('Invite link copied', 'Send it to them on Slack or email.')
+    } catch {}
+  }
+})
+document.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'invite-form') return
+  e.preventDefault()
+  try {
+    const r = await api('/api/invites', { role: $('#iv-role').value, name: $('#iv-name').value, projects: [...e.target.querySelectorAll('.tm-chips input:checked')].map((i) => i.value) })
+    S.lastInvite = `${location.origin}/#invite/${r.token}`
+    await loadTeam()
+    renderAll(false)
+    try {
+      await navigator.clipboard.writeText(S.lastInvite)
+      toast('Invite link copied', 'Send it to them. It works once and expires in 7 days.')
+    } catch {}
+  } catch (x) {
+    toast('Couldn’t create the invite', x.message)
+  }
+})
+
+// ---- Invite link: make your own account ----
+async function inviteScreen(token) {
+  let el = $('#auth')
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'auth'
+    el.className = 'auth'
+    document.body.appendChild(el)
+  }
+  el.hidden = false
+  document.body.classList.add('signed-out')
+  const inv = await api(`/api/auth/invite?t=${encodeURIComponent(token)}`).catch((x) => ({ error: x.message }))
+  if (inv.error) {
+    el.innerHTML = `<div class="auth-card"><img src="${LOGO}" alt="" class="auth-logo"><h1>Invite link not valid</h1><p>${esc(inv.error)}</p><button class="btn primary" type="button" id="iv-signin">Sign in instead</button></div>`
+    $('#iv-signin').onclick = () => ((location.hash = ''), authScreen('login'))
+    return
+  }
+  el.innerHTML = `<form class="auth-card" id="iv-form"><img src="${LOGO}" alt="" class="auth-logo"><h1>Join the Design Studio</h1>
+    <p>${esc(inv.by)} invited you as a <b>${ROLE_LABEL[inv.role]}</b>. Create your account to get started.</p>
+    <input class="field-in" id="iv-n" placeholder="Your name" autocomplete="name" required value="${esc(inv.name || '')}" aria-label="Your name">
+    <input class="field-in" id="iv-u" placeholder="Username or work email" autocomplete="username" required aria-label="Username or email">
+    <input class="field-in" id="iv-p" type="password" placeholder="Password (10+ characters)" autocomplete="new-password" required aria-label="Password">
+    <div class="card-sub" id="iv-err" style="color:var(--err)" hidden></div>
+    <button class="btn primary" type="submit">Create account</button></form>`
+  $(inv.name ? '#iv-u' : '#iv-n').focus()
+  $('#iv-form').onsubmit = async (e) => {
+    e.preventDefault()
+    try {
+      const r = await api('/api/auth/invite', { token, name: $('#iv-n').value, username: $('#iv-u').value, password: $('#iv-p').value })
+      S.user = r.user
+      el.hidden = true
+      document.body.classList.remove('signed-out')
+      history.replaceState(null, '', '#')
+      if (!S.booted) start()
+      else (await loadJobs(), renderAll())
+      toast(`Welcome, ${r.user.name}`, 'Your projects are in the sidebar. Type @ in any comment to mention someone.')
+    } catch (x) {
+      $('#iv-err').hidden = false
+      $('#iv-err').textContent = x.message
+    }
+  }
+}
+
+// ================= Settings: one place (Account + Notifications for everyone; Admin sections for Admins) =================
+const SETTINGS_NAV = [
+  ['Account', [['account', 'Your account'], ['notifications', 'Notifications']]],
+  ['Admin', [['activity', 'Activity'], ['people', 'People'], ['projects', 'Projects'], ['roles', 'Roles & sign-off'], ['security', 'Security'], ['integrations', 'Keys & integrations']]],
+]
+const ADMIN_SECTIONS = new Set(['activity', 'people', 'projects', 'roles', 'security', 'integrations'])
+const ROLE_HELP = {
+  owner: 'Everything, including these settings',
+  lead: 'Signs off any project; no admin settings',
+  designer: 'Starts BRDs, works on their projects',
+  viewer: 'Sees their projects and comments',
+}
+function settingsSection() {
+  const sec = S.settingsSec || 'account'
+  return me().role !== 'owner' && ADMIN_SECTIONS.has(sec) ? 'account' : sec
+}
+function settingsHTML() {
+  const admin = me().role === 'owner'
+  const sec = settingsSection()
+  const nav = SETTINGS_NAV.filter(([g]) => g !== 'Admin' || admin)
+    .map(([g, items]) => `<div class="st-group">${g}</div>${items.map(([k, l]) => `<a class="st-link${k === sec ? ' on' : ''}" href="#settings/${k}">${l}${k === 'people' && (S.team?.invites || []).length ? `<i>${S.team.invites.length}</i>` : ''}</a>`).join('')}`)
+    .join('')
+  const body = { account: accountHTML, notifications: () => notificationsHTML(true), people: peopleHTML, projects: projectsHTML, roles: rolesHTML, security: securityHTML, integrations: integrationsHTML, activity: activityHTML }[sec]
+  return `<div class="st"><nav class="st-nav" aria-label="Settings">${nav}</nav><div class="st-body">${body()}</div></div>`
+}
+const stHead = (title, sub, action = '') => `<div class="st-head"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${action}</div>`
+// Figma-style setting row: title + description on the left, value or control on the right.
+const stRow = (title, sub, control, attrs = '') => `<div class="st-row" ${attrs}><div class="st-row-t"><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</div><div class="st-row-c">${control}</div></div>`
+
+function accountHTML() {
+  const self = member(me().id) || { name: me().name }
+  return `${stHead('Your account', 'How you appear to the team, and how you sign in.')}
+    <div class="st-card">
+      ${stRow('Name', 'Shown on comments, mentions and the Team page.', `<form class="st-inline" id="name-form"><input class="field-in" id="me-name-in" value="${esc(self.name)}" maxlength="40" aria-label="Your name"><button class="btn" type="submit">Save</button></form>`)}
+      ${stRow('Username', 'People mention you with this.', `<span class="st-val">@${esc(self.handle || '')}</span>`)}
+      ${stRow('Role', ROLE_HELP[me().role] + (S.config.me?.signoffNow && me().role === 'designer' ? ` · can sign off${self.signoffUntil ? ` until ${dateIn(self.signoffUntil)}` : ''}` : ''), `<span class="tm-tag r-${me().role}">${roleLabel(me())}</span>`)}
+      ${stRow('Password', 'At least 10 characters. You’ll sign in again after.', '<button class="btn" id="st-pass">Change password</button>')}
+      ${stRow(self.away ? `Away until ${dateIn(self.away.until)}` : 'Away', self.away ? 'The team sees this on the Team page.' : 'Let the team know you’re out. Admins: give someone sign-off in Roles & sign-off so work doesn’t wait.', self.away ? '<button class="btn" data-tm-away="">I’m back</button>' : `<span class="st-inline"><input class="field-in tm-date" type="date" id="tm-away-until" min="${new Date().toISOString().slice(0, 10)}" aria-label="Away until"><button class="btn" data-tm-away="set">Set</button></span>`)}
+    </div>`
+}
+
+function peopleHTML() {
+  const T = S.team || { members: [] }
+  const q = (S.peopleQ || '').toLowerCase()
+  const f = S.peopleRole || 'all'
+  const list = T.members.filter((m) => (f === 'all' || m.role === f) && (!q || `${m.name} ${m.username}`.toLowerCase().includes(q)))
+  const count = (r) => T.members.filter((m) => r === 'all' || m.role === r).length
+  const signCell = (m) =>
+    m.role === 'owner' || m.role === 'lead'
+      ? '<span class="st-val">Always</span>'
+      : m.role === 'designer'
+        ? m.signoffNow
+          ? `<button class="st-sign on" data-tm-menu="${m.id}">${m.signoffUntil ? `Until ${dateIn(m.signoffUntil)}` : 'Yes'}</button>`
+          : `<button class="st-sign" data-tm-menu="${m.id}">Give</button>`
+        : '<span class="st-dash">–</span>'
+  const row = (m) => `<div class="pp-row" role="row">
+      <div class="pp-name" role="cell"><span class="tm-av-wrap">${avatarHTML(m, 'lg')}<i class="tm-dot ${m.online ? 'on' : ''}"></i></span><div class="tm-who"><b>${esc(m.name)}${m.id === me().id ? ' <span class="tm-you">you</span>' : ''}${m.away ? ` <span class="tm-tag away">Away</span>` : ''}</b><span>${esc(m.username)}</span></div></div>
+      <div role="cell">${m.id === me().id ? `<span class="pp-role">${roleLabel(m)}</span>` : `<select class="pp-select" data-pp-role="${m.id}" aria-label="Role for ${esc(m.name)}">${['owner', 'lead', 'designer', 'viewer'].map((r) => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}</select>`}</div>
+      <div role="cell">${signCell(m)}</div>
+      <div role="cell" class="pp-proj">${m.role === 'owner' || m.role === 'lead' ? '<span class="st-val">All</span>' : m.projects.length ? `<span class="st-val" title="${esc(m.projects.map((p) => p.title).join(', '))}">${m.projects.length}</span>` : '<span class="st-dash">–</span>'}</div>
+      <div role="cell" class="st-val">${m.online ? '<span class="pp-online">Online</span>' : m.lastSeen ? `${ago(m.lastSeen)} ago` : '–'}</div>
+      <div role="cell">${m.id !== me().id ? `<button class="icon-btn" data-tm-menu="${m.id}" aria-label="Manage ${esc(m.name)}">${ic.more}</button>` : ''}</div>
+    </div>`
+  const pending = (T.invites || []).map((i) => `<div class="pp-row pending" role="row">
+      <div class="pp-name" role="cell"><span class="tm-av lg pending">✉</span><div class="tm-who"><b>${esc(i.name || 'Invite link')} <span class="tm-tag">Pending invite</span></b><span>by ${esc(i.by)} · expires ${dateIn(i.expires)}</span></div></div>
+      <div role="cell"><span class="pp-role">${ROLE_LABEL[i.role]}</span></div><div role="cell"><span class="st-dash">–</span></div>
+      <div role="cell" class="pp-proj">${i.projects.length ? `<span class="st-val">${i.projects.length}</span>` : '<span class="st-dash">–</span>'}</div><div role="cell" class="st-dash">–</div>
+      <div role="cell"><button class="icon-btn" data-iv-revoke="${i.id}" title="Revoke invite" aria-label="Revoke invite">${ic.x}</button></div></div>`)
+  return `${stHead('People', `${T.members.length} ${T.members.length === 1 ? 'person' : 'people'} · ${T.members.filter((m) => m.online).length} online`, '<button class="btn primary" data-invite-open>Invite people</button>')}
+    <div class="pp-tools"><label class="search pp-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input id="pp-q" type="search" placeholder="Search people" value="${esc(S.peopleQ || '')}" aria-label="Search people"></label>
+      <span class="ib-tabs">${['all', 'owner', 'lead', 'designer', 'viewer'].map((r) => `<button class="ib-tab${f === r ? ' on' : ''}" data-pp-filter="${r}">${r === 'all' ? 'All' : ROLE_LABEL[r] + 's'} <i>${count(r)}</i></button>`).join('')}</span></div>
+    <div class="pp-table" role="table"><div class="pp-row pp-th" role="row"><div role="columnheader">Name</div><div role="columnheader">Role</div><div role="columnheader">Sign-off</div><div role="columnheader">Projects</div><div role="columnheader">Last active</div><div></div></div>
+      ${f === 'all' && !q ? pending.join('') : ''}${list.map(row).join('') || '<div class="ib-empty">Nobody matches.</div>'}</div>`
+}
+function projectsHTML() {
+  const T = S.team || {}
+  const P = T.projects || []
+  return `${stHead('Projects', 'Who’s on each project. People on a project are notified about it and can work on it.')}
+    <div class="st-card">${stRow('Designers can see every project', 'Off: Designers and Viewers only see projects they’re on. On: Designers can open everything, but only change projects they’re on. Admins and Leads always see everything.', `<label class="switch"><input type="checkbox" data-tm-see-all ${T.settings?.designersSeeAll ? 'checked' : ''}><span></span></label>`)}</div>
+    <div class="st-card">${P.length ? P.map((p) => stRow(`<a href="#j/${p.slug}">${esc(p.title)}</a>`, esc(S.config.statuses[p.status]?.label || p.status), `<span class="tm-stack">${p.assignees.map(member).filter(Boolean).map((u) => avatarHTML(u)).join('') || '<span class="st-dash">Nobody</span>'}</span><button class="btn ghost" data-tm-assign="${p.slug}">Assign</button>`)).join('') : '<p class="ib-empty">No projects yet.</p>'}</div>`
+}
+function rolesHTML() {
+  const T = S.team || { members: [] }
+  const caps = [
+    ['Start BRDs and work on their projects', [1, 1, 1, 0]],
+    ['Comment, reply and @mention', [1, 1, 1, 1]],
+    ['See every project', [1, 1, 0, 0]],
+    ['Approve direction and Final sign-off', [1, 1, 'temp', 0]],
+    ['Assign people, invite, roles', [1, 0, 0, 0]],
+    ['Settings: security, keys, notifications', [1, 0, 0, 0]],
+  ]
+  const cell = (v) => (v === 'temp' ? '<span class="rl-temp">If given</span>' : v ? '<span class="rl-yes">✓</span>' : '<span class="st-dash">–</span>')
+  const signers = T.members.filter((m) => m.signoffNow)
+  const designers = T.members.filter((m) => m.role === 'designer' && !m.signoffNow)
+  return `${stHead('Roles & sign-off', 'Leads sign off without admin access. For cover while you’re away, give a Designer temporary sign-off with an end date.')}
+    <div class="rl-table" role="table"><div class="rl-row rl-th" role="row"><div></div>${['owner', 'lead', 'designer', 'viewer'].map((r) => `<div role="columnheader"><b>${ROLE_LABEL[r]}</b><span>${ROLE_HELP[r]}</span></div>`).join('')}</div>
+      ${caps.map(([l, v]) => `<div class="rl-row" role="row"><div role="rowheader">${l}</div>${v.map((x) => `<div role="cell">${cell(x)}</div>`).join('')}</div>`).join('')}</div>
+    <h3 class="st-sub">Who can sign off right now · ${signers.length}</h3>
+    <div class="st-card">${signers.map((m) => stRow(`${avatarHTML(m, 'sm')} ${esc(m.name)}${m.away ? ' <span class="tm-tag away">Away</span>' : ''}`, m.role === 'owner' ? 'Admin · every project' : m.role === 'lead' ? 'Lead · every project' : `Temporary · projects they’re on${m.signoffUntil ? ` · until ${dateIn(m.signoffUntil)}` : ' · no end date'}`, m.role === 'designer' ? `<button class="btn ghost" data-rl-revoke="${m.id}">Remove</button>` : '')).join('')}</div>
+    ${designers.length ? `<h3 class="st-sub">Give temporary sign-off</h3><form class="st-card st-pad st-inline" id="rl-form"><select class="field-in" id="rl-who" aria-label="Designer">${designers.map((m) => `<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select><span class="card-sub">until</span><input class="field-in tm-date" type="date" id="rl-until" min="${new Date().toISOString().slice(0, 10)}" aria-label="Until"><button class="btn primary" type="submit">Give sign-off</button></form>
+    <p class="card-sub">They get a notification. Rights end on the date (leave it empty for no end date). They can sign off projects they’re on and still can’t open admin settings.</p>` : ''}`
+}
+function securityHTML() {
+  const T = S.team || {}
+  const st = T.settings || {}
+  const A = T.access || {}
+  const sel = (key, opts, val) => `<select class="field-in st-select" data-sec="${key}" aria-label="${key}">${opts.map(([v, l]) => `<option value="${v}" ${String(val) === String(v) ? 'selected' : ''}>${l}</option>`).join('')}</select>`
+  return `${stHead('Security', 'Sign-in, sessions and who can join.')}
+    <h3 class="st-sub">Login and sessions</h3>
+    <div class="st-card">
+      ${stRow('Session length', 'How long people stay signed in before they need to sign in again. Applies to new sign-ins.', sel('sessionDays', [[1, '1 day'], [7, '7 days'], [14, '14 days'], [30, '30 days']], st.sessionDays))}
+      ${stRow('Idle session timeout', 'Sign people out automatically after this long without using the studio.', sel('idleHours', [[0, 'Off'], [8, '8 hours'], [24, '1 day'], [48, '2 days'], [168, '7 days']], st.idleHours))}
+      ${stRow('Failed sign-in protection', 'Too many wrong passwords from one address locks sign-in for a while.', '<span class="st-val">8 attempts · 15 min lock</span>')}
+      ${stRow('Passwords', 'Stored hashed (scrypt), never in plain text.', '<span class="st-val">10+ characters</span>')}
+      ${stRow('Sign everyone out', 'Ends every session except yours. Use it if a laptop is lost or someone leaves.', '<button class="btn" data-sec-signout>Sign everyone out</button>')}
+    </div>
+    <h3 class="st-sub">Joining</h3>
+    <div class="st-card">
+      ${stRow('Invite links expire after', 'Each link also works only once.', sel('inviteDays', [[1, '1 day'], [3, '3 days'], [7, '7 days'], [14, '14 days'], [30, '30 days']], st.inviteDays))}
+      ${stRow('Allowed email domains', 'When set, people joining from an invite must sign up with a work email on these domains.', `<form class="st-inline" id="domains-form"><input class="field-in" id="sec-domains" placeholder="e.g. yourcompany.com" value="${esc((st.allowedDomains || []).join(', '))}" aria-label="Allowed email domains"><button class="btn" type="submit">Save</button></form>`)}
+      ${stRow('Who can invite', 'Only Admins create invite links and add people.', '<span class="st-val">Admins</span>')}
+    </div>
+    <h3 class="st-sub">Access</h3>
+    <div class="st-card">
+      ${stRow('Studio access', A.host === 'local' ? 'Only this computer can open the studio. Host it for the team (docs/SETUP.md → Hosting).' : 'Open on the network; everyone signs in.', `<span class="st-val">${A.host === 'local' ? 'This computer only' : 'Network'}</span>`)}
+      ${stRow('Secure cookies (HTTPS)', 'Required when the studio is hosted. Set STUDIO_SECURE_COOKIE=1 behind HTTPS.', `<span class="st-val ${A.secureCookie ? 'ok' : ''}">${A.secureCookie ? 'On' : 'Off'}</span>`)}
+      ${stRow('Secrets', 'API keys, the Figma token, accounts and sessions stay on the studio’s computer and are git-ignored.', '<span class="st-val ok">Not in git</span>')}
+    </div>`
+}
+function inviteModal() {
+  const root = $('#modal-root')
+  const P = S.team?.projects || []
+  root.innerHTML = `<form class="modal st-modal" role="dialog" aria-modal="true" aria-labelledby="iv-t" id="invite-form"><h2 id="iv-t">Invite people</h2>
+    <p>Send them the link. They choose a username and password and land on the projects you pick. One use, expires in ${S.team?.settings?.inviteDays || 7} days.</p>
+    <div class="tm-inv-grid"><input class="field-in" id="iv-name" placeholder="Name (optional)" maxlength="40" aria-label="Name">
+      <select class="field-in" id="iv-role" aria-label="Role"><option value="designer">Designer</option><option value="lead">Lead · can sign off</option><option value="viewer">Viewer</option><option value="owner">Admin</option></select></div>
+    ${P.length ? `<div class="card-sub">Add them to projects (optional)</div><div class="tm-chips">${P.map((p) => `<label class="chip"><input type="checkbox" value="${p.slug}" hidden>${esc(p.title)}</label>`).join('')}</div>` : ''}
+    <div id="iv-out"></div>
+    ${/localhost|127\.0\.0\.1/.test(location.host) ? '<p class="card-sub">This studio runs on your computer, so links only work here until it’s hosted (docs/SETUP.md → Hosting).</p>' : ''}
+    <details class="tm-direct"><summary class="card-sub">Or add someone directly with a temporary password</summary><div class="st-direct"><input class="field-in" id="nu-name" placeholder="Name" maxlength="40" aria-label="Name"><input class="field-in" id="nu-user" placeholder="Username or email" aria-label="Username or email"><input class="field-in" id="nu-pass" type="password" autocomplete="new-password" placeholder="Temporary password (10+ characters)" aria-label="Temporary password"><button type="button" class="btn" id="nu-add">Add person</button><div class="card-sub" id="nu-err" style="color:var(--err)" hidden></div></div></details>
+    <div class="foot"><button type="button" class="btn ghost" data-close>Done</button><button class="btn primary" type="submit">Create invite link</button></div></form>`
+  root.hidden = false
+  $('#iv-name').focus()
+  const close = () => ((root.hidden = true), (root.innerHTML = ''), loadTeam().then(() => renderAll(false)))
+  root.onclick = (e) => (e.target === root || e.target.dataset.close != null) && close()
+  $('#invite-form').onsubmit = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      const r = await api('/api/invites', { role: $('#iv-role').value, name: $('#iv-name').value, projects: [...e.target.querySelectorAll('.tm-chips input:checked')].map((i) => i.value) })
+      S.lastInvite = `${location.origin}/#invite/${r.token}`
+      $('#iv-out').innerHTML = `<div class="tm-link"><code>${esc(S.lastInvite)}</code><button type="button" class="btn primary" data-copy-invite>Copy link</button></div>`
+      try {
+        await navigator.clipboard.writeText(S.lastInvite)
+        toast('Invite link copied', 'Send it to them on Slack or email.')
+      } catch {}
+    } catch (x) {
+      toast('Couldn’t create the invite', x.message)
+    }
+  }
+  $('#nu-add').onclick = async () => {
+    try {
+      await api('/api/users', { name: $('#nu-name').value, username: $('#nu-user').value, password: $('#nu-pass').value, role: $('#iv-role').value })
+      toast('Person added', `${$('#nu-name').value} can sign in with the username and password you set.`)
+      close()
+    } catch (x) {
+      $('#nu-err').hidden = false
+      $('#nu-err').textContent = x.message
+    }
+  }
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target
+  if (t.closest('[data-invite-open]')) return inviteModal()
+  if (t.closest('#st-pass')) return passwordModal()
+  const pf = t.closest('[data-pp-filter]')
+  if (pf) return (S.peopleRole = pf.dataset.ppFilter), renderThread(false)
+  const rr = t.closest('[data-rl-revoke]')
+  if (rr) {
+    await api('/api/users/signoff', { id: rr.dataset.rlRevoke, on: false }).catch((x) => toast('Couldn’t do that', x.message))
+    await loadTeam()
+    return renderAll(false)
+  }
+  if (t.closest('[data-sec-signout]')) {
+    await api('/api/security/signout-all', {}).then(() => toast('Done', 'Everyone else is signed out.')).catch((x) => toast('Couldn’t do that', x.message))
+  }
+})
+document.addEventListener('change', async (e) => {
+  const t = e.target
+  if (t.dataset?.ppRole) {
+    try {
+      await api('/api/users/role', { id: t.dataset.ppRole, role: t.value })
+      toast('Role changed', `${member(t.dataset.ppRole)?.name} is now ${ROLE_LABEL[t.value]}.`)
+    } catch (x) {
+      toast('Couldn’t change the role', x.message)
+    }
+    await loadTeam()
+    return renderAll(false)
+  }
+  if (t.dataset?.sec) {
+    try {
+      await api('/api/team/settings', { [t.dataset.sec]: Number(t.value) })
+      toast('Saved', 'Security setting updated.')
+    } catch (x) {
+      toast('Couldn’t save', x.message)
+    }
+    return loadTeam()
+  }
+})
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'pp-q') return
+  S.peopleQ = e.target.value
+  const pos = e.target.selectionStart
+  renderThread(false)
+  const el = $('#pp-q')
+  el?.focus()
+  el?.setSelectionRange(pos, pos)
+})
+document.addEventListener('submit', async (e) => {
+  const id = e.target.id
+  if (!['name-form', 'domains-form', 'rl-form'].includes(id)) return
+  e.preventDefault()
+  try {
+    if (id === 'name-form') {
+      const r = await api('/api/me/name', { name: $('#me-name-in').value })
+      S.user = { ...S.user, ...r.user }
+      toast('Saved', 'Your name is updated.')
+    } else if (id === 'domains-form') {
+      await api('/api/team/settings', { allowedDomains: $('#sec-domains').value })
+      toast('Saved', 'Allowed domains updated.')
+    } else {
+      await api('/api/users/signoff', { id: $('#rl-who').value, on: true, until: $('#rl-until').value || null })
+      toast('Sign-off given', `${member($('#rl-who').value)?.name} can now sign off their projects.`)
+    }
+    await loadTeam()
+    renderAll(false)
+  } catch (x) {
+    toast('Couldn’t save', x.message)
+  }
+})
+
+// ---- Settings → Activity (Admin): BRDs in, who's working on them, every piece of feedback with timestamps ----
+const ACT_TYPES = [
+  ['all', 'All events'],
+  ['brd', 'BRDs received'],
+  ['feedback', 'Feedback'],
+  ['comment', 'Comments'],
+  ['approval', 'Approvals & sign-off'],
+  ['answers', 'Answers to the agent'],
+  ['team', 'Assignments'],
+  ['dev', 'Dev questions'],
+  ['access', 'Sign-ins'],
+  ['admin', 'Admin changes'],
+]
+const ACT_RANGES = [['1', 'Last 24 hours'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['0', 'All time']]
+const stamp = (iso) => {
+  const d = new Date(iso)
+  return `<span class="ac-date">${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span><span class="ac-time">${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>`
+}
+function actFilter() {
+  const F = (S.actF = S.actF || { q: '', range: '30', type: 'all', person: 'all', project: 'all' })
+  const since = Number(F.range) ? Date.now() - Number(F.range) * 864e5 : 0
+  const q = F.q.toLowerCase()
+  return (S.activity?.items || []).filter(
+    (e) =>
+      (!since || new Date(e.at) >= since) &&
+      (F.type === 'all' || e.type === F.type) &&
+      (F.person === 'all' || e.by === F.person) &&
+      (F.project === 'all' || e.slug === F.project) &&
+      (!q || `${e.by} ${e.label} ${e.text} ${e.title || ''}`.toLowerCase().includes(q)),
+  )
+}
+function activityHTML() {
+  const A = S.activity
+  if (!A) return `${stHead('Activity', 'Loading…')}`
+  const tab = S.actTab || 'brds'
+  const F = (S.actF = S.actF || { q: '', range: '30', type: 'all', person: 'all', project: 'all' })
+  const sel = (key, opts, label) => `<label class="ac-sel"><span>${label}</span><select data-act-f="${key}" aria-label="${label}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${F[key] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`
+  const head = stHead('Activity', 'Every BRD that comes in, who’s working on it, and every piece of feedback with its timestamp.', `<span class="st-inline"><span class="ib-tabs"><button class="ib-tab${tab === 'brds' ? ' on' : ''}" data-act-tab="brds">BRDs <i>${A.brds.length}</i></button><button class="ib-tab${tab === 'log' ? ' on' : ''}" data-act-tab="log">All activity</button></span><a class="icon-btn" href="/api/activity?format=csv" download title="Download CSV" aria-label="Download CSV"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></a></span>`)
+  if (tab === 'brds') {
+    const st = (s) => `<span class="dot ${s === 'ready_for_dev' ? 'done' : s === 'error' ? 'error' : ['direction', 'awaiting_signoff', 'questions', 'refine', 'idle'].includes(s) ? 'gate' : 'working'}"></span>`
+    return `${head}<div class="pp-table ac-brds" role="table"><div class="pp-row pp-th" role="row"><div>BRD</div><div>Received</div><div>Designers</div><div>Status</div><div>Latest feedback</div></div>
+      ${A.brds.map((b) => `<div class="pp-row" role="row">
+        <div class="ac-proj"><a href="#j/${b.slug}"><b>${esc(b.title)}</b></a><span>${esc(b.surface || '')}${b.surface ? ' · ' : ''}${esc(b.source)}</span></div>
+        <div class="ac-when">${stamp(b.receivedAt)}<span class="ac-from">from ${esc(b.from)}</span></div>
+        <div class="ac-des">${b.designers.length ? `<span class="tm-stack">${b.designers.map((n) => avatarHTML(members().find((m) => m.name === n) || { name: n }, 'sm')).join('')}</span><span>${esc(b.designers.join(', '))}</span>` : '<span class="st-dash">Nobody assigned</span>'}</div>
+        <div class="ac-status">${st(b.status)}<span><b>${esc(S.config.statuses[b.status]?.label || b.status)}</b><span>${b.round ? `Round ${b.round} · ` : ''}${b.signedOffBy ? `signed off by ${esc(b.signedOffBy)} ${ago(b.signedOffAt)} ago` : `updated ${ago(b.updatedAt)} ago`}</span></span></div>
+        <div class="ac-last">${b.lastFeedback ? `<button class="link-btn ac-more" data-act-open="${b.slug}"><b>${esc(b.lastFeedback.by)}</b> · ${ago(b.lastFeedback.at)} ago${b.feedbackCount > 1 ? ` · ${b.feedbackCount} in total` : ''}</button><span class="ac-snip">${hl(esc(b.lastFeedback.text))}</span>` : '<span class="st-dash">No feedback yet</span>'}</div>
+      </div>`).join('') || '<p class="ib-empty">No BRDs yet.</p>'}</div>`
+  }
+  const list = actFilter()
+  const shown = list.slice(0, S.actMore || 150)
+  const people = (A.people || []).map((p) => [p, p])
+  const projects = A.brds.map((b) => [b.slug, b.title])
+  return `${head}
+    <div class="ac-tools"><label class="search pp-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><input id="ac-q" type="search" placeholder="Search feedback, people, projects" value="${esc(F.q)}" aria-label="Search activity"></label>
+      ${sel('range', ACT_RANGES, 'Date range')}${sel('type', ACT_TYPES, 'Event')}${sel('person', [['all', 'All'], ...people], 'Person')}${sel('project', [['all', 'All'], ...projects], 'Project')}</div>
+    <div class="ac-count">${list.length} event${list.length === 1 ? '' : 's'}</div>
+    <div class="pp-table ac-log" role="table"><div class="pp-row pp-th" role="row"><div>Date</div><div>Person</div><div>Event</div><div>Project</div></div>
+      ${shown.map((e, i) => `<div class="pp-row ac-row t-${e.type}" role="row">
+        <div class="ac-when">${stamp(e.at)}</div>
+        <div class="ac-who">${avatarHTML(members().find((m) => m.name === e.by) || { name: e.by }, 'sm')}<span>${esc(e.by)}</span></div>
+        <div class="ac-ev"><b>${esc(e.label)}</b>${e.round ? ` <span class="tm-tag">Round ${e.round}</span>` : ''}${e.stage && e.type !== 'brd' ? ` <span class="ac-stage">${esc(S.config.stages.find((s) => s.id === e.stage)?.label || e.stage)}</span>` : ''}${e.shots ? ` <span class="ac-stage">${e.shots} screenshot${e.shots === 1 ? '' : 's'}</span>` : ''}
+          ${e.text ? `<div class="ac-text${S.actOpen === i ? ' open' : ''}" data-act-row="${i}">${hl(esc(e.text))}</div>` : ''}${e.ip ? `<span class="ac-ip">IP ${esc(e.ip.replace(/^::ffff:/, ''))}</span>` : ''}</div>
+        <div class="ac-p">${e.slug ? `<a href="#j/${e.slug}">${esc(e.title)}</a>` : '<span class="st-dash">–</span>'}</div>
+      </div>`).join('') || '<p class="ib-empty">Nothing matches these filters.</p>'}</div>
+    ${list.length > shown.length ? `<button class="btn ghost" data-act-more style="align-self:center">Show more (${list.length - shown.length})</button>` : ''}`
+}
+document.addEventListener('click', (e) => {
+  const t = e.target
+  const tb = t.closest('[data-act-tab]')
+  if (tb) return (S.actTab = tb.dataset.actTab), renderThread(false)
+  const op = t.closest('[data-act-open]')
+  if (op) return (S.actTab = 'log'), (S.actF = { q: '', range: '0', type: 'all', person: 'all', project: op.dataset.actOpen }), renderThread(false)
+  const row = t.closest('[data-act-row]')
+  if (row) return (S.actOpen = S.actOpen === Number(row.dataset.actRow) ? null : Number(row.dataset.actRow)), renderThread(false)
+  if (t.closest('[data-act-more]')) return (S.actMore = (S.actMore || 150) + 300), renderThread(false)
+})
+document.addEventListener('change', (e) => {
+  const k = e.target.dataset?.actF
+  if (!k) return
+  S.actF[k] = e.target.value
+  S.actMore = 150
+  renderThread(false)
+})
+document.addEventListener('input', (e) => {
+  if (e.target.id !== 'ac-q') return
+  S.actF.q = e.target.value
+  const pos = e.target.selectionStart
+  renderThread(false)
+  const el = $('#ac-q')
+  el?.focus()
+  el?.setSelectionRange(pos, pos)
+})
 
 async function start() {
   S.booted = true
   S.panelWide = ls.get('panelWide', false)
   if (ls.get('side', true) === false && innerWidth > 820) $('#app').classList.add('side-hidden')
   S.config = await api('/api/config')
-  await loadJobs()
+  await Promise.all([loadJobs(), loadTeam(), loadInbox()])
   addEventListener('hashchange', route)
   await route()
   connect()
 }
 ;(async function boot() {
+  const inv = /^#invite\/([a-f0-9]{48})$/.exec(location.hash)
+  if (inv) return inviteScreen(inv[1])
   const r = await api('/api/auth/me').catch((e) => ({ error: e.message }))
   // An older studio server has no accounts yet: it needs a restart, not a password.
   if (r.error) return authScreen('restart')

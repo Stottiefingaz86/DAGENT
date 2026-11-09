@@ -30,7 +30,7 @@
 | 9 | **Dev questions** | Dev agent → Agent → *Head of Design* | Dev's SpecKit finds a case: it POSTs the question. Covered → answered with the source. Not covered → escalated as a question card, then the handover is updated. | `decisions.md` |
 | — | **Ideas** | Agent → Head of Design | On request: gaps against the strategy and research, each with a mock, scope and business case. Good ones become projects. | Ideas page |
 
-The full contract between this repo and its neighbours is in **[docs/PIPELINE.md](docs/PIPELINE.md)**; the handover and dev-questions API in **[docs/HANDOVER.md](docs/HANDOVER.md)**; components Lumen doesn't have in **[knowledge/lumen/GAPS.md](knowledge/lumen/GAPS.md)**; what's next in **[docs/ROADMAP.md](docs/ROADMAP.md)**. For a presentation version, see **[docs/Design_Agent_Overview.pdf](docs/Design_Agent_Overview.pdf)**.
+The full contract between this repo and its neighbours is in **[docs/PIPELINE.md](docs/PIPELINE.md)**; the handover and dev-questions API in **[docs/HANDOVER.md](docs/HANDOVER.md)**; roles, invites, sign-off and notifications for the team in **[docs/TEAM.md](docs/TEAM.md)**; components Lumen doesn't have in **[knowledge/lumen/GAPS.md](knowledge/lumen/GAPS.md)**; what's next in **[docs/ROADMAP.md](docs/ROADMAP.md)**. For a presentation version, see **[docs/Design_Agent_Overview.pdf](docs/Design_Agent_Overview.pdf)**.
 
 ---
 

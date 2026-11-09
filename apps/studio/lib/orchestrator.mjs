@@ -98,7 +98,7 @@ export function createOrchestrator({ store, runner, taste }) {
     },
     requestSignoff(slug, by) {
       store.update(slug, { status: 'awaiting_signoff', stage: 'signoff' })
-      store.event(slug, 'human', 'Requested Chris’s sign-off.', { by })
+      store.event(slug, 'human', 'Requested sign-off.', { by })
     },
     signoff(slug, by) {
       store.update(slug, { status: 'packaging', stage: 'handoff', signedOffBy: by, signedOffAt: new Date().toISOString() })

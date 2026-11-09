@@ -28,6 +28,9 @@ apps/studio/studio.log
 apps/studio/.studio-users.json
 apps/studio/.studio-sessions.json
 apps/studio/.studio-figma-token
+apps/studio/.studio-team.json
+apps/studio/.studio-inbox.json
+apps/studio/.studio-audit.jsonl
 apps/studio/.studio-notify.json
 apps/studio/.studio-tidy.json
 .studio-trash/

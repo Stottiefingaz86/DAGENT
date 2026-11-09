@@ -25,7 +25,7 @@ export const STATUSES = {
   questions: { label: 'Questions for you', gate: 'Answer the agent’s questions' },
   direction: { label: 'Direction review', gate: 'Approve the direction or ask for changes' },
   refine: { label: 'Refine', gate: 'Review the prototype and leave feedback' },
-  awaiting_signoff: { label: 'Awaiting Chris', gate: 'Final sign-off (Owner)' },
+  awaiting_signoff: { label: 'Awaiting sign-off', gate: 'Final sign-off' },
   packaging: { label: 'Packaging', gate: null },
   ready_for_dev: { label: 'Ready for dev', gate: null },
   idle: { label: 'Waiting for you', gate: 'Reply to the agent' },
@@ -149,6 +149,10 @@ export class Store extends EventEmitter {
 
   // who: agent | human | system | tool
   event(slug, who, text, data = undefined) {
+    if (who === 'human' && data) {
+      const j = this.get(slug)
+      if (j) data = { stage: j.stage, round: j.round || 0, ...data }
+    }
     const e = { t: new Date().toISOString(), who, text, ...(data ? { data } : {}) }
     fs.appendFileSync(path.join(this.dir(slug), 'events.jsonl'), JSON.stringify(e) + '\n')
     this.emit('change', { type: 'event', slug, event: e })
