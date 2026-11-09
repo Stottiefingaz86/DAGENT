@@ -197,7 +197,7 @@ async function route() {
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
   if (S.view === 'team' || S.view === 'settings') await loadTeam()
-  if (S.view === 'settings' && settingsSection() === 'activity') S.activity = await api('/api/activity').catch(() => null)
+  if (S.view === 'settings' && settingsSection() === 'activity') S.activity = await api('/api/activity').catch((e) => ({ error: e.message }))
   sayWhere()
   if (S.view === 'home' && S.config.setup && !S.config.setup.ready && !S.figmaToken) S.figmaToken = await api('/api/figma-token').catch(() => null)
   if (S.view === 'settings' && settingsSection() === 'notifications' && S.user?.role === 'owner') S.notify = await api('/api/notify').catch(() => null)
@@ -2646,6 +2646,9 @@ function actFilter() {
 function activityHTML() {
   const A = S.activity
   if (!A) return `${stHead('Activity', 'Loading…')}`
+  if (A.error)
+    return `${stHead('Activity', 'Every BRD that comes in, who’s working on it, and every piece of feedback with its timestamp.')}
+      <div class="st-card st-pad"><b>Activity couldn’t load.</b><p class="card-sub" style="margin:6px 0 12px">${/not found/i.test(A.error) ? 'The studio that’s running is older than this page. Restart it: close its Terminal window, then double-click <b>Start Design Studio.command</b>.' : esc(A.error)}</p><button class="btn" data-act-reload>Try again</button></div>`
   const tab = S.actTab || 'brds'
   const F = (S.actF = S.actF || { q: '', range: '30', type: 'all', person: 'all', project: 'all' })
   const sel = (key, opts, label) => `<label class="ac-sel"><span>${label}</span><select data-act-f="${key}" aria-label="${label}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${F[key] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`
@@ -2688,6 +2691,7 @@ document.addEventListener('click', (e) => {
   const row = t.closest('[data-act-row]')
   if (row) return (S.actOpen = S.actOpen === Number(row.dataset.actRow) ? null : Number(row.dataset.actRow)), renderThread(false)
   if (t.closest('[data-act-more]')) return (S.actMore = (S.actMore || 150) + 300), renderThread(false)
+  if (t.closest('[data-act-reload]')) return api('/api/activity').then((r) => (S.activity = r)).catch((x) => (S.activity = { error: x.message })).then(() => renderThread(false))
 })
 document.addEventListener('change', (e) => {
   const k = e.target.dataset?.actF

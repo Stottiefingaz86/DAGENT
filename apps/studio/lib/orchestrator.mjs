@@ -96,9 +96,9 @@ export function createOrchestrator({ store, runner, taste }) {
       store.event(slug, 'human', 'Build the screens in Figma.', { by })
       enqueue(slug, P.figmaPrompt(job))
     },
-    requestSignoff(slug, by) {
+    requestSignoff(slug, by, note = '') {
       store.update(slug, { status: 'awaiting_signoff', stage: 'signoff' })
-      store.event(slug, 'human', 'Requested sign-off.', { by })
+      store.event(slug, 'human', `Requested sign-off.${note ? ` ${note}` : ''}`, { by, kind: 'request-signoff' })
     },
     signoff(slug, by) {
       store.update(slug, { status: 'packaging', stage: 'handoff', signedOffBy: by, signedOffAt: new Date().toISOString() })

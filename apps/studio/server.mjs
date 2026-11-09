@@ -100,10 +100,10 @@ const peopleOn = (job) => {
 const admins = () => auth.raw().filter((u) => u.role === 'owner').map((u) => u.id)
 const signerIds = (job) => team.signers(job).map((u) => u.id)
 // @mentions in any feedback: notify the people named (they also get added to the project so they can open it).
-function mentionNotify(slug, text, user, where) {
+function mentionNotify(slug, text, user, where, skip = []) {
   const job = store.get(slug)
   if (!job) return []
-  const hit = team.mentioned(text).filter((u) => u.id !== user.id)
+  const hit = team.mentioned(text).filter((u) => u.id !== user.id && !skip.includes(u.id))
   const fresh = hit.filter((u) => !team.canSee(u, job)).map((u) => u.id)
   if (fresh.length) store.update(slug, { assignees: [...new Set([...(job.assignees || []), ...fresh])] })
   team.notify(hit.map((u) => u.id), { type: 'mention', slug, title: job.title, text: `${user.name} mentioned you ${where}: “${String(text).slice(0, 200)}”`, by: user.name, byId: user.id })
@@ -483,7 +483,7 @@ function buildActivity() {
     if (k === 'reaction') return ['feedback', t.startsWith('👍') ? 'Liked' : 'Disliked']
     if (k === 'signoff') return ['approval', 'Final sign-off']
     if (k === 'dev-questions') return ['dev', 'Dev questions']
-    if (t === 'Requested sign-off.') return ['approval', 'Requested sign-off']
+    if (k === 'request-signoff' || t.startsWith('Requested sign-off.')) return ['approval', 'Requested sign-off']
     if (t === 'Back to refine.') return ['approval', 'Sent back to refine']
     if (t === 'Build the screens in Figma.') return ['work', 'Asked for Figma screens']
     if (t.startsWith('Team:')) return ['team', 'Assigned people']
@@ -504,7 +504,8 @@ function buildActivity() {
       items.push({ at: c.at, by: c.by, type: 'comment', label: `Commented #${c.n}`, text: c.text, slug: j.slug, title: j.title, image: c.image })
       for (const r of c.replies) items.push({ at: r.at, by: r.by, type: 'comment', label: `Replied on #${c.n}`, text: r.text, slug: j.slug, title: j.title, image: c.image })
     }
-    const fb = human.filter((e) => !['team', 'answers'].includes(classify(e)[0]))
+    // "Latest feedback" = what people actually said: feedback, reactions and comments (not approvals or assignments)
+    const fb = human.filter((e) => ['feedback', 'comment'].includes(classify(e)[0]))
     const last = [...fb, ...cs.map((c) => ({ t: c.at, text: c.text, data: { by: c.by } }))].sort((a, b) => (a.t < b.t ? 1 : -1))[0]
     brds.push({
       slug: j.slug, title: j.title, surface: j.surface, source: j.source, from: from || 'Inbox', receivedAt: j.createdAt, status: j.status, stage: j.stage, round: j.round || 0,
@@ -1094,7 +1095,8 @@ const server = http.createServer(async (req, res) => {
       const SIGN = ['direction', 'signoff', 'back-to-refine']
       if (action !== 'delete' && !SIGN.includes(action) && !team.canWork(req.user, job)) return send(res, 403, { error: req.user.role === 'viewer' ? 'Viewers can comment but not change the project.' : 'You’re not on this project. Ask an Admin to add you.' })
       if (SIGN.includes(action) && !team.canSignoff(req.user, job)) return send(res, 403, { error: 'You don’t have sign-off rights on this project. Request sign-off instead.' })
-      for (const t of [body.text, body.note]) if (t && String(t).includes('@')) mentionNotify(slug, String(t), req.user, 'in feedback')
+      // @mentions in feedback (a sign-off note already reaches the people who sign off, so they aren't told twice)
+      for (const t of [body.text, body.note]) if (t && String(t).includes('@')) mentionNotify(slug, String(t), req.user, 'in feedback', action === 'request-signoff' ? signerIds(job) : [])
       if (action === 'react') {
         const value = body.value === 'like' ? 'like' : 'dislike'
         orch.react(slug, body.target === 'proposal' ? 'proposal' : 'prototype', value, String(body.note || '').trim().slice(0, 1200), who(req))
@@ -1122,7 +1124,7 @@ const server = http.createServer(async (req, res) => {
           orch.figma(slug, who(req))
           break
         case 'request-signoff': {
-          orch.requestSignoff(slug, who(req))
+          orch.requestSignoff(slug, who(req), String(body.note || '').trim().slice(0, 600))
           store.update(slug, { signoffRequestedBy: who(req), signoffRequestedAt: new Date().toISOString() })
           const to = signerIds(job)
           team.notify(to, { type: 'signoff', slug, title: job.title, text: `${req.user.name} requested your sign-off on the prototype.${body.note ? ` “${String(body.note).slice(0, 200)}”` : ''}`, by: req.user.name, byId: req.user.id })
