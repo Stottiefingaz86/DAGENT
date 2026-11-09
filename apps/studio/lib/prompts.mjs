@@ -81,13 +81,22 @@ New BRD. Job slug: ${job.slug}. Title: "${job.title}". Surface hint from the req
 BRD: specs/${job.slug}/brd.md${job.files?.brdPdf ? ` and the original PDF specs/${job.slug}/brd.pdf (read it)` : ''}.
 Attachments (if any): specs/${job.slug}/attachments/.
 
-This run: intake → spec → clarify.
+This run: intake → spec → clarify. (Research and the proposal run next as their own step, on the design model.)
 1. set_stage intake. Read the playbook, SURFACES.md and the BRD. Call set_title with a short, clear name for this project (the BRD may have arrived as a screenshot or file). log which surfaces it touches.
 2. set_stage spec. Follow .claude/skills/speckit-specify/SKILL.md to write specs/${job.slug}/spec.md from .specify/templates/spec-template.md,
    including Strategy alignment from BRIEF.md, the KPI it moves from knowledge/product-strategy/KPIS.md, and the journey audits. (Skip the bash scripts and branch creation in the SpecKit skill — the studio already made the folder.)
 3. set_stage clarify. Follow .claude/skills/speckit-clarify/SKILL.md. Answer what you can from the sources and write those answers into spec.md with citations.
 4. If anything still needs a human, call ask_questions and end your turn.
-   If nothing does, continue to research and the proposal (see below) and call submit_proposal.
+   If nothing does, log "No open questions" and end your turn. The studio starts research and the proposal next.
+`.trim()
+}
+
+// Research + proposal, run on the design model once the spec is clarified (no questions, or after the answers).
+export function designPrompt(job) {
+  return `
+The spec for ${job.slug} is clarified (specs/${job.slug}/spec.md). Read it first.
+set_stage research (Mobbin with the SURFACES.md queries; fall back to COMPETITOR_RESEARCH.md if Mobbin fails),
+then set_stage proposal, build the draft + screenshots and call submit_proposal.
 
 ${PROPOSAL_RULES.replace(/<slug>/g, job.slug)}
 `.trim()

@@ -16,6 +16,7 @@ import { createComments } from './lib/comments.mjs'
 import { renderAnnotated } from './lib/capture.mjs'
 import { createNotify } from './lib/notify.mjs'
 import { createTeam } from './lib/team.mjs'
+import { createModels } from './lib/models.mjs'
 import crypto from 'node:crypto'
 import * as P from './lib/prompts.mjs'
 import { execFile } from 'node:child_process'
@@ -127,14 +128,15 @@ store.on('change', (msg) => {
 })
 // The studio runs the prototype lane itself (apps/live-site on :3001).
 const lane = createLane({ repoRoot: REPO_ROOT, origin: LINKS.prototypeOrigin, onChange: (st) => store.emit('change', { type: 'lane', lane: st }) })
-const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL, siteOrigin: LINKS.prototypeOrigin, lane, taste })
+const models = createModels(here)
+const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL, models, siteOrigin: LINKS.prototypeOrigin, lane, taste })
 // No key → no run. Never a stand-in agent.
-async function runner(slug, prompt, signal) {
+async function runner(slug, prompt, signal, step) {
   if (!connected()) throw new Error('The design agent isn’t connected. Add your Anthropic API key on the studio home screen, then Retry.')
   // Belt and braces: even a queued run stops here if setup is incomplete.
   const nr = notReady()
   if (nr) throw new Error(nr.error)
-  return claude(slug, prompt, signal)
+  return claude(slug, prompt, signal, step)
 }
 const orch = createOrchestrator({ store, runner, taste })
 
@@ -357,7 +359,7 @@ function autoTidy() {
     if (rules - st.rules < 6 && entries - st.entries < 10) return
     if (notReady() || store.list().some((j) => j.source === 'maintenance' && /Tidy taste/.test(j.title) && orch.isRunning(j.slug))) return
     const job = store.create({ title: `Tidy taste notes (auto) · ${new Date().toISOString().slice(0, 10)}`, surface: 'Maintenance', brief: 'Automatic tidy after new feedback', source: 'maintenance', requester: 'Studio' })
-    orch.run(job.slug, P.tidyTastePrompt(store.get(job.slug)))
+    orch.run(job.slug, P.tidyTastePrompt(store.get(job.slug)), 'taste')
     fs.writeFileSync(TIDY_FILE, JSON.stringify({ at: new Date().toISOString(), rules, entries }))
     studioLog(`auto tidy started (${rules - st.rules} new rules, ${entries - st.entries} new log entries)`)
   } catch (e) {
@@ -807,6 +809,31 @@ const server = http.createServer(async (req, res) => {
       }
       return send(res, 200, A)
     }
+    // ---- Models & cost (Admin): model per step, spending cap, and what every BRD cost ----
+    if (p === '/api/models') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin can change models.' })
+      if (req.method === 'POST') {
+        const b = await readJson(req)
+        models.set(b)
+        team.audit(req.user, 'admin', `Models: ${b.step ? `${b.step} → ${b.reset ? 'default' : [b.model, b.effort].filter(Boolean).join(' · ')}` : ''}${'capUsd' in b ? `cap per step $${b.capUsd}` : ''}`, { ip: ip(req) })
+      }
+      return send(res, 200, { ...models.all(), override: process.env.STUDIO_MODEL || null })
+    }
+    if (p === '/api/costs') {
+      if (role(req) !== 'owner') return send(res, 403, { error: 'Only an Admin can see costs.' })
+      const jobs = store.list().map((j) => {
+        const runs = j.runs || []
+        const byModel = {}
+        for (const r of runs) for (const [m, u] of Object.entries(r.models || {})) {
+          const b = (byModel[m] = byModel[m] || { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 })
+          for (const k of Object.keys(b)) b[k] += u[k] || 0
+        }
+        const tracked = runs.reduce((a, r) => a + (r.costUsd || 0), 0)
+        return { slug: j.slug, title: j.title, source: j.source, status: j.status, createdAt: j.createdAt, costUsd: j.costUsd || 0, trackedUsd: tracked, untrackedUsd: Math.max(0, (j.costUsd || 0) - tracked), runs, byModel }
+      })
+      jobs.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      return send(res, 200, { jobs, total: jobs.reduce((a, j) => a + j.costUsd, 0) })
+    }
     // ---- In-app notifications (the bell) ----
     if (p === '/api/inbox') {
       if (req.method === 'POST') {
@@ -911,7 +938,7 @@ const server = http.createServer(async (req, res) => {
       // Earlier dismissals travel into the new run, so the agent doesn't re-propose them.
       const dismissedIdeas = store.list().filter((j) => j.source === 'recommendation').flatMap((j) => (j.ideas || []).filter((i) => i.dismissed).map((i) => ({ title: i.title, reason: i.dismissed.reason })))
       store.update(job.slug, { dismissedIdeas })
-      orch.run(job.slug, P.recommendPrompt(store.get(job.slug), String(b.focus || '').slice(0, 1000)))
+      orch.run(job.slug, P.recommendPrompt(store.get(job.slug), String(b.focus || '').slice(0, 1000)), 'ideas')
       return send(res, 201, store.get(job.slug))
     }
     if (p === '/api/ideas' && req.method === 'GET') {
@@ -946,7 +973,7 @@ const server = http.createServer(async (req, res) => {
       store.appendFeedback(run.slug, store.get(run.slug).round, `[Idea: ${idea.title}]${fb.value ? ` ${fb.value === 'like' ? '👍' : '👎'}` : ''} ${text}`, [])
       taste.signal({ kind: fb.value || 'change', project: run.slug, title: idea.title, text: `Idea “${idea.title}”: ${text}`, by: who(req), target: 'proposal' })
       store.event(run.slug, 'human', `Feedback on “${idea.title}”${fb.value ? ` ${fb.value === 'like' ? '👍' : '👎'}` : ''}: ${text}`, { by: who(req) })
-      if (b.revise) orch.run(run.slug, P.reviseIdeaPrompt(store.get(run.slug), idea, text))
+      if (b.revise) orch.run(run.slug, P.reviseIdeaPrompt(store.get(run.slug), idea, text), 'ideas')
       return send(res, 200, { ok: true, revising: !!b.revise })
     }
     if (p === '/api/ideas/promote' && req.method === 'POST') {
@@ -972,7 +999,7 @@ const server = http.createServer(async (req, res) => {
       const spec = { 'lumen-figma': ['Lumen check in Figma', P.lumenFigmaPrompt], 'tidy-taste': ['Tidy taste notes', P.tidyTastePrompt] }[kind]
       if (!spec) return send(res, 404, { error: 'Unknown maintenance job' })
       const job = store.create({ title: `${spec[0]} · ${new Date().toISOString().slice(0, 10)}`, surface: 'Maintenance', brief: spec[0], source: 'maintenance', requester: who(req) })
-      orch.run(job.slug, spec[1](store.get(job.slug)))
+      orch.run(job.slug, spec[1](store.get(job.slug)), kind === 'tidy-taste' ? 'taste' : 'build')
       return send(res, 201, store.get(job.slug))
     }
     // ---- Live cursors on screenshots ----

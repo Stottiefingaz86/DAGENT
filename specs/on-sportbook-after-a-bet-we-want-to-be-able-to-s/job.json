@@ -5,10 +5,10 @@
   "source": "dashboard",
   "requester": "CH",
   "createdAt": "2026-11-09T15:23:07.367Z",
-  "updatedAt": "2026-11-09T15:54:32.180Z",
+  "updatedAt": "2026-11-09T15:54:41.144Z",
   "status": "direction",
   "stage": "proposal",
-  "running": true,
+  "running": false,
   "sessionId": "81e29380-4131-44f6-b4e2-555ac14c09b6",
   "questions": [
     {
@@ -125,7 +125,7 @@
     }
   ],
   "round": 1,
-  "costUsd": 8.5624122,
+  "costUsd": 19.664728099999998,
   "createdById": "bb53c1f7-4345-4b21-92a2-a7b53658ccfe",
   "assignees": [
     "bb53c1f7-4345-4b21-92a2-a7b53658ccfe"

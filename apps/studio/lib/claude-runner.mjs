@@ -243,16 +243,25 @@ function describeTool(name, input) {
   return `${verbs[name] || name} ${short}`.trim()
 }
 
-export function createClaudeRunner({ store, repoRoot, model, siteOrigin = 'http://127.0.0.1:3001', lane, taste }) {
-  return async function run(slug, prompt, signal) {
+export function createClaudeRunner({ store, repoRoot, model, models, siteOrigin = 'http://127.0.0.1:3001', lane, taste }) {
+  // step: plan | design | build | ideas | taste (Settings → Models & cost decides the model, effort and cap for each)
+  return async function run(slug, prompt, signal, stepKey = 'design') {
     await load()
     lane?.ensure() // warm the prototype lane while the agent reads
     const job = store.get(slug)
     const abortController = new AbortController()
     signal?.addEventListener('abort', () => abortController.abort())
+    // STUDIO_MODEL in .env overrides everything (one model for all steps); otherwise the per-step choice.
+    const step = models ? models.step(stepKey) : { key: stepKey, model: model || undefined }
+    const chosen = model || step.model
+    const cap = models ? models.cap() : 0
     const options = {
       cwd: repoRoot,
-      model: model || undefined,
+      model: chosen || undefined,
+      ...(step.effort && !model ? { effort: step.effort } : {}),
+      // If the chosen model is unavailable or overloaded, fall back so the run still finishes (the run log says which model answered).
+      ...(chosen && !/opus/.test(chosen) ? { fallbackModel: 'claude-opus-5-5' } : {}),
+      ...(cap > 0 ? { maxBudgetUsd: cap } : {}),
       resume: job.sessionId || undefined,
       systemPrompt: { type: 'preset', preset: 'claude_code', append: SYSTEM_APPEND },
       // Figma runs also load your own Claude Code settings, so a Figma MCP you connected in Claude Code is available here.
@@ -280,8 +289,28 @@ export function createClaudeRunner({ store, repoRoot, model, siteOrigin = 'http:
           }
         }
       } else if (msg.type === 'result') {
-        store.update(slug, (j) => ({ costUsd: (j.costUsd || 0) + (msg.total_cost_usd || 0), sessionId: msg.session_id || j.sessionId }))
-        if (msg.subtype !== 'success') store.event(slug, 'system', `Run ended: ${msg.subtype}`)
+        // A resumed session reports a running total that already includes earlier runs, so only count what this run added.
+        const usage = {}
+        for (const [m, u] of Object.entries(msg.modelUsage || {})) usage[m] = { input: u.inputTokens || 0, output: u.outputTokens || 0, cacheRead: u.cacheReadInputTokens || 0, cacheWrite: u.cacheCreationInputTokens || 0, cost: u.costUSD || 0 }
+        const total = Object.values(usage).reduce((a, u) => a + u.cost, 0) || msg.total_cost_usd || 0
+        store.update(slug, (j) => {
+          const same = msg.session_id && j.sessionId === msg.session_id && j.sessionTotals
+          const prev = same ? j.sessionTotals : { cost: 0, models: {} }
+          const delta = {}
+          for (const [m, u] of Object.entries(usage)) {
+            const p = prev.models[m] || { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 }
+            // a total lower than before means the SDK started counting afresh: take this run's numbers as they are
+            const fresh = u.cost < p.cost || u.input < p.input
+            delta[m] = Object.fromEntries(Object.keys(u).map((k) => [k, Math.max(0, fresh ? u[k] : u[k] - p[k])]))
+          }
+          for (const m of Object.keys(delta)) if (!delta[m].cost && !delta[m].output) delete delta[m]
+          const runCost = Math.max(0, total < prev.cost ? total : total - prev.cost)
+          const run = { at: new Date().toISOString(), step: step.key, stepLabel: step.label, model: chosen || 'default', effort: options.effort || null, models: delta, costUsd: runCost, turns: msg.num_turns || 0, durationMs: msg.duration_ms || 0, ended: msg.subtype }
+          return { costUsd: (j.costUsd || 0) + runCost, sessionId: msg.session_id || j.sessionId, sessionTotals: { cost: total, models: usage }, runs: [...(j.runs || []), run].slice(-200) }
+        })
+        const names = Object.keys(usage).map((m) => m.replace(/^claude-/, '')).join(', ')
+        if (msg.subtype === 'error_max_budget_usd') store.event(slug, 'system', `Run stopped at the $${cap} spending cap for one step (${names}). Retry continues from here, or raise the cap in Settings → Models & cost.`)
+        else if (msg.subtype !== 'success') store.event(slug, 'system', `Run ended: ${msg.subtype}`)
       }
     }
   }

@@ -201,6 +201,7 @@ async function route() {
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
   if (S.view === 'team' || S.view === 'settings') await loadTeam()
+  if (S.view === 'settings' && settingsSection() === 'costs') await loadCosts()
   if (S.view === 'settings' && settingsSection() === 'activity') S.activity = await api('/api/activity').catch((e) => ({ error: e.message }))
   sayWhere()
   if (S.view === 'home' && S.config.setup && !S.config.setup.ready && !S.figmaToken) S.figmaToken = await api('/api/figma-token').catch(() => null)
@@ -267,7 +268,7 @@ function renderSide() {
   const u = me()
   $('#me-name').textContent = u.name
   $('#me-role').textContent = ['owner', 'lead'].includes(u.role) ? `${roleLabel(u)} · signs off` : S.config.me?.signoffNow ? `${roleLabel(u)} · can sign off` : roleLabel(u)
-  $('#me-avatar').textContent = (u.name[0] || '?').toUpperCase()
+  $('#me-avatar').textContent = initials(u.name)
   const q = S.search.toLowerCase()
   const list = S.jobs.filter((j) => !q || `${j.title} ${j.surface}`.toLowerCase().includes(q))
   const groups = [
@@ -2442,9 +2443,9 @@ async function inviteScreen(token) {
 // ================= Settings: one place (Account + Notifications for everyone; Admin sections for Admins) =================
 const SETTINGS_NAV = [
   ['Account', [['account', 'Your account'], ['notifications', 'Notifications']]],
-  ['Admin', [['activity', 'Activity'], ['people', 'People'], ['projects', 'Projects'], ['roles', 'Roles & sign-off'], ['security', 'Security'], ['integrations', 'Keys & integrations']]],
+  ['Admin', [['activity', 'Activity'], ['costs', 'Models & cost'], ['people', 'People'], ['projects', 'Projects'], ['roles', 'Roles & sign-off'], ['security', 'Security'], ['integrations', 'Keys & integrations']]],
 ]
-const ADMIN_SECTIONS = new Set(['activity', 'people', 'projects', 'roles', 'security', 'integrations'])
+const ADMIN_SECTIONS = new Set(['activity', 'costs', 'people', 'projects', 'roles', 'security', 'integrations'])
 const ROLE_HELP = {
   owner: 'Everything, including these settings',
   lead: 'Signs off any project; no admin settings',
@@ -2461,7 +2462,7 @@ function settingsHTML() {
   const nav = SETTINGS_NAV.filter(([g]) => g !== 'Admin' || admin)
     .map(([g, items]) => `<div class="st-group">${g}</div>${items.map(([k, l]) => `<a class="st-link${k === sec ? ' on' : ''}" href="#settings/${k}">${l}${k === 'people' && (S.team?.invites || []).length ? `<i>${S.team.invites.length}</i>` : ''}</a>`).join('')}`)
     .join('')
-  const body = { account: accountHTML, notifications: () => notificationsHTML(true), people: peopleHTML, projects: projectsHTML, roles: rolesHTML, security: securityHTML, integrations: integrationsHTML, activity: activityHTML }[sec]
+  const body = { account: accountHTML, notifications: () => notificationsHTML(true), people: peopleHTML, projects: projectsHTML, roles: rolesHTML, security: securityHTML, integrations: integrationsHTML, activity: activityHTML, costs: costsHTML }[sec]
   return `<div class="st"><nav class="st-nav" aria-label="Settings">${nav}</nav><div class="st-body">${body()}</div></div>`
 }
 const stHead = (title, sub, action = '') => `<div class="st-head"><div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${action}</div>`
@@ -2780,6 +2781,65 @@ document.addEventListener('input', (e) => {
   const el = $('#ac-q')
   el?.focus()
   el?.setSelectionRange(pos, pos)
+})
+
+// ---- Settings → Models & cost (Admin): model per step, spending cap, and what each BRD cost ----
+const usd = (n) => `$${(n || 0) < 10 ? (n || 0).toFixed(2) : (n || 0).toFixed(1)}`
+const tok = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n || 0))
+const modelName = (id) => (S.models?.models || []).find((m) => id && id.startsWith(m.id))?.label || String(id || '').replace(/^claude-/, '').replace(/-(\d)-(\d)$/, ' $1.$2').replace(/-(\d)$/, ' $1')
+function costsHTML() {
+  const M = S.models
+  const C = S.costs
+  if (!M || !C) return `${stHead('Models & cost', 'Loading…')}`
+  if (M.error || C.error) return `${stHead('Models & cost', '')}<div class="st-card st-pad"><b>Couldn’t load.</b><p class="card-sub">${/not found/i.test(M.error || C.error) ? 'Restart the studio to load this page (close its Terminal window, then Start Design Studio.command).' : esc(M.error || C.error)}</p></div>`
+  const opt = (list, val) => list.map(([v, l]) => `<option value="${esc(v)}" ${v === val ? 'selected' : ''}>${esc(l)}</option>`).join('')
+  const steps = M.steps.map((s) => stRow(`${esc(s.label)}`, esc(s.what), `<select class="field-in st-select" data-model-step="${s.key}" aria-label="Model for ${esc(s.label)}">${opt(M.models.map((m) => [m.id, m.label]), s.model)}</select><select class="field-in st-select st-effort" data-effort-step="${s.key}" aria-label="Effort for ${esc(s.label)}">${opt(M.efforts.map((e) => [e, ({ xhigh: 'Extra high', max: 'Max' }[e] || `${e[0].toUpperCase()}${e.slice(1)}`) + ' effort']), s.effort)}</select>`)).join('')
+  const sum = (j, k) => Object.values(j.byModel).reduce((a, u) => a + (u[k] || 0), 0)
+  const open = S.costOpen
+  const rows = C.jobs.map((j) => {
+    const used = Object.keys(j.byModel)
+    const tokIn = sum(j, 'input') + sum(j, 'cacheRead') + sum(j, 'cacheWrite')
+    return `<div class="pp-row cs-row" role="row" data-cost-open="${j.slug}">
+      <div class="ac-proj"><a href="#j/${j.slug}"><b>${esc(j.title)}</b></a><span>${esc(S.config.statuses[j.status]?.label || j.status)} · ${j.runs.length} run${j.runs.length === 1 ? '' : 's'} tracked</span></div>
+      <div class="cs-cost"><b>${usd(j.costUsd)}</b>${j.untrackedUsd > 0.005 ? `<span title="Spent before tracking started: no model or token detail">${usd(j.untrackedUsd)} before tracking</span>` : ''}</div>
+      <div class="cs-tok">${j.runs.length ? `<span class="cs-io"><b>${tok(tokIn)}</b> in · <b>${tok(sum(j, 'output'))}</b> out</span><span>${tok(sum(j, 'cacheRead'))} re-read from cache</span>` : '<span class="st-dash">Not recorded yet</span>'}</div>
+      <div class="cs-models">${used.length ? used.map((m) => `<span class="tm-tag">${esc(modelName(m))} · ${usd(j.byModel[m].cost)}</span>`).join('') : '<span class="st-dash">Not recorded (before tracking)</span>'}</div>
+      <div><button class="icon-btn" aria-label="Show runs">${open === j.slug ? '▾' : '▸'}</button></div>
+    </div>
+    ${open === j.slug ? `<div class="cs-runs">${j.runs.length ? `<div class="cs-run cs-th"><div>When</div><div>Step</div><div>Model</div><div>Tokens in / out</div><div>Cost</div><div>Time</div></div>${j.runs.slice().reverse().map((r) => {
+      const ms = Object.entries(r.models || {}).filter(([, u]) => u.cost > 0 || u.output > 0)
+      const i = ms.reduce((a, [, u]) => a + u.input + u.cacheRead + u.cacheWrite, 0)
+      const o = ms.reduce((a, [, u]) => a + u.output, 0)
+      return `<div class="cs-run"><div>${stamp(r.at)}</div><div><b>${esc(r.stepLabel || r.step)}</b>${r.ended && r.ended !== 'success' ? `<span class="cs-end">${r.ended === 'error_max_budget_usd' ? 'stopped at cap' : esc(r.ended)}</span>` : ''}</div><div>${ms.map(([m]) => esc(modelName(m))).join(' + ') || esc(modelName(r.model))}${r.effort ? ` <span class="ac-stage">${esc(r.effort)}</span>` : ''}</div><div>${tok(i)} / ${tok(o)}</div><div><b>${usd(r.costUsd)}</b></div><div>${Math.round((r.durationMs || 0) / 60000)} min · ${r.turns} turns</div></div>`
+    }).join('')}` : ''}${j.untrackedUsd > 0.005 ? `<p class="card-sub" style="padding:10px 14px;margin:0">${usd(j.untrackedUsd)} was spent before tracking started, so its model and tokens weren’t recorded. Earlier totals may also be overstated: the agent reported running totals when it resumed, and they were added on top of each other.</p>` : ''}</div>` : ''}`
+  }).join('')
+  return `${stHead('Models & cost', `Total so far: <b>${usd(C.total)}</b> across ${C.jobs.length} project${C.jobs.length === 1 ? '' : 's'}.`)}
+    ${M.override ? `<div class="st-card st-pad"><b>STUDIO_MODEL=${esc(M.override)} is set in .env</b><p class="card-sub" style="margin:4px 0 0">It overrides the choices below for every step. Remove that line and restart the studio to use them.</p></div>` : ''}
+    <h3 class="st-sub">Model for each step</h3>
+    <div class="st-card">${steps}${stRow('Spending cap per step', 'A run stops when it passes this, and Retry carries on from there. Stops a runaway step from costing a lot.', `<select class="field-in st-select" data-cap aria-label="Spending cap per step">${opt([[0, 'No cap'], [5, '$5'], [10, '$10'], [15, '$15'], [25, '$25'], [50, '$50']].map(([v, l]) => [String(v), l]), String(M.capUsd))}</select>`)}</div>
+    <h3 class="st-sub">Cost per BRD</h3>
+    <div class="pp-table cs-table" role="table"><div class="pp-row pp-th" role="row"><div>BRD</div><div>Cost</div><div>Tokens</div><div>Models used</div><div></div></div>${rows || '<p class="ib-empty">No projects yet.</p>'}</div>
+    <p class="card-sub">Costs are the agent’s own estimate at list prices; your Anthropic Console bill is the final word.</p>`
+}
+async function loadCosts() {
+  ;[S.models, S.costs] = await Promise.all([api('/api/models').catch((e) => ({ error: e.message })), api('/api/costs').catch((e) => ({ error: e.message }))])
+}
+document.addEventListener('change', async (e) => {
+  const t = e.target
+  const body = t.dataset?.modelStep ? { step: t.dataset.modelStep, model: t.value } : t.dataset?.effortStep ? { step: t.dataset.effortStep, effort: t.value } : t.dataset?.cap != null ? { capUsd: Number(t.value) } : null
+  if (!body) return
+  try {
+    S.models = await api('/api/models', body)
+    toast('Saved', 'Used from the next run.')
+  } catch (x) {
+    toast('Couldn’t save', x.message)
+  }
+})
+document.addEventListener('click', (e) => {
+  const r = e.target.closest('[data-cost-open]')
+  if (!r || e.target.closest('a')) return
+  S.costOpen = S.costOpen === r.dataset.costOpen ? null : r.dataset.costOpen
+  renderThread(false)
 })
 
 async function start() {

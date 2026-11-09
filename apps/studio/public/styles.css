@@ -827,3 +827,29 @@ input.field-in[type=date] { color-scheme: dark; height: 36px; }
 /* messages show above the comment view */
 .toasts { z-index: 120; }
 body.reviewing .toasts { top: 76px; right: 460px; }
+
+/* ---------- Settings → Models & cost ---------- */
+.st-effort { width: 170px !important; }
+.cs-table .pp-row { grid-template-columns: minmax(0, 1.3fr) 130px minmax(0, 1.1fr) minmax(0, 1.2fr) 32px; align-items: start; }
+.cs-table .pp-th { align-items: center; }
+.cs-row { cursor: pointer; }
+.cs-cost { display: flex; flex-direction: column; }
+.cs-cost b { font-size: 16px; }
+.cs-cost span, .cs-tok span { font-size: 11.5px; color: var(--faint); }
+.cs-tok { display: flex; flex-direction: column; font-size: 13px; color: var(--muted); }
+.cs-tok b { color: var(--text); font-weight: 600; }
+.cs-models { display: flex; flex-wrap: wrap; gap: 4px; }
+.cs-runs { background: var(--side); border-top: 1px solid var(--line); }
+.cs-run { display: grid; grid-template-columns: 110px 150px minmax(0, 1fr) 130px 70px 120px; gap: 10px; padding: 9px 14px 9px 28px; font-size: 13px; align-items: start; }
+.cs-run + .cs-run { border-top: 1px solid var(--line); }
+.cs-th { font-size: 11.5px; font-weight: 600; color: var(--faint); }
+.cs-end { display: block; font-size: 11px; color: #fbbf24; }
+@media (max-width: 900px) {
+  .cs-table .pp-row { grid-template-columns: minmax(0, 1fr) 90px 32px; }
+  .cs-table .pp-row > div:nth-child(3), .cs-table .pp-row > div:nth-child(4) { display: none; }
+  .cs-run { grid-template-columns: 80px 1fr 70px; }
+  .cs-run > div:nth-child(3), .cs-run > div:nth-child(4), .cs-run > div:nth-child(6) { display: none; }
+}
+
+.cs-io { white-space: nowrap; color: var(--muted); font-size: 13px !important; }
+.cs-run > div:first-child { display: flex; flex-direction: column; line-height: 1.35; }

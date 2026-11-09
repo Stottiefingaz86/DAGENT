@@ -4,21 +4,29 @@ import * as P from './prompts.mjs'
 
 export function createOrchestrator({ store, runner, taste }) {
   const sig = (slug, kind, text, by, extra = {}) => taste?.signal({ kind, project: slug, title: store.get(slug)?.title, stage: store.get(slug)?.stage, text, by, ...extra })
-  const queues = new Map() // slug -> [prompt]
+  const queues = new Map() // slug -> [{ prompt, step }]
   const active = new Map() // slug -> AbortController
 
   async function pump(slug) {
     if (active.has(slug)) return
     const q = queues.get(slug) || []
-    const prompt = q.shift()
-    if (!prompt) return
+    const item = q.shift()
+    if (!item) return
+    const { prompt, step } = item
     const ac = new AbortController()
     active.set(slug, ac)
-    store.update(slug, { running: true, status: 'working', lastPrompt: prompt })
+    store.update(slug, { running: true, status: 'working', lastPrompt: prompt, lastStep: step })
     try {
       // Every run starts with what the team liked and disliked, and the lessons learned so far.
-      await runner(slug, prompt + (taste ? taste.context(store.get(slug)) : ''), ac.signal)
-      const job = store.get(slug)
+      await runner(slug, prompt + (taste ? taste.context(store.get(slug)) : ''), ac.signal, step)
+      let job = store.get(slug)
+      // Planning ended with no questions for the team: hand over to the design model for research + proposal.
+      if (step === 'plan' && job.status === 'working' && !(job.questions || []).some((x) => !x.answer)) {
+        store.event(slug, 'system', 'No open questions. Starting the design step.')
+        store.update(slug, { prevStatus: null })
+        ;(queues.get(slug) || queues.set(slug, []).get(slug)).unshift({ prompt: P.designPrompt(job), step: 'design' })
+        job = store.get(slug)
+      }
       // The agent ended its turn without hitting a gate: hand the conversation back to a human.
       if (job.status === 'working') store.update(slug, { status: job.prevStatus || 'idle', prevStatus: null })
     } catch (err) {
@@ -37,20 +45,20 @@ export function createOrchestrator({ store, runner, taste }) {
     }
   }
 
-  function enqueue(slug, prompt) {
+  function enqueue(slug, prompt, step = 'design') {
     if (!queues.has(slug)) queues.set(slug, [])
-    queues.get(slug).push(prompt)
+    queues.get(slug).push({ prompt, step })
     pump(slug)
   }
 
   return {
     start(slug) {
-      enqueue(slug, P.startPrompt(store.get(slug)))
+      enqueue(slug, P.startPrompt(store.get(slug)), 'plan')
     },
     retry(slug) {
       const job = store.get(slug)
       store.event(slug, 'system', 'Retrying the last step.')
-      enqueue(slug, job.lastPrompt || P.startPrompt(job))
+      enqueue(slug, job.lastPrompt || P.startPrompt(job), job.lastPrompt ? job.lastStep || 'design' : 'plan')
     },
     answer(slug, answers, by) {
       const job = store.update(slug, (j) => ({
@@ -62,7 +70,7 @@ export function createOrchestrator({ store, runner, taste }) {
       // After sign-off, answers are for questions the dev team raised: update the handover, not the proposal.
       if (job.signedOffAt) {
         store.update(slug, { prevStatus: 'ready_for_dev' })
-        return enqueue(slug, P.devAnswersPrompt(job, answered))
+        return enqueue(slug, P.devAnswersPrompt(job, answered), 'build')
       }
       enqueue(slug, P.answersPrompt(job, answered))
     },
@@ -104,7 +112,7 @@ export function createOrchestrator({ store, runner, taste }) {
       store.update(slug, { status: 'packaging', stage: 'handoff', signedOffBy: by, signedOffAt: new Date().toISOString() })
       store.event(slug, 'human', 'Final sign-off.', { by, kind: 'signoff' })
       sig(slug, 'signoff', 'Final sign-off', by, { target: 'prototype' })
-      enqueue(slug, P.signoffPrompt(store.get(slug)))
+      enqueue(slug, P.signoffPrompt(store.get(slug)), 'build')
     },
     backToRefine(slug, by) {
       store.update(slug, { status: 'refine', stage: 'refine' })
@@ -126,12 +134,12 @@ export function createOrchestrator({ store, runner, taste }) {
       const qs = questions.map((q, i) => ({ id: `dq${Date.now().toString(36)}${i}`, text: String(q.text || q).slice(0, 2000), context: String(q.context || '').slice(0, 4000), from: from || 'dev', status: 'open', answer: null, askedAt: new Date().toISOString() }))
       store.update(slug, (j) => ({ devQuestions: [...(j.devQuestions || []), ...qs], prevStatus: j.status === 'working' ? j.prevStatus : j.status }))
       store.event(slug, 'human', `${qs.length} question${qs.length === 1 ? '' : 's'} from ${from || 'dev'}:\n${qs.map((q) => `• ${q.text}`).join('\n')}`, { by: from || 'dev', kind: 'dev-questions' })
-      enqueue(slug, P.devQuestionsPrompt(store.get(slug), qs))
+      enqueue(slug, P.devQuestionsPrompt(store.get(slug), qs), 'build')
       return qs
     },
     // Maintenance work (Lumen check, taste tidy) runs as its own project with a custom prompt.
-    run(slug, prompt) {
-      enqueue(slug, prompt)
+    run(slug, prompt, step = 'build') {
+      enqueue(slug, prompt, step)
     },
     stop(slug) {
       queues.set(slug, [])
