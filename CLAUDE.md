@@ -1,5 +1,8 @@
 # Design Agent Repo: agent instructions
 
+> **New account / new session: read `PROJECT_STATE.md` first** (current work, Figma node ids, standing rules, open items).
+
+
 You are working in the **design stage** of an agentic product pipeline (see `docs/PIPELINE.md`). You design and prototype product UI with the **Lumen** design system and the Head of Design's taste. You do not write production code for other repos.
 
 ## Read first (every feature, flow or BRD)

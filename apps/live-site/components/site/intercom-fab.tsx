@@ -12,10 +12,18 @@ import {
   IconX,
 } from '@tabler/icons-react'
 import { useShell } from '@/components/site/shell-context'
+import {
+  INTERCOM_FALLBACK_REPLY,
+  INTERCOM_TOURS,
+  matchIntent,
+} from '@/lib/lumen/intercom-intents'
 import { VIP_SILVER_UNLOCKED_LABELS } from '@/lib/lumen/vip-hub'
 import { cn } from '@/lib/utils'
 
 const AGENT_NAME = 'Laura'
+const FIN_NAME = 'Fin'
+
+type ChatBubble = { id: string; role: 'user' | 'bot'; text: string }
 
 /** Classic Intercom messenger mark — squircle + tip + smile (not a chat-bubble outline). */
 function IntercomMark({ className }: { className?: string }) {
@@ -61,12 +69,15 @@ export function IntercomFab() {
     setCashierOpen,
     setVipHubOpen,
     loggedIn,
+    startProductTour,
   } = useShell()
   const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [inboxTab, setInboxTab] = useState<'home' | 'messages' | 'help'>('messages')
   const [vipMatchDraft, setVipMatchDraft] = useState('')
   const [vipMatchReplies, setVipMatchReplies] = useState<string[]>([])
+  const [chatDraft, setChatDraft] = useState('')
+  const [chatThread, setChatThread] = useState<ChatBubble[]>([])
   const username = profile.fullName.trim() || 'there'
   /* Laura cards — level-up > welcome > VIP status match. */
   const showLevelUpAlert = loggedIn && intercomLevelUpPending
@@ -88,6 +99,13 @@ export function IntercomFab() {
   }, [intercomOpen])
 
   useEffect(() => {
+    if (!intercomOpen) {
+      setChatDraft('')
+      setChatThread([])
+    }
+  }, [intercomOpen])
+
+  useEffect(() => {
     if (!showVipMatchAlert) {
       setVipMatchDraft('')
       setVipMatchReplies([])
@@ -99,6 +117,42 @@ export function IntercomFab() {
     if (!text) return
     setVipMatchReplies((prev) => [...prev, text])
     setVipMatchDraft('')
+  }
+
+  const sendFinMessage = () => {
+    const text = chatDraft.trim()
+    if (!text) return
+    const userBubble: ChatBubble = {
+      id: `u-${Date.now()}`,
+      role: 'user',
+      text,
+    }
+    setChatDraft('')
+    setChatThread((prev) => [...prev, userBubble])
+
+    const intent = matchIntent(text)
+    if (intent) {
+      const tour = INTERCOM_TOURS[intent]
+      const botBubble: ChatBubble = {
+        id: `b-${Date.now()}`,
+        role: 'bot',
+        text: `Got it — I'll highlight where to find that. ${tour.title}.`,
+      }
+      setChatThread((prev) => [...prev, botBubble])
+      window.setTimeout(() => {
+        startProductTour(intent)
+      }, 450)
+      return
+    }
+
+    setChatThread((prev) => [
+      ...prev,
+      {
+        id: `b-${Date.now()}`,
+        role: 'bot',
+        text: INTERCOM_FALLBACK_REPLY,
+      },
+    ])
   }
 
   if (!mounted) return null
@@ -339,40 +393,101 @@ export function IntercomFab() {
                   </button>
                 </header>
 
-                <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-4 pt-8 text-center">
-                  {inboxTab === 'messages' ? (
-                    <>
-                      <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-zinc-100 text-zinc-900">
-                        <IconMessageCircle2 className="size-8" strokeWidth={1.75} />
-                      </span>
-                      <p className="text-[17px] font-bold tracking-tight">No messages</p>
-                      <p className="mt-1.5 max-w-[220px] text-[13px] leading-snug text-zinc-500">
-                        Messages from the team will be shown here
-                      </p>
+                {inboxTab === 'messages' ? (
+                  <>
+                    <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto px-3.5 py-3">
+                      {chatThread.length === 0 ? (
+                        <div className="rounded-2xl bg-zinc-100 px-3.5 py-3 text-[13px] leading-[1.55] text-zinc-700">
+                          <p className="font-semibold text-zinc-900">{FIN_NAME}</p>
+                          <p className="mt-1">
+                            Ask where something lives — I can walk you there. Try rakeback
+                            rewards or your Daily Race position.
+                          </p>
+                        </div>
+                      ) : null}
+                      {chatThread.map((msg) =>
+                        msg.role === 'user' ? (
+                          <div
+                            key={msg.id}
+                            className="ml-8 rounded-2xl bg-primary px-3.5 py-2.5 text-[13px] leading-[1.45] text-primary-foreground"
+                          >
+                            {msg.text}
+                          </div>
+                        ) : (
+                          <div
+                            key={msg.id}
+                            className="mr-6 rounded-2xl bg-zinc-100 px-3.5 py-2.5 text-[13px] leading-[1.45] text-zinc-700"
+                          >
+                            <p className="mb-1 text-[11px] font-semibold text-zinc-500">
+                              {FIN_NAME}
+                            </p>
+                            {msg.text}
+                          </div>
+                        ),
+                      )}
+                    </div>
+                    <form
+                      className="pointer-events-auto flex shrink-0 items-end gap-2 border-t border-zinc-100 px-3 pb-3 pt-2.5"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        sendFinMessage()
+                      }}
+                    >
+                      <label className="sr-only" htmlFor="fin-chat-reply">
+                        Message
+                      </label>
+                      <textarea
+                        id="fin-chat-reply"
+                        rows={2}
+                        value={chatDraft}
+                        onChange={(e) => setChatDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            sendFinMessage()
+                          }
+                        }}
+                        placeholder="Ask about rakeback or daily race…"
+                        autoFocus
+                        className="pointer-events-auto min-h-[44px] flex-1 resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-[13px] text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-primary/25"
+                      />
                       <button
-                        type="button"
-                        className="mt-8 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-size-sm font-semibold text-primary-foreground shadow-[0_8px_20px_rgba(238,53,53,0.35)]"
+                        type="submit"
+                        disabled={!chatDraft.trim()}
+                        aria-label="Send message"
+                        className="pointer-events-auto inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
                       >
-                        Send us a message
                         <IconSend className="size-4" strokeWidth={2.25} />
                       </button>
-                    </>
-                  ) : inboxTab === 'home' ? (
-                    <>
-                      <p className="text-[17px] font-bold tracking-tight">Hi there 👋</p>
-                      <p className="mt-2 max-w-[240px] text-[13px] leading-snug text-zinc-500">
-                        Ask us anything — we&apos;re here to help.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-[17px] font-bold tracking-tight">Help</p>
-                      <p className="mt-2 max-w-[240px] text-[13px] leading-snug text-zinc-500">
-                        FAQs and support articles live here in the real product.
-                      </p>
-                    </>
-                  )}
-                </div>
+                    </form>
+                  </>
+                ) : (
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-4 pt-8 text-center">
+                    {inboxTab === 'home' ? (
+                      <>
+                        <p className="text-[17px] font-bold tracking-tight">Hi there 👋</p>
+                        <p className="mt-2 max-w-[240px] text-[13px] leading-snug text-zinc-500">
+                          Ask us anything — we&apos;re here to help.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setInboxTab('messages')}
+                          className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-size-sm font-semibold text-primary-foreground"
+                        >
+                          Send us a message
+                          <IconSend className="size-4" strokeWidth={2.25} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[17px] font-bold tracking-tight">Help</p>
+                        <p className="mt-2 max-w-[240px] text-[13px] leading-snug text-zinc-500">
+                          FAQs and support articles live here in the real product.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <nav className="grid shrink-0 grid-cols-3 border-t border-zinc-100 bg-white px-2 pb-2 pt-1.5">
                   {(

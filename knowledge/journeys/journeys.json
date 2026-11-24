@@ -1,0 +1,178 @@
+[
+  {
+    "id": "onboarding-to-first-deposit",
+    "name": "Onboarding to first deposit",
+    "goal": "A new player joins, funds and is ready to play without getting lost.",
+    "description": "Proposed by the Head of Design. Not yet checked against the live site: use Map with agent.",
+    "surface": "",
+    "kpis": [
+      "#4 Median time from first deposit to first casino stake"
+    ],
+    "status": "draft",
+    "current": [],
+    "proposed": [
+      {
+        "id": "35a39c09",
+        "title": "Join",
+        "detail": "Email, then password.",
+        "kind": "screen",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "3e594d41",
+        "title": "OTP",
+        "detail": "Verify with the code.",
+        "kind": "screen",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "1a3214bd",
+        "title": "Welcome",
+        "detail": "Welcome moment after verifying.",
+        "kind": "screen",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "cca38e73",
+        "title": "Wallet open by default",
+        "detail": "The wallet is already open so the next step is to fund.",
+        "kind": "screen",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "6a52fd20",
+        "title": "If the wallet is closed: Intercom",
+        "detail": "Closing the wallet without depositing triggers an Intercom message offering help.",
+        "kind": "message",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "9c40ac80",
+        "title": "Deposit: polling progress",
+        "detail": "While the deposit is pending, show its progress as it is polled.",
+        "kind": "system",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "e568c7ec",
+        "title": "Alert: deposit cleared",
+        "detail": "Tell the player the moment the deposit clears.",
+        "kind": "message",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      }
+    ],
+    "peers": [],
+    "opportunities": [],
+    "impact": "",
+    "project": null,
+    "createdBy": "CH",
+    "createdAt": "2026-11-09T20:38:15.504Z",
+    "updatedAt": "2026-11-09T20:38:15.504Z",
+    "seeded": true
+  },
+  {
+    "id": "play-casino-game-rakeback",
+    "name": "Play a casino game: rakeback on close",
+    "goal": "Closing a game shows the player what they earned, so rewards feel connected to play.",
+    "description": "Proposed by the Head of Design. Not yet checked against the live site: use Map with agent.",
+    "surface": "",
+    "kpis": [
+      "#5 30-day return rate",
+      "#2 Casino play days per active player"
+    ],
+    "status": "draft",
+    "current": [],
+    "proposed": [
+      {
+        "id": "21801faf",
+        "title": "Coins fly to VIP",
+        "detail": "On close, coins travel to the VIP entry to represent the rakeback earned in that session.",
+        "kind": "system",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "1e3b9269",
+        "title": "Play a casino game",
+        "detail": "The player opens and plays a game.",
+        "kind": "screen",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      },
+      {
+        "id": "e5a6580b",
+        "title": "Close the game",
+        "detail": "The player closes the game.",
+        "kind": "screen",
+        "route": "",
+        "screen": "",
+        "friction": "",
+        "change": "new",
+        "why": "",
+        "source": "human",
+        "by": "CH"
+      }
+    ],
+    "peers": [],
+    "opportunities": [],
+    "impact": "",
+    "project": null,
+    "createdBy": "CH",
+    "createdAt": "2026-11-09T20:38:15.504Z",
+    "updatedAt": "2026-11-09T20:39:10.238Z",
+    "seeded": true,
+    "updatedBy": "CH"
+  }
+]

@@ -17,9 +17,12 @@ import { renderAnnotated } from './lib/capture.mjs'
 import { createNotify } from './lib/notify.mjs'
 import { createTeam } from './lib/team.mjs'
 import { createModels } from './lib/models.mjs'
+import { createJourneys } from './lib/journeys.mjs'
 import crypto from 'node:crypto'
 import * as P from './lib/prompts.mjs'
 import { execFile } from 'node:child_process'
+import { startPrototypeProxy } from './lib/proto-proxy.mjs'
+import { startGitSync } from './lib/git-sync.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 // If the studio's code changes while it runs, the page shows "Restart the studio" (new code only loads on restart).
@@ -60,6 +63,8 @@ const LINKS = {
   lumen: process.env.STUDIO_LUMEN_URL || 'https://design-request-app-one.vercel.app/lumen',
   figma: process.env.STUDIO_FIGMA_URL || 'https://www.figma.com/design/vCPe93hNKDWWcpu49Vo0kU',
   prototypeOrigin: process.env.STUDIO_PROTOTYPE_ORIGIN || 'http://127.0.0.1:3001',
+  // What people's browsers open for prototypes. On a server: the public address of the prototype proxy (see docs/DEPLOY_AWS.md).
+  prototypePublic: process.env.STUDIO_PROTOTYPE_PUBLIC_URL || '',
   designAgentFile: 'https://www.figma.com/design/' + (process.env.STUDIO_FIGMA_FILE || 'MYeELetKW9xye1shSpm8Fn'),
   research: process.env.STUDIO_RESEARCH_URL || 'https://www.figma.com/files/1304356510223900444/folder/653184570',
   repo: process.env.STUDIO_REPO_URL || 'https://github.com/Stottiefingaz86/DAGENT',
@@ -129,6 +134,7 @@ store.on('change', (msg) => {
 // The studio runs the prototype lane itself (apps/live-site on :3001).
 const lane = createLane({ repoRoot: REPO_ROOT, origin: LINKS.prototypeOrigin, onChange: (st) => store.emit('change', { type: 'lane', lane: st }) })
 const models = createModels(here)
+const journeys = createJourneys(REPO_ROOT)
 const claude = createClaudeRunner({ store, repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL, models, siteOrigin: LINKS.prototypeOrigin, lane, taste })
 // No key → no run. Never a stand-in agent.
 async function runner(slug, prompt, signal, step) {
@@ -151,7 +157,10 @@ const readKeys = () => {
   }
 }
 const writeKeys = (k) => fs.writeFileSync(KEYS_FILE, JSON.stringify(k, null, 2), { mode: 0o600 })
+// On a server the key comes from the environment (AWS Secrets Manager) and is never stored in a file.
+const KEY_FROM_ENV = process.env.STUDIO_KEY_SOURCE === 'env'
 function applyActiveKey() {
+  if (KEY_FROM_ENV) return
   const k = readKeys()
   const a = k.keys.find((x) => x.id === k.active)
   if (a) process.env.ANTHROPIC_API_KEY = a.key
@@ -163,10 +172,16 @@ function applyActiveKey() {
 applyActiveKey()
 const KEY_RE = /^sk-ant-[A-Za-z0-9_\-]{20,}$/
 const publicKeys = () => {
+  if (KEY_FROM_ENV) {
+    const key = process.env.ANTHROPIC_API_KEY || ''
+    return { active: 'env', managed: 'env', keys: key ? [{ id: 'env', label: 'Server key (set by DevOps)', hint: `${key.slice(0, 10)}…${key.slice(-4)}` }] : [] }
+  }
   const k = readKeys()
   return { active: k.active, keys: k.keys.map(({ key, ...rest }) => ({ ...rest, hint: `${key.slice(0, 10)}…${key.slice(-4)}` })) }
 }
-const isLocal = (req) => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
+// Behind a load balancer (STUDIO_TRUST_PROXY=1) the real client is in X-Forwarded-For, and nothing counts as "this computer".
+const TRUST_PROXY = process.env.STUDIO_TRUST_PROXY === '1'
+const isLocal = (req) => !(TRUST_PROXY && req.headers['x-forwarded-for']) && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
 
 // Jobs left mid-run by a restart go back to the humans.
 for (const j of store.list()) {
@@ -235,7 +250,7 @@ const REQUIRED = (process.env.STUDIO_SETUP_REQUIRED || 'apiKey,figma,mobbin,rese
 let tools = { figma: { connected: null, detail: '' }, mobbin: { connected: null, detail: '' }, checkedAt: null }
 let figmaStatus = tools.figma // kept for the handover card
 const chromeFound = () =>
-  !!(process.env.STUDIO_CHROME_PATH ? fs.existsSync(process.env.STUDIO_CHROME_PATH) : ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/opt/google/chrome/chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe'].some((p) => fs.existsSync(p)))
+  !!(process.env.STUDIO_CHROME_PATH ? fs.existsSync(process.env.STUDIO_CHROME_PATH) : ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/opt/google/chrome/chrome', 'C:/Program Files/Google/Chrome/Application/chrome.exe'].some((p) => fs.existsSync(p)))
 function claudeCli() {
   const sdkDir = path.join(here, 'node_modules', '@anthropic-ai')
   try {
@@ -455,7 +470,7 @@ function listKnowledge() {
 // Who is asking comes from their login session, never from the browser.
 const role = (req) => (req.user?.role === 'owner' ? 'owner' : 'requester')
 const who = (req) => req.user?.name || 'Unknown'
-const ip = (req) => req.socket.remoteAddress || ''
+const ip = (req) => (TRUST_PROXY && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || ''
 // A request from another website (CSRF) has a foreign Origin; refuse it.
 const sameOrigin = (req) => !req.headers.origin || req.headers.origin === `http://${req.headers.host}` || req.headers.origin === `https://${req.headers.host}`
 
@@ -516,7 +531,7 @@ function buildActivity() {
       signedOffBy: j.signedOffBy || null, signedOffAt: j.signedOffAt || null, updatedAt: j.updatedAt,
     })
   }
-  for (const a of team.auditList()) items.push({ at: a.at, by: a.by, type: a.type === 'signin' || a.type === 'signout' || a.type === 'signin_failed' || a.type === 'joined' ? 'access' : 'admin', label: { signin: 'Signed in', signout: 'Signed out', signin_failed: 'Failed sign-in', joined: 'Joined the studio', access: 'Team change', security: 'Security change' }[a.type] || a.type, text: a.text, ip: a.ip })
+  for (const a of team.auditList()) items.push({ at: a.at, by: a.by, type: a.type === 'signin' || a.type === 'signout' || a.type === 'signin_failed' || a.type === 'joined' ? 'access' : 'admin', label: { signin: 'Signed in', signout: 'Signed out', signin_failed: 'Failed sign-in', joined: 'Joined the studio', access: 'Team change', security: 'Security change', admin: 'Admin change' }[a.type] || a.type, text: a.text, ip: a.ip })
   items.sort((a, b) => (a.at < b.at ? 1 : -1))
   brds.sort((a, b) => (a.receivedAt < b.receivedAt ? 1 : -1))
   return { items: items.slice(0, 3000), brds, people: [...new Set(items.map((i) => i.by))].sort() }
@@ -529,6 +544,7 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('Referrer-Policy', 'no-referrer')
   res.setHeader('X-Frame-Options', 'DENY')
+  if (p === '/healthz') return send(res, 200, { ok: true, lane: lane.status().status })
   if (req.method === 'POST' && p !== '/api/presence') studioLog(`POST ${p}`)
   try {
     req.user = auth.userFor(req)
@@ -684,7 +700,7 @@ const server = http.createServer(async (req, res) => {
       const b = await readJson(req)
       if (b.item === 'tools') {
         // Opens Connect Tools.command in Terminal on the Mac that runs the studio (only when you're on that Mac).
-        if (process.platform !== 'darwin' || !isLocal(req)) return send(res, 400, { error: 'Open a terminal on the machine that runs the studio and run "Connect Tools.command" (see docs/SETUP.md).' })
+        if (process.platform !== 'darwin' || !isLocal(req)) return send(res, 400, { error: process.platform === 'darwin' ? 'Open a terminal on the machine that runs the studio and run "Connect Tools.command" (see docs/SETUP.md).' : 'On the server, DevOps runs  apps/studio/scripts/connect-tools.sh  once (see docs/DEPLOY_AWS.md → Connect Figma and Mobbin), then click Check again.' })
         execFile('open', ['-a', 'Terminal', path.join(REPO_ROOT, 'Connect Tools.command')], () => {})
         return send(res, 200, { ok: true, message: 'Terminal opened with Connect Tools. Follow the steps there, then click Check again.' })
       }
@@ -855,7 +871,7 @@ const server = http.createServer(async (req, res) => {
       }
     }
     if (p === '/api/config') {
-      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: LINKS, lane: lane.status(), lumen, research, figma: figmaStatus, restartNeeded: codeChanged(), setup: { ...setupState(), figmaToken: !!process.env.FIGMA_TOKEN, people: auth.list().length }, me: req.user ? { ...auth.raw().find((u) => u.id === req.user.id), color: colorFor(req.user.id), signoffNow: team.signoffActive(auth.raw().find((u) => u.id === req.user.id)) } : null, online: team.presence(), repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
+      return send(res, 200, { connected: connected(), stages: STAGES, statuses: STATUSES, links: { ...LINKS, prototypeOrigin: LINKS.prototypePublic || LINKS.prototypeOrigin }, lane: lane.status(), lumen, research, figma: figmaStatus, restartNeeded: codeChanged(), setup: { ...setupState(), figmaToken: !!process.env.FIGMA_TOKEN, people: auth.list().length }, me: req.user ? { ...auth.raw().find((u) => u.id === req.user.id), color: colorFor(req.user.id), signoffNow: team.signoffActive(auth.raw().find((u) => u.id === req.user.id)) } : null, online: team.presence(), repoRoot: REPO_ROOT, model: process.env.STUDIO_MODEL || 'default' })
     }
     if (p === '/api/lane') {
       if (req.method === 'POST') lane.ensure()
@@ -871,6 +887,7 @@ const server = http.createServer(async (req, res) => {
     }
     // ---- API keys (Settings) — this computer only, Owner only for changes ----
     if (p.startsWith('/api/keys')) {
+      if (KEY_FROM_ENV) return req.method === 'GET' ? send(res, 200, publicKeys()) : send(res, 403, { error: 'The API key on this server is managed by DevOps (ANTHROPIC_API_KEY in the server settings).' })
       if (!isLocal(req)) return send(res, 403, { error: 'Keys can only be managed on the computer running the studio.' })
       if (req.method === 'GET') return send(res, 200, publicKeys())
       if (role(req) !== 'owner') return send(res, 403, { error: 'Only the Owner can change keys.' })
@@ -989,6 +1006,81 @@ const server = http.createServer(async (req, res) => {
       store.update(run.slug, (j) => ({ ideas: j.ideas.map((i) => (i.id === idea.id ? { ...i, project: job.slug } : i)) }))
       orch.start(job.slug)
       return send(res, 201, store.get(job.slug))
+    }
+    // ---- Journey maps: today vs proposed, editable, mapped by the agent, turned into prototypes ----
+    if (p === '/api/journeys' && req.method === 'GET') {
+      journeys.seed(req.user.name)
+      const runs = store.list().filter((j) => j.source === 'journeys')
+      const projects = Object.fromEntries(store.list().map((j) => [j.slug, { title: j.title, status: j.status, previewUrl: j.previewUrl || null }]))
+      return send(res, 200, {
+        journeys: journeys.list().map((j) => ({ ...j, projectInfo: j.project ? projects[j.project] || null : null })),
+        mapping: runs.filter((r) => orch.isRunning(r.slug) || r.status === 'working' || r.status === 'queued').map((r) => ({ slug: r.slug, ids: r.journeyTargets || [] })),
+        can: { edit: req.user.role !== 'viewer', run: ['owner', 'lead'].includes(req.user.role) },
+      })
+    }
+    if (p === '/api/journeys' && req.method === 'POST') {
+      if (req.user.role === 'viewer') return send(res, 403, { error: 'Viewers can’t add journeys.' })
+      const b = await readJson(req)
+      if (!String(b.name || '').trim()) return send(res, 400, { error: 'Give the journey a name.' })
+      const j = journeys.create(b, req.user.name)
+      team.audit(req.user, 'admin', `Added journey map “${j.name}”`)
+      broadcast({ type: 'journeys' })
+      return send(res, 201, j)
+    }
+    // Ask the agent to map journeys against the live site, peers and KPIs (Admin or Lead: it costs a run).
+    if (p === '/api/journeys/map' && req.method === 'POST') {
+      { const nr = notReady(); if (nr) return send(res, 423, nr) }
+      if (!['owner', 'lead'].includes(req.user.role)) return send(res, 403, { error: 'Only an Admin or Lead can start a mapping run.' })
+      if (!connected()) return send(res, 400, { error: 'Connect the design agent first (Settings → Keys & integrations).' })
+      const b = await readJson(req)
+      const ids = (Array.isArray(b.ids) ? b.ids : []).map(String)
+      const targets = journeys.list().filter((j) => ids.includes(j.id))
+      const job = store.create({ title: `Journey maps · ${targets.length === 1 ? targets[0].name : new Date().toISOString().slice(0, 10)}`, surface: 'Journeys', brief: String(b.focus || (targets.length ? `Map: ${targets.map((j) => j.name).join(', ')}` : 'Map the core player journeys')), source: 'journeys', requester: who(req) })
+      store.update(job.slug, { createdById: req.user.id, assignees: [req.user.id], journeyTargets: targets.map((j) => j.id) })
+      orch.run(job.slug, P.journeyMapPrompt(store.get(job.slug), targets, String(b.focus || '').slice(0, 1000)), 'ideas')
+      broadcast({ type: 'journeys' })
+      return send(res, 201, { slug: job.slug })
+    }
+    const jm = /^\/api\/journeys\/([a-z0-9-]+)(?:\/(delete|prototype))?$/.exec(p)
+    if (jm && req.method === 'POST') {
+      const [, id, op] = jm
+      const j = journeys.get(id)
+      if (!j) return send(res, 404, { error: 'No such journey' })
+      if (req.user.role === 'viewer') return send(res, 403, { error: 'Viewers can’t change journeys.' })
+      const b = await readJson(req)
+      if (op === 'delete') {
+        if (!['owner', 'lead'].includes(req.user.role)) return send(res, 403, { error: 'Only an Admin or Lead can delete a journey map.' })
+        journeys.remove(id)
+        team.audit(req.user, 'admin', `Deleted journey map “${j.name}”`)
+      } else if (op === 'prototype') {
+        // Turn the proposed journey into a project: the agent builds a click-through prototype of it, end to end.
+        { const nr = notReady(); if (nr) return send(res, 423, nr) }
+        if (!['owner', 'lead'].includes(req.user.role)) return send(res, 403, { error: 'Only an Admin or Lead can start a prototype.' })
+        const steps = (lane) => (j[lane] || []).map((s, i) => `${i + 1}. ${s.title}${lane === 'proposed' && s.change !== 'same' ? ` [${s.change}]` : ''}${s.kind !== 'screen' ? ` (${s.kind})` : ''}${s.detail ? `: ${s.detail}` : ''}${s.route ? ` · route ${s.route}` : ''}${s.friction ? `\n   Friction today: ${s.friction}` : ''}${s.why ? `\n   Why: ${s.why}` : ''}`).join('\n') || '(not mapped yet: map it from the live site first)'
+        if (!(j.proposed || []).length) return send(res, 400, { error: 'Add the proposed steps first.' })
+        const brief = [
+          `Journey prototype: ${j.name}`,
+          `Source: journey map "${j.id}" in knowledge/journeys/journeys.json.`,
+          `Goal: ${j.goal || '—'}`,
+          j.kpis?.length ? `KPI it moves (KPIS.md): ${j.kpis.join('; ')}` : '',
+          j.impact ? `Expected impact: ${j.impact}` : '',
+          `\n## The journey today\n${steps('current')}`,
+          `\n## The proposed journey (build THIS)\n${steps('proposed')}`,
+          j.peers?.length ? `\n## Peer patterns\n${j.peers.map((x) => `- ${x.peer}: ${x.pattern}${x.source ? ` (${x.source})` : ''}`).join('\n')}` : '',
+          `\n## What to build\nA click-through prototype of the WHOLE proposed journey, start to finish, on the real shell: every step reachable in order (a step switcher or the real triggers), including the system steps and messages (progress while waiting, alerts, animations) and the unhappy path of each step. Lumen only. After it is signed off, the handover's journeys.md must match this map.`,
+          b.note ? `\nNote from ${req.user.name}: ${String(b.note).slice(0, 800)}` : '',
+        ].filter(Boolean).join('\n')
+        const job = store.create({ title: `${j.name} journey`, surface: 'Journey', brief, source: 'journey', requester: who(req) })
+        store.update(job.slug, { createdById: req.user.id, assignees: [req.user.id], journeyId: j.id })
+        journeys.patch(id, { project: job.slug }, req.user.name)
+        orch.start(job.slug)
+        broadcast({ type: 'journeys' })
+        return send(res, 201, { slug: job.slug })
+      } else {
+        journeys.patch(id, b, req.user.name)
+      }
+      broadcast({ type: 'journeys' })
+      return send(res, 200, journeys.get(id) || { deleted: true })
     }
     // ---- Maintenance jobs the agent runs (Owner) ----
     if (p.startsWith('/api/maintenance/') && req.method === 'POST') {
@@ -1178,7 +1270,7 @@ const server = http.createServer(async (req, res) => {
     if (p.startsWith('/files/')) {
       const rel = decodeURIComponent(p.slice(7))
       const sp = /^specs\/([a-z0-9-]+)\//.exec(rel)
-      if (sp && store.get(sp[1]) && !team.canSee(req.user, store.get(sp[1]))) return send(res, 404, { error: 'Not found' })
+      if (sp && store.get(sp[1]) && store.get(sp[1]).source !== 'journeys' && !team.canSee(req.user, store.get(sp[1]))) return send(res, 404, { error: 'Not found' })
       const full = path.resolve(REPO_ROOT, rel)
       const ok = PUBLIC_ROOTS.some((r) => full.startsWith(path.join(REPO_ROOT, r) + path.sep))
       return ok ? serveFile(res, full) : send(res, 403, { error: 'Not shared' })
@@ -1210,4 +1302,8 @@ server.listen(PORT, HOST, () => {
     lane.ensure().then((st) => console.log(`  Prototype lane: ${st.status} — ${st.message}`))
   }
   console.log(`  Inbox: ${path.join(REPO_ROOT, 'inbox')} (drop .md / .pdf BRDs here)\n`)
+  // Server only: the prototype site for people's browsers, behind the studio login (STUDIO_PROTOTYPE_PROXY_PORT).
+  if (process.env.STUDIO_PROTOTYPE_PROXY_PORT) startPrototypeProxy({ port: Number(process.env.STUDIO_PROTOTYPE_PROXY_PORT), host: HOST, target: LINKS.prototypeOrigin, auth, lane, studioUrl: process.env.STUDIO_PUBLIC_URL || '', log: studioLog })
+  // Server only: push the agent's work (prototypes, specs, taste notes) to a git branch (STUDIO_GIT_SYNC_MINUTES).
+  if (Number(process.env.STUDIO_GIT_SYNC_MINUTES) > 0) startGitSync({ repoRoot: REPO_ROOT, minutes: Number(process.env.STUDIO_GIT_SYNC_MINUTES), branch: process.env.STUDIO_GIT_SYNC_BRANCH || 'studio-work', log: studioLog })
 })

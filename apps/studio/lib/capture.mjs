@@ -8,8 +8,11 @@ let pw
 async function chromium() {
   if (!pw) pw = await import('playwright-core')
   const opts = { headless: true }
+  const linux = ['/usr/bin/chromium', '/usr/bin/chromium-browser'].find((p) => fs.existsSync(p))
   if (process.env.STUDIO_CHROME_PATH) opts.executablePath = process.env.STUDIO_CHROME_PATH
+  else if (linux) opts.executablePath = linux // server (Docker image ships Chromium)
   else opts.channel = 'chrome'
+  if (process.platform === 'linux') opts.args = ['--no-sandbox', '--disable-dev-shm-usage']
   try {
     return await pw.chromium.launch(opts)
   } catch (e) {

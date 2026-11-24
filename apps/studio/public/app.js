@@ -182,6 +182,7 @@ function parse() {
   if (a === 'resources') return { view: 'resources' }
   if (a === 'notifications') return { view: 'settings', section: 'notifications' }
   if (a === 'team') return { view: 'team' }
+  if (a === 'journeys') return { view: 'journeys', journey: b || null }
   return { view: 'home' }
 }
 async function route() {
@@ -189,6 +190,7 @@ async function route() {
   const changed = r.slug !== S.slug
   S.view = r.view
   if (r.section) S.settingsSec = r.section
+  S.journeyId = r.view === 'journeys' ? r.journey : null
   S.slug = r.slug || null
   if (changed) {
     // A new project starts from a blank page: the previous project's thread, live prototype and comments never carry over.
@@ -200,6 +202,7 @@ async function route() {
   if (S.view === 'skills' && !S.skills) S.skills = await api('/api/skills')
   if (S.view === 'taste') S.taste = await api('/api/taste').catch(() => ({ rules: [], signals: [] }))
   if (S.view === 'ideas') S.ideas = await api('/api/ideas').catch(() => [])
+  if (S.view === 'journeys') await loadJourneys()
   if (S.view === 'team' || S.view === 'settings') await loadTeam()
   if (S.view === 'settings' && settingsSection() === 'costs') await loadCosts()
   if (S.view === 'settings' && settingsSection() === 'activity') S.activity = await api('/api/activity').catch((e) => ({ error: e.message }))
@@ -368,7 +371,8 @@ function liveHTML(j) {
     ${v.screens?.length ? `<div class="pb-body">${shots(v.screens, 'Checked by the agent')}</div>` : ''}
   </article>`
 }
-const absProto = (u) => (/^https?:/.test(u || '') ? u : `${S.config.links.prototypeOrigin}${u?.startsWith('/') ? '' : '/'}${u || ''}`)
+// Links the agent saved as the lane's own address (127.0.0.1:3001) open through the public prototype address on a server.
+const absProto = (u) => (/^https?:\/\/(127\.0\.0\.1|localhost):3001/.test(u || '') ? u.replace(/^https?:\/\/(127\.0\.0\.1|localhost):3001/, S.config.links.prototypeOrigin.replace(/\/$/, '')) : /^https?:/.test(u || '') ? u : `${S.config.links.prototypeOrigin}${u?.startsWith('/') ? '' : '/'}${u || ''}`)
 function fitLive() {
   const f = document.querySelector('.live-frame')
   if (!f) return
@@ -469,6 +473,10 @@ function threadHTML() {
     }
     else if (/^Figma screens ready/.test(e.text) && j.figma) out.push(`<div class="card"><div class="card-head"><span class="card-icon">${ic.figma}</span><div style="min-width:0"><div class="card-title">Figma screens</div><div class="card-sub">${(j.figma.frames || []).length} frames · Lumen library only${(j.figma.gaps || []).length ? ` · ${j.figma.gaps.length} gaps` : ''}</div></div><a class="btn open" href="${esc(j.figma.url)}" target="_blank" rel="noreferrer">Open in Figma</a></div></div>`)
     else if (/^Dev handoff package ready/.test(e.text)) out.push(workCard('handoff', 'Handover', 'Spec, every screen and state, journeys, hover and motion, prototype and Figma', 'handoff'))
+    else if (/^\d+ journey maps? ready/.test(e.text)) {
+      const js = e.data?.journeys || []
+      out.push(`<div class="card indent-card"><div class="card-head"><span class="card-icon">${JM_ICON}</span><div style="min-width:0"><div class="card-title">${js.length || ''} journey map${js.length === 1 ? '' : 's'} ready</div><div class="card-sub">${esc(js.map((x) => x.name).join(' · ') || 'Today vs proposed, with friction and peers')}</div></div><a class="btn open" href="#journeys${js.length === 1 ? `/${js[0].id}` : ''}">Open Journey maps</a></div></div>`)
+    }
     else if (/^\d+ recommendations? ready/.test(e.text)) {
       // A recommendations run links straight to its ideas on the Ideas page.
       const n = (j.ideas || []).length
@@ -1216,7 +1224,7 @@ function placeComposer() {
   const slot = $('#home-slot')
   if (S.view === 'home' && slot) slot.append(composer)
   else if (composer.parentElement !== $('#main')) $('#main').append(composer)
-  composer.classList.toggle('is-home', S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'resources' || S.view === 'notifications' || S.view === 'team' || (S.view === 'job' && (!S.job || !canWork(S.job))) || (S.view === 'home' && (!S.config.connected || (S.config.setup && !S.config.setup.ready))))
+  composer.classList.toggle('is-home', S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'resources' || S.view === 'notifications' || S.view === 'team' || S.view === 'journeys' || (S.view === 'job' && (!S.job || !canWork(S.job))) || (S.view === 'home' && (!S.config.connected || (S.config.setup && !S.config.setup.ready))))
   const j = S.job
   const home = S.view === 'home'
   input.placeholder = home
@@ -1413,6 +1421,7 @@ function meMenu(anchor) {
     `<div class="mm-head"><span class="avatar">${esc((u.name || '?').slice(0, 2).toUpperCase())}</span><div><b>${esc(u.name)}</b><span>${roleLabel(u)}${S.config.me?.signoffNow && u.role === 'designer' ? ' · can sign off' : ''}</span></div></div>
     <hr>
     <a class="mi" href="#team">${icons.team}Team<span class="check">${nOnline} online</span></a>
+    <a class="mi" href="#journeys">${JM_ICON.replace('<svg ', '<svg class="mi-ic" ')}Journey maps</a>
     <a class="mi" href="#ideas">${icons.ideas}Ideas</a>
     <a class="mi" href="#taste">${icons.taste}Taste</a>
     <a class="mi" href="#skills">${icons.skills}Skills</a>
@@ -1914,7 +1923,7 @@ function renderThread(scrollToEnd) {
       }
     }
   } else {
-    th.innerHTML = S.view === 'home' ? homeHTML() : S.view === 'skills' ? skillsHTML() : S.view === 'taste' ? tasteHTML() : S.view === 'ideas' ? ideasHTML() : S.view === 'resources' ? resourcesHTML() : S.view === 'notifications' ? notificationsHTML() : S.view === 'settings' ? settingsHTML() : S.view === 'team' ? teamHTML() : '<div class="sys" style="margin-top:20vh">Project not found.</div>'
+    th.innerHTML = S.view === 'home' ? homeHTML() : S.view === 'skills' ? skillsHTML() : S.view === 'taste' ? tasteHTML() : S.view === 'ideas' ? ideasHTML() : S.view === 'resources' ? resourcesHTML() : S.view === 'notifications' ? notificationsHTML() : S.view === 'settings' ? settingsHTML() : S.view === 'team' ? teamHTML() : S.view === 'journeys' ? journeysHTML() : '<div class="sys" style="margin-top:20vh">Project not found.</div>'
   }
   placeComposer()
   if (active) {
@@ -1927,6 +1936,7 @@ function renderThread(scrollToEnd) {
     input.setSelectionRange(inputCaret, inputCaret)
   }
   if (S.view === 'home' || S.view === 'skills' || S.view === 'settings' || S.view === 'taste' || S.view === 'ideas' || S.view === 'team') sc.scrollTop = 0
+  if (S.view === 'journeys' && scrollToEnd) sc.scrollTop = 0
   else if (scrollToEnd || nearEnd) sc.scrollTop = sc.scrollHeight
 }
 function renderAll(scrollToEnd = true) {
@@ -1980,6 +1990,10 @@ function connect() {
       renderTop()
       if (S.view === 'team') clearTimeout(S.teamT), (S.teamT = setTimeout(() => loadTeam().then(() => renderThread(false)), 400))
       return
+    }
+    if (msg.type === 'journeys' || (msg.type === 'event' && /journey maps? ready/.test(msg.event?.text || ''))) {
+      if (S.view === 'journeys' && $('#modal-root').hidden) loadJourneys().then(() => renderThread(false))
+      if (msg.type === 'journeys') return
     }
     if (msg.type === 'team') return loadTeam().then(async () => ((S.config = await api('/api/config')), refresh()))
     if (msg.type === 'inbox') {
@@ -2840,6 +2854,239 @@ document.addEventListener('click', (e) => {
   if (!r || e.target.closest('a')) return
   S.costOpen = S.costOpen === r.dataset.costOpen ? null : r.dataset.costOpen
   renderThread(false)
+})
+
+// ================= Journey maps: today vs proposed, friction, peers, KPI; edit, map with the agent, prototype =================
+const JM_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M7.2 6H14a3 3 0 010 6h-4a3 3 0 000 6h6.8"/></svg>'
+const JM_STATUS = { draft: ['Not mapped yet', ''], mapped: ['Mapped', 'ok'], proposed: ['Mapped · proposal ready', 'ok'] }
+const JM_CHANGE = { same: ['Same', ''], changed: ['Changed', 'chg'], new: ['New', 'new'], removed: ['Removed', 'rem'] }
+const JM_KIND = { screen: 'Screen', system: 'Happens automatically', message: 'Message' }
+const jmGet = () => (S.jm?.journeys || []).find((j) => j.id === S.journeyId)
+const jmMapping = (id) => (S.jm?.mapping || []).some((m) => !m.ids.length || m.ids.includes(id))
+async function loadJourneys() {
+  S.jm = await api('/api/journeys').catch((e) => ({ error: e.message, journeys: [], mapping: [], can: {} }))
+}
+function jmStep(s, i, lane, edit, last) {
+  const [chgLabel, chgCls] = JM_CHANGE[s.change] || JM_CHANGE.same
+  return `<div class="jm-step k-${s.kind} ${lane === 'proposed' ? `c-${s.change}` : ''} ${s.friction && lane === 'current' ? 'has-friction' : ''}" data-step="${s.id}">
+      <div class="jm-step-top"><span class="jm-n">${i + 1}</span>${s.kind !== 'screen' ? `<span class="jm-kind">${JM_KIND[s.kind]}</span>` : ''}${lane === 'proposed' && s.change !== 'same' ? `<span class="jm-chg ${chgCls}">${chgLabel}</span>` : ''}${s.source === 'human' && s.by ? `<span class="jm-by" title="Added by ${esc(s.by)}">${esc(initials(s.by))}</span>` : ''}</div>
+      ${s.screen ? `<button type="button" class="jm-shot" data-zoom="${esc(imgSrc(s.screen))}" data-caption="${esc(`${i + 1}. ${s.title}`)}"><img src="${esc(imgSrc(s.screen))}" alt="${esc(s.title)}" loading="lazy"></button>` : ''}
+      <b class="jm-title">${esc(s.title)}</b>
+      ${s.detail ? `<p class="jm-detail">${esc(s.detail)}</p>` : ''}
+      ${s.friction && lane === 'current' ? `<p class="jm-friction"><b>Friction</b> ${esc(s.friction)}</p>` : ''}
+      ${s.why && lane === 'proposed' ? `<p class="jm-why"><b>Why</b> ${esc(s.why)}</p>` : ''}
+      ${edit ? `<div class="jm-tools"><button class="icon-btn" data-jm-move="-1" ${i === 0 ? 'disabled' : ''} aria-label="Move earlier" title="Move earlier">‹</button><button class="icon-btn" data-jm-edit aria-label="Edit step" title="Edit">✎</button><button class="icon-btn" data-jm-del aria-label="Remove step" title="Remove">${ic.x}</button><button class="icon-btn" data-jm-move="1" ${last ? 'disabled' : ''} aria-label="Move later" title="Move later">›</button></div>` : ''}
+    </div>`
+}
+function jmLane(j, lane, edit) {
+  const steps = j[lane] || []
+  const add = (at) => (edit ? `<button class="jm-add" data-jm-add="${at}" aria-label="Add a step here" title="Add a step here">+</button>` : '<span class="jm-arrow" aria-hidden="true"></span>')
+  if (!steps.length) {
+    return lane === 'current'
+      ? `<div class="jm-empty"><b>Not mapped yet</b><span>${S.jm.can.run ? 'Press Map with agent: it walks the live site, captures each step and marks the friction.' : 'An Admin or Lead can ask the agent to map it from the live site.'}</span></div>`
+      : `<div class="jm-empty"><b>No proposal yet</b><span>${edit ? 'Add the first step, or copy today’s journey and change it.' : 'Nothing proposed yet.'}</span>${edit ? `<span class="jm-empty-act"><button class="btn" data-jm-add="0">Add a step</button>${(j.current || []).length ? '<button class="btn ghost" data-jm-copy>Start from today</button>' : ''}</span>` : ''}</div>`
+  }
+  return `<div class="jm-track" data-lane="${lane}">${steps.map((s, i) => `${i ? add(i) : edit ? add(0) : ''}${jmStep(s, i, lane, edit, i === steps.length - 1)}`).join('')}${edit ? add(steps.length) : ''}</div>`
+}
+function journeysHTML() {
+  const J = S.jm
+  if (!J) return '<div class="skills"><h2>Journey maps</h2><p>Loading…</p></div>'
+  if (J.error) return `<div class="skills"><h2>Journey maps</h2><div class="st-card st-pad"><b>Couldn’t load.</b><p class="card-sub">${/not found/i.test(J.error) ? 'Restart the studio to load this page (close its Terminal window, then Start Design Studio.command).' : esc(J.error)}</p></div></div>`
+  const j = jmGet()
+  if (S.journeyId && j) return journeyHTML(j)
+  const card = (x) => {
+    const fr = (x.current || []).filter((s) => s.friction).length
+    const chg = (x.proposed || []).filter((s) => s.change !== 'same').length
+    const lane = (x.proposed || []).length ? x.proposed : x.current || []
+    const [st, cls] = JM_STATUS[x.status] || JM_STATUS.draft
+    return `<a class="jm-card" href="#journeys/${x.id}">
+      <div class="jm-card-top"><b>${esc(x.name)}</b>${jmMapping(x.id) ? '<span class="jm-live"><span class="spin"></span>Mapping…</span>' : `<span class="tm-tag ${cls === 'ok' ? 'sign' : ''}">${st}</span>`}</div>
+      <p>${esc(x.goal || '')}</p>
+      <div class="jm-mini">${lane.slice(0, 9).map((s) => `<span class="jm-mini-s c-${(x.proposed || []).length ? s.change : 'same'}" title="${esc(s.title)}">${esc(s.title)}</span>`).join('<i></i>')}${lane.length > 9 ? `<i></i><span class="jm-mini-s">+${lane.length - 9}</span>` : ''}</div>
+      <div class="jm-card-foot">${(x.kpis || []).slice(0, 2).map((k) => `<span class="jm-kpi">${esc(k.split(' ').slice(0, 1).join(''))}<span>${esc(k.split(' ').slice(1).join(' '))}</span></span>`).join('')}<span class="jm-count">${(x.current || []).length ? `${x.current.length} steps today${fr ? ` · ${fr} friction` : ''}` : 'Today not mapped'}${(x.proposed || []).length ? ` · ${x.proposed.length} proposed${chg ? ` (${chg} changes)` : ''}` : ''}</span></div>
+    </a>`
+  }
+  return `<div class="skills jm"><div class="tm-top"><div><h2>Journey maps</h2><p>Each player journey as it is on the site today, where it loses people, how peers do it, and the journey we propose, tied to the KPI it moves.</p></div>
+      <span class="st-inline">${J.can.run ? `<button class="btn" data-jm-map="">Map with agent</button>` : ''}${J.can.edit ? '<button class="btn primary" data-jm-new>New journey</button>' : ''}</span></div>
+    ${(J.mapping || []).length ? `<div class="st-card st-pad jm-banner"><span class="spin"></span><span>The agent is mapping journeys from the live site. This page updates when it finishes.</span><a class="btn ghost" href="#j/${J.mapping[0].slug}">Watch</a></div>` : ''}
+    <div class="jm-grid">${J.journeys.map(card).join('') || '<p class="ib-empty">No journeys yet. Add one, or ask the agent to map the core journeys.</p>'}</div></div>`
+}
+function journeyHTML(j) {
+  const can = S.jm.can
+  const mapping = jmMapping(j.id)
+  const [st, cls] = JM_STATUS[j.status] || JM_STATUS.draft
+  const P = j.projectInfo
+  const fr = (j.current || []).filter((s) => s.friction).length
+  return `<div class="skills jm jm-detail-page">
+    <a class="jm-back" href="#journeys">‹ Journey maps</a>
+    <div class="tm-top"><div style="min-width:0"><h2>${esc(j.name)}</h2><p>${esc(j.goal || '')}</p>
+        <div class="jm-meta">${mapping ? '<span class="jm-live"><span class="spin"></span>Agent is mapping…</span>' : `<span class="tm-tag ${cls === 'ok' ? 'sign' : ''}">${st}</span>`}${(j.kpis || []).map((k) => `<span class="jm-kpi">${esc(k.split(' ')[0])}<span>${esc(k.split(' ').slice(1).join(' '))}</span></span>`).join('')}${j.mappedAt ? `<span class="card-sub">Mapped ${ago(j.mappedAt)} ago</span>` : ''}</div></div>
+      <span class="st-inline">${can.run ? `<button class="btn" data-jm-map="${j.id}" ${mapping ? 'disabled' : ''}>${(j.current || []).length ? 'Re-map with agent' : 'Map with agent'}</button>` : ''}
+        ${j.project && P ? `<a class="btn primary" href="#j/${j.project}">${P.previewUrl ? 'Open prototype' : 'Open project'}</a>` : can.run ? `<button class="btn primary" data-jm-proto ${(j.proposed || []).length ? '' : 'disabled'} title="${(j.proposed || []).length ? '' : 'Add the proposed steps first'}">Prototype this journey</button>` : ''}
+        ${can.edit ? `<button class="icon-btn" data-jm-menu aria-label="More">${ic.more}</button>` : ''}</span></div>
+    ${j.summary ? `<div class="st-card st-pad jm-summary"><p>${esc(j.summary)}</p>${j.impact ? `<p class="jm-impact"><b>Expected impact</b> ${esc(j.impact)}</p>` : ''}</div>` : j.description ? `<div class="st-card st-pad jm-summary"><p>${esc(j.description)}</p></div>` : ''}
+    <section class="jm-lane"><div class="jm-lane-head"><h3>Today</h3><span>${(j.current || []).length ? `${j.current.length} steps on the live site${fr ? ` · ${fr} with friction` : ''}` : 'From the live site'}</span></div>${jmLane(j, 'current', false)}</section>
+    <section class="jm-lane is-proposed"><div class="jm-lane-head"><h3>Proposed</h3><span>${(j.proposed || []).length ? `${j.proposed.length} steps · ${j.proposed.filter((s) => s.change !== 'same').length} changes` : ''}${can.edit && (j.proposed || []).length ? ' · use + to add, ‹ › to reorder, ✎ to edit' : ''}</span>${can.edit && (j.current || []).length && (j.proposed || []).length ? '<button class="btn ghost" data-jm-copy>Reset to today</button>' : ''}</div>${jmLane(j, 'proposed', can.edit)}</section>
+    ${(j.opportunities || []).length || (j.peers || []).length ? `<div class="jm-cols">
+      ${(j.opportunities || []).length ? `<div><h3 class="st-sub">Biggest opportunities</h3><div class="st-card">${j.opportunities.map((o) => stRow(esc(o.title), esc(o.why), `${o.kpi ? `<span class="jm-kpi">${esc(o.kpi.split(' ')[0])}</span>` : ''}${o.effort ? `<span class="tm-tag">Effort ${esc(o.effort)}</span>` : ''}`)).join('')}</div></div>` : ''}
+      ${(j.peers || []).length ? `<div><h3 class="st-sub">How peers do it</h3><div class="st-card">${j.peers.map((p) => stRow(esc(p.peer), `${esc(p.pattern)}${p.source ? ` <span class="jm-src">${/^https?:/.test(p.source) ? `<a href="${esc(p.source)}" target="_blank" rel="noreferrer">Source</a>` : esc(p.source)}</span>` : ''}`, '')).join('')}</div></div>` : ''}
+    </div>` : ''}
+    ${j.project && P ? `<a class="gate-row" href="#j/${j.project}"><span class="dot ${P.status === 'ready_for_dev' ? 'done' : 'working'}"></span><div style="min-width:0"><b>Prototype project: ${esc(P.title)}</b><span class="s">${esc(S.config.statuses[P.status]?.label || P.status)}</span></div><span class="go">Open</span></a>` : ''}
+  </div>`
+}
+async function jmSave(body, msg) {
+  try {
+    await api(`/api/journeys/${S.journeyId}`, body)
+    await loadJourneys()
+    renderThread(false)
+    if (msg) toast('Saved', msg)
+    return true
+  } catch (x) {
+    toast('Couldn’t save', x.message)
+    return false
+  }
+}
+function jmModal(html, onSubmit, focusSel) {
+  const root = $('#modal-root')
+  root.innerHTML = `<form class="modal st-modal" role="dialog" aria-modal="true" id="jm-form">${html}</form>`
+  root.hidden = false
+  const close = () => ((root.hidden = true), (root.innerHTML = ''))
+  root.onclick = (e) => {
+    if (e.target === root || e.target.dataset.close != null) close()
+  }
+  $(focusSel || '#jm-form input, #jm-form textarea')?.focus()
+  $('#jm-form').onsubmit = async (e) => {
+    e.preventDefault()
+    if ((await onSubmit()) !== false) close()
+  }
+}
+function jmStepModal(step, at) {
+  const s = step || { title: '', detail: '', kind: 'screen', change: 'new', why: '' }
+  const opt = (o, v) => Object.entries(o).map(([k, l]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${Array.isArray(l) ? l[0] : l}</option>`).join('')
+  jmModal(
+    `<h2>${step ? 'Edit step' : 'Add a step'}</h2>
+    <input class="field-in" id="js-title" placeholder="Step name, e.g. Wallet open by default" maxlength="80" required value="${esc(s.title)}" aria-label="Step name">
+    <textarea class="field-in" id="js-detail" rows="3" placeholder="What the player sees, or what happens" aria-label="What happens">${esc(s.detail || '')}</textarea>
+    <div class="tm-inv-grid"><select class="field-in" id="js-kind" aria-label="Type">${opt(JM_KIND, s.kind)}</select><select class="field-in" id="js-change" aria-label="Compared with today">${opt({ new: 'New step', changed: 'Changed from today', same: 'Same as today', removed: 'Removed' }, s.change)}</select></div>
+    <textarea class="field-in" id="js-why" rows="2" placeholder="Why (optional): the KPI it moves or the peer that does it" aria-label="Why">${esc(s.why || '')}</textarea>
+    <div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">${step ? 'Save step' : 'Add step'}</button></div>`,
+    () => {
+      const j = jmGet()
+      const next = { ...(step || {}), title: $('#js-title').value, detail: $('#js-detail').value, kind: $('#js-kind').value, change: $('#js-change').value, why: $('#js-why').value }
+      const list = [...(j.proposed || [])]
+      if (step) list[list.findIndex((x) => x.id === step.id)] = next
+      else list.splice(at, 0, next)
+      return jmSave({ proposed: list })
+    },
+    '#js-title',
+  )
+}
+document.addEventListener('click', async (e) => {
+  const t = e.target
+  if (S.view !== 'journeys') return
+  if (t.closest('[data-jm-new]'))
+    return jmModal(
+      `<h2>New journey</h2><p>Name it and say what the player is trying to do. Add the steps you have in mind, one per line, or leave them empty and let the agent map it.</p>
+      <input class="field-in" id="jn-name" placeholder="e.g. Withdraw winnings" maxlength="80" required aria-label="Journey name">
+      <input class="field-in" id="jn-goal" placeholder="What the player is trying to do" maxlength="300" aria-label="Goal">
+      <textarea class="field-in" id="jn-steps" rows="5" placeholder="Proposed steps, one per line (optional)" aria-label="Proposed steps"></textarea>
+      <div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Add journey</button></div>`,
+      async () => {
+        try {
+          const j = await api('/api/journeys', { name: $('#jn-name').value, goal: $('#jn-goal').value, steps: $('#jn-steps').value })
+          go(`#journeys/${j.id}`)
+        } catch (x) {
+          toast('Couldn’t add it', x.message)
+          return false
+        }
+      },
+    )
+  const mp = t.closest('[data-jm-map]')
+  if (mp) {
+    const id = mp.dataset.jmMap
+    const j = id ? jmGet() : null
+    const all = S.jm.journeys
+    return jmModal(
+      `<h2>${j ? `Map “${esc(j.name)}”` : 'Map journeys with the agent'}</h2>
+      <p>The agent walks the live site and captures each step, marks the friction, checks how peers do it, and proposes a better journey tied to the KPIs. It keeps steps people added. It runs as its own project so you can watch, and uses the Ideas model (Settings → Models &amp; cost).</p>
+      ${j ? '' : `<div class="card-sub">Which journeys?</div><div class="tm-chips">${all.map((x) => `<label class="chip on"><input type="checkbox" value="${x.id}" hidden checked>${esc(x.name)}</label>`).join('') || '<span class="card-sub">None yet: the agent picks the core journeys.</span>'}</div>`}
+      <textarea class="field-in" id="jm-focus" rows="2" placeholder="Anything to focus on? (optional) e.g. compare the deposit wait with our peers" aria-label="Focus"></textarea>
+      <div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Start mapping</button></div>`,
+      async () => {
+        try {
+          const ids = j ? [j.id] : [...document.querySelectorAll('#jm-form .tm-chips input:checked')].map((i) => i.value)
+          await api('/api/journeys/map', { ids, focus: $('#jm-focus').value })
+          toast('Mapping started', 'This page updates when the agent finishes.')
+          await loadJourneys()
+          renderThread(false)
+        } catch (x) {
+          toast('Couldn’t start', x.message)
+          return false
+        }
+      },
+      '#jm-focus',
+    )
+  }
+  if (t.closest('[data-jm-proto]')) {
+    const j = jmGet()
+    return jmModal(
+      `<h2>Prototype this journey</h2><p>The agent builds a click-through prototype of the proposed journey, start to finish (${j.proposed.length} steps), on the real shell with Lumen. It runs as a normal project: questions, direction review, feedback rounds, sign-off.</p>
+      <textarea class="field-in" id="jp-note" rows="2" placeholder="Anything to add? (optional)" aria-label="Note"></textarea>
+      <div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Start prototype</button></div>`,
+      async () => {
+        try {
+          const r = await api(`/api/journeys/${j.id}/prototype`, { note: $('#jp-note').value })
+          await loadJobs()
+          go(`#j/${r.slug}`)
+        } catch (x) {
+          toast('Couldn’t start', x.message)
+          return false
+        }
+      },
+      '#jp-note',
+    )
+  }
+  if (t.closest('[data-jm-menu]')) {
+    e.stopPropagation()
+    const j = jmGet()
+    return menu(t.closest('[data-jm-menu]'), `<button class="mi" id="jm-rename">Rename or change the goal</button>${S.jm.can.run ? '<button class="mi danger" id="jm-delete">Delete journey map</button>' : ''}`, (m) => {
+      $('#jm-rename', m).onclick = () => {
+        m.hidden = true
+        jmModal(
+          `<h2>Journey details</h2><input class="field-in" id="jr-name" maxlength="80" required value="${esc(j.name)}" aria-label="Name"><input class="field-in" id="jr-goal" maxlength="300" value="${esc(j.goal || '')}" placeholder="What the player is trying to do" aria-label="Goal"><div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Save</button></div>`,
+          () => jmSave({ name: $('#jr-name').value, goal: $('#jr-goal').value }),
+        )
+      }
+      const d = $('#jm-delete', m)
+      if (d)
+        d.onclick = () => {
+          m.hidden = true
+          jmModal(`<h2>Delete “${esc(j.name)}”?</h2><p>The map is removed for everyone. A prototype project made from it stays.</p><div class="foot"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Delete</button></div>`, async () => {
+            await api(`/api/journeys/${j.id}/delete`, {}).catch((x) => toast('Couldn’t delete', x.message))
+            go('#journeys')
+          })
+        }
+    })
+  }
+  const j = jmGet()
+  if (!j || !S.jm.can.edit) return
+  const add = t.closest('[data-jm-add]')
+  if (add) return jmStepModal(null, Number(add.dataset.jmAdd))
+  if (t.closest('[data-jm-copy]')) return jmSave({ proposed: (j.current || []).map(({ id, friction, ...s }) => ({ ...s, change: 'same', why: '' })) }, 'Proposed now starts from today’s journey.')
+  const card = t.closest('.is-proposed .jm-step')
+  if (!card) return
+  const list = [...(j.proposed || [])]
+  const i = list.findIndex((s) => s.id === card.dataset.step)
+  if (i < 0) return
+  if (t.closest('[data-jm-edit]')) return jmStepModal(list[i])
+  if (t.closest('[data-jm-del]')) return list.splice(i, 1), jmSave({ proposed: list })
+  const mv = t.closest('[data-jm-move]')
+  if (mv) {
+    const k = i + Number(mv.dataset.jmMove)
+    if (k < 0 || k >= list.length) return
+    ;[list[i], list[k]] = [list[k], list[i]]
+    return jmSave({ proposed: list })
+  }
 })
 
 async function start() {

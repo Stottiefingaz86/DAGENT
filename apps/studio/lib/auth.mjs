@@ -7,6 +7,9 @@ import path from 'node:path'
 
 const SESSION_DAYS = 14
 const COOKIE = 'studio_session'
+// On a server where prototypes have their own address (proto.example.com), the login cookie is shared with it
+// through the parent domain, e.g. STUDIO_COOKIE_DOMAIN=.example.com. Unset on a Mac.
+const DOMAIN = /^\.?[a-z0-9.-]+$/i.test(process.env.STUDIO_COOKIE_DOMAIN || '') ? `; Domain=${process.env.STUDIO_COOKIE_DOMAIN}` : ''
 
 export function createAuth(dir) {
   const USERS = path.join(dir, '.studio-users.json')
@@ -81,13 +84,13 @@ export function createAuth(dir) {
     const days = policy().sessionDays || SESSION_DAYS
     sessions[sha(t)] = { userId: user.id, exp: Date.now() + days * 864e5, last: Date.now() }
     saveSessions()
-    res.setHeader('Set-Cookie', `${COOKIE}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${days * 86400}${secure ? '; Secure' : ''}`)
+    res.setHeader('Set-Cookie', `${COOKIE}=${t}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${days * 86400}${secure ? '; Secure' : ''}${DOMAIN}`)
   }
   function endSession(req, res) {
     const t = cookieToken(req)
     if (t) delete sessions[sha(t)]
     saveSessions()
-    res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0`)
+    res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${DOMAIN}`)
   }
   const dropSessionsOf = (userId) => {
     for (const [k, s] of Object.entries(sessions)) if (s.userId === userId) delete sessions[k]

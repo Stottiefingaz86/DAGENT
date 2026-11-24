@@ -42,6 +42,7 @@ import { AuthModal } from './auth-modal'
 import { ProfileGateModal } from './profile-gate-modal'
 import { FullPageLoader } from './full-page-loader'
 import { IntercomFab } from './intercom-fab'
+import { ProductTour } from './product-tour'
 import { isAccountPath, productFromPath } from './shell-nav'
 import { cn } from '@/lib/utils'
 
@@ -220,6 +221,7 @@ function ShellChrome({
       </div>
       <ShellMobileNav />
       <IntercomFab />
+      <ProductTour />
       <FullPageLoader open={fullPageLoader} />
       <AuthModal />
       <ProfileGateModal />

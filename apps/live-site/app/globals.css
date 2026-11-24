@@ -1956,6 +1956,10 @@ body > div:not([data-shell-drawer]):not([data-ubc-root]):not([data-cashier-root]
   overflow: visible !important;
   pointer-events: none !important;
 }
+/* Composer / buttons must receive clicks even when ancestors are pointer-events:none. */
+[data-welcome-inbox-root] .pointer-events-auto {
+  pointer-events: auto !important;
+}
 
 /* Churn rescue after 3 losses — same fixed carve-out as auth / Intercom. */
 [data-churn-rescue-root] {

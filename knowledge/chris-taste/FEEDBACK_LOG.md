@@ -248,3 +248,32 @@ Format for new chronological entries (bottom of file):
 - **Surface:** sportsbook · on-sportbook-after-a-bet-we-want-to-be-able-to-s
 - **Signal:** “they should land on sports with the bets already in the slip”
 - **Do:** Shared or deep links to a bet land on the sportsbook (/sports/<sport>) with the picks already in the betslip and the slip open, ready for a stake; logged-out players hit Join only at Place Bet. <!-- rule:a9a5ef57 -->
+
+### 2026-11-11 — Mobbin: take the journey, never the layout
+- **Sentiment:** mixed
+- **Surface:** all surfaces · research
+- **Signal:** “our agent should not just copy mobbin layout as it would not fit igaming, but it can be inspired by journeys”
+- **Do:** Use Mobbin (non-gambling apps only — it has no casino or sportsbook apps) for journey patterns: steps, order, states, feedback, timing. Say which step was borrowed.
+- **Don't:** Copy a Mobbin screen's layout, structure or visual style into our site, or search Mobbin for casino/sportsbook competitors by name.
+
+### 2026-11-12 — Figma handover must match prod exactly, in situ
+- **Sentiment:** negative
+- **Surface:** sportsbook · Figma handover (alternate lines)
+- **Signal:** “totals x button in figma is wrong, the event row also doesnt seem correct missing arrows on desktop and the lines seem off, i also want to see everything in situ, sub nav also doesnt look like what we have in prod, the odds selections is opening below rather aligned with the arrows like prod, sportsbook side nav from shell not loading in”
+- **Do:** Rebuild screens from the live DOM (sub-nav, shell side nav with its icons, crests, desktop odds-rail edge chevrons, popover position) and compare a prod screenshot next to the Figma frame before handing over. Show every component in situ on the real page, not only isolated.
+- **Don't:** Approximate shell pieces (side nav, sub-nav) or position overlays by guesswork; never ship a Figma component whose header layout differs between variants.
+
+## 2026-11-12 (b) · Figma handover: complete prod pages + handover links
+- In-situ pages must be the **whole** prod page: header as prod renders it (nav items, active pill, balance, badges), glass sticky sub-nav with its 1px stroke, tiles with prod icons, boards, Live Wins, SEO, footer. Not pieces.
+- Mobile sub-nav must sit vertically centred in its 64px band exactly like prod (items 68×56, 4px top/bottom). Check vertical offsets of wrapped instances, not just widths.
+- Every interactive affordance gets its states in Figma (e.g. the ">" open-event chevron: Default / Hover / Focus).
+- Every handover carries three links together: **prod reference, Figma page, repo handover folder** (README, dev SKILL.md, tokens, components, journeys, acceptance).
+- (Nov 12, later) Light mode must follow prod per surface: the **sub-nav is light glass in Light** (`--container` @72%), never dark; the **betslip stays dark in both modes** (prod root has `class="dark"`). Before handing over, check every screen in Light *and* Dark against prod with the mode toggled, and pin fixed-mode surfaces (betslip, header, footer) in Figma.
+- (Nov 12, later) Chris loves the in-situ screens, but every Figma handover also needs a **Feature focus** frame: only the new/updated parts, broken down: numbered anatomy with tokens and NEW/UPDATED tags, before → after delta, all states, placement/measurement redlines. Put it first, straight after the Read me.
+- (Nov 12, 17:05) Alt-line picker v2 from Chris (code + taste note SOCCER_ALT_LINES.md): 7 lines high → low, no scroll; main line is the centre row and sits exactly on the board chips; chips use OddsButton styling (no row stroke / red ring); tap = pair moves onto the board + only the tapped chip on the slip (one leg per event market, replaced in place; tap again removes); reopening never re-centres. When code changes, update Figma components, every screen that shows the popover, Feature focus, Motion/Dev notes and the handover together.
+
+## 2026-11-20 · Betslip parlay row
+- **Signal:** “there is a bug on the figma betslip, the betslip should not have this grey box on the parlays should be just a divide line.”
+- **Do:** The Parlay row in the betslip sits on the popover surface with only a 1px `border` top divider, like prod. Compare the Figma betslip with a prod screenshot of the open drawer before handing over.
+- **Don't:** Put a filled band (secondary or any tint) behind the Parlay row, or any surface the prod slip doesn't show.
+- (Nov 20, later) “now the divide line is wrong colour, you have it black, in prod is not black.” Dividers use the `border` token exactly as prod renders it (faint white on dark), never a solid black line. After any Figma fix, screenshot the fixed part in situ, in both modes, next to prod.

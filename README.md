@@ -49,7 +49,7 @@ The full contract between this repo and its neighbours is in **[docs/PIPELINE.md
    - **Home → Check again.** The agent stays **off** until the key, Figma, Mobbin, the research token and Chrome all work. BRDs that arrive earlier wait.
    - **Settings → People:** add your team.
 
-**Hosting it for the team** (a server, not Vercel): see [docs/SETUP.md → Hosting the studio](docs/SETUP.md#hosting-the-studio-for-the-team).
+**Hosting it for the team** (a server, not Vercel): on AWS, see **[docs/DEPLOY_AWS.md](docs/DEPLOY_AWS.md)** (Docker image, load balancer, secrets, one-time sign-ins, git sync). Other servers: [docs/SETUP.md → Hosting the studio](docs/SETUP.md#hosting-the-studio-for-the-team).
 
 After that, start it with **`Start Design Studio.command`** (or `npm run studio`). Keys never go in the repo: they stay on the machine running the studio.
 

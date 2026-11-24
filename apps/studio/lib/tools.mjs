@@ -1,6 +1,7 @@
 // The studio tools the design agent calls. Each one changes the job the dashboard shows.
 // Used by the Claude runner.
 import { STAGES } from './store.mjs'
+import { createJourneys } from './journeys.mjs'
 
 export const STAGE_IDS = STAGES.map((s) => s.id)
 
@@ -92,6 +93,12 @@ export function makeTools(store, slug, taste) {
       })
       store.event(slug, 'system', `${ideas.length} recommendation${ideas.length === 1 ? '' : 's'} ready.`, { summary, ideas: true })
       return 'Recommendations recorded. End your turn.'
+    },
+    submit_journeys({ journeys = [], summary }) {
+      const saved = createJourneys(store.repoRoot).submit(journeys, slug)
+      store.update(slug, { status: 'done', stage: 'handoff', journeyIds: saved.map((j) => j.id) })
+      store.event(slug, 'system', `${saved.length} journey map${saved.length === 1 ? '' : 's'} ready.`, { summary, journeys: saved.map((j) => ({ id: j.id, name: j.name })) })
+      return 'Journey maps saved. End your turn.'
     },
     submit_handoff({ file, summary }) {
       store.update(slug, { status: 'ready_for_dev', stage: 'handoff', deliveryFile: file || 'handover/README.md' })

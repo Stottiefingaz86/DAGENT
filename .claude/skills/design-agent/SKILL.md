@@ -32,7 +32,7 @@ Two short sentences max per chat message. The cards (questions, proposal, protot
 - **If Lumen doesn't have it, stop.** Write a component brief (what's missing, why, nearest existing component) and ask Chris. Never invent a one-off to unblock.
 - **Build on what exists.** Find the shipped surface in SURFACES.md first and extend it. Read its component source and look at the live route before proposing. A BRD for a surface that doesn't exist yet borrows the shell and recipes of its closest neighbour.
 - **Strategy first.** Every design names its bet / enabler, initiative + feature #, and the needle it moves with the baseline number. The 50 features are context, not a to-do list.
-- **Peers inspire, never clone.** Mobbin first; if Mobbin is unavailable or needs a paid plan, say so once, then use `COMPETITOR_RESEARCH.md` + `competitors/`. Never describe peer UI from memory.
+- **Peers inspire, never clone.** Real competitors: research Figma folder + PEERS.md. Mobbin = journeys from non-gambling apps, never layouts; if Mobbin is unavailable or needs a paid plan, say so once, then use `COMPETITOR_RESEARCH.md` + `competitors/`. Never describe peer UI from memory.
 - `npm run tokens:lint <dir>` must pass before asking for sign-off.
 - Don't commit or deploy unless Chris asks.
 
@@ -50,7 +50,7 @@ Run `speckit-clarify`. Answer every question you can from the BRD, strategy, aud
 In this order (see `knowledge/product-strategy/RESEARCH_SOURCES.md`):
 1. **Research Figma folder** — read `knowledge/research/CHANGELOG.md` and open the New / Updated research files (Figma MCP, read only). This is the team's living competitor research; it wins over memory and older notes.
 2. **Peers + strategy** — `knowledge/product-strategy/PEERS.md` (Rainbet, Winna, Stake for casino and rewards; Kalshi, Polymarket for sportsbook), then BRIEF.md, journey audits, COMPETITOR_RESEARCH.md.
-3. **Mobbin** — `search_flows` / `search_screens` with the queries SURFACES.md suggests, adapted to the BRD (web for casino and sportsbook peers, iOS when mobile chrome matters). Look at the images, keep the links.
+3. **Mobbin** — `search_flows` / `search_screens` with the queries SURFACES.md suggests, adapted to the BRD (iOS when mobile chrome matters). Mobbin has no casino or sportsbook apps, so search adjacent categories (fintech, crypto, trading, loyalty, games) and take the **journey** — steps, order, states, feedback — **never the layout or visual style**; layout comes from our shell + Lumen. Look at the images, keep the links.
 4. **Our live site** — `capture_site` before calling anything a gap.
 Cross-check against Chris-liked notes. Inspire, never clone.
 

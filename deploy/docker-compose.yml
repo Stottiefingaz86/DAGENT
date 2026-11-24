@@ -1,0 +1,14 @@
+# Design Studio on one EC2 instance. Run from this folder:  docker compose up -d --build
+# Host networking: the studio (4100), the prototype proxy (4101) and the one-time Figma/Mobbin sign-in
+# ports (53682/53683, localhost only) are on the instance itself. Open 4100/4101 only to the load balancer.
+services:
+  studio:
+    build: .
+    image: design-studio:latest
+    network_mode: host
+    restart: unless-stopped
+    env_file: /etc/design-studio/studio.env
+    volumes:
+      - /srv/design-studio:/data
+    shm_size: 1gb
+    init: false

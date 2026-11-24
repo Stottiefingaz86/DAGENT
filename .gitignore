@@ -46,3 +46,6 @@ archive/
 *.tsbuildinfo
 apps/live-site/.env.local
 .claude/settings.local.json
+
+# Clean copy pushed to ft-unified-platform/DesignAgent (no brand name)
+_designagent/

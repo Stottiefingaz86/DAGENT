@@ -10,6 +10,8 @@ Your playbook is .claude/skills/design-agent/SKILL.md. Read it at the start of e
 and follow it exactly: SURFACES.md first, then knowledge/chris-taste/FEEDBACK_LOG.md for every surface you touch (each Don't is a hard reject), Lumen only, strategy first, SpecKit for the spec, Mobbin when
 available, proposal before building, learning loop on every piece of feedback, dev handoff that stands alone.
 
+Journey maps: knowledge/journeys/journeys.json holds the mapped player journeys (today vs proposed, friction, KPI). When a BRD touches one, read it and say in the spec which journey and which steps the work changes.
+
 You report through the studio tools. The dashboard only knows what you tell it:
 - studio.set_title once at intake: a short project name from the BRD (e.g. "Sidebar rewards widget").
 - studio.set_stage whenever you move to a new stage (intake, spec, clarify, research, proposal, prototype, refine, signoff, handoff).
@@ -29,6 +31,7 @@ You report through the studio tools. The dashboard only knows what you tell it:
 - The design-reviewer subagent (Task tool, subagent_type "design-reviewer"): call it before EVERY submit_proposal and submit_prototype with the slug, route and screenshot paths. Fix every MUST FIX, re-capture, and only submit on VERDICT: PASS (or after two rounds, submit and list what's still open).
 
 Research (Chris, Nov 2026): competitor and market research lives in the research Figma folder listed in knowledge/product-strategy/RESEARCH_SOURCES.md and is updated all the time. At the start of research, read knowledge/research/CHANGELOG.md and open the new or updated research files (read only) before Mobbin. Never rely on memory for what competitors do.
+Mobbin (Chris, Nov 2026): Mobbin has no casino or sportsbook apps — do not search for competitors by name there. Search adjacent categories (fintech, crypto exchanges, trading, loyalty, games, streaming) and take the journey only — steps, order, states, feedback, timing. Never copy a Mobbin layout or visual style; it does not fit iGaming. Layout always comes from our shell, Lumen and SURFACES.md. In proposals, say which journey step you borrowed and that the layout is ours.
 Lumen gaps (when Lumen has no component or variant you need): first try to compose it from existing Lumen components and tokens. If it truly needs something new, build it in apps/live-site/components/proposed/<name>.tsx from Lumen tokens only, with a header comment "PROPOSED — not in Lumen yet", add an entry to knowledge/lumen/GAPS.md (name, why, which BRD, props/variants, screenshot), show it to Chris in the proposal's gaps, and never present it as a library component. When Lumen ships it (lumen CHANGELOG), swap to the real one.
 Lumen moves: at the start of every run read the newest entry of knowledge/lumen/CHANGELOG.md. Never use a token or component it lists as removed; if a value you rely on changed, check the design still works and say so in one log line.
 Every run ends with a "Taste ledger" section listing this project's 👍/👎 and the strongest learned rules — treat them as Chris's voice.
@@ -233,6 +236,27 @@ Ideas Chris already dismissed (don't propose them again, and learn from his reas
 ${(job.dismissedIdeas || []).map((d) => `- ${d.title}${d.reason ? `: ${d.reason}` : ''}`).join('\n') || '- none yet'}
 4. Call studio.submit_recommendations with the list (title, summary, goal, impact, effort, mock screenshots, file) and end your turn. Chris turns the ones he likes into projects.
 Never clone a peer's look; translate into Lumen.
+`.trim()
+}
+
+// ---- Journey maps ----
+export function journeyMapPrompt(job, journeys, focus) {
+  const list = journeys
+    .map((j) => `- id "${j.id}": ${j.name}. Goal: ${j.goal || '(none yet)'}${(j.proposed || []).some((s) => s.source === 'human') ? `\n  Steps a person proposed (KEEP them, with their ids and source: 'human'; build around them): ${j.proposed.filter((s) => s.source === 'human').map((s) => `[${s.id}] ${s.title}${s.detail ? ` (${s.detail})` : ''}`).join(' → ')}` : ''}`)
+    .join('\n')
+  return `
+JOURNEY MAPS — job ${job.slug}. Map player journeys on our live site, compare with peers, and propose a better journey tied to the KPIs.${focus ? `\nFocus from the team: "${focus}"` : ''}
+Journeys to map (existing maps are in knowledge/journeys/journeys.json; read it first):
+${list || '- None chosen. Pick the 4 journeys that matter most for KPIS.md (casino first), e.g. onboarding to first deposit, deposit to first casino stake, playing a casino game, claiming a reward.'}
+
+1. set_title "${job.title}". set_stage research. Read knowledge/product-strategy/KPIS.md, BRIEF.md, PEERS.md, COMPETITOR_RESEARCH.md, SURFACES.md, knowledge/research/CHANGELOG.md and the journey audits.
+2. TODAY, from the real site only. For each journey walk it route by route with capture_site (mobile 390 first; add 1440 only where the layout differs) and read the code behind it where a screenshot can't show what happens (polling, redirects, toasts, Intercom).
+   One step per thing the player sees or that happens to them. Every step with a screen gets its real screenshot. Never describe a step you did not see in a capture or in the code; if you could not reach a step (e.g. it needs a real payment), say so in its detail.
+   Friction: note it on the step where it happens, with the evidence (extra tap, dead end, player lands somewhere unrelated, no feedback while waiting, copy that explains instead of doing).
+3. PEERS. How the peers in PEERS.md and the research Figma folder handle the same journey (open the research files the changelog lists; Mobbin if it is connected). One line per pattern, with its source. Translate, never clone.
+4. PROPOSED. The improved journey, step by step. Mark each step same / changed / new / removed and say why, naming the KPIS.md metric or the peer evidence. Keep every step a person proposed. Prefer removing friction over adding steps; no urgency or dark patterns.
+5. Opportunities: the 2 to 4 changes with the most effect, each with the KPI and effort S/M/L. Impact: what you expect the KPI to do and the assumption behind it.
+6. Do NOT build prototypes in this run. Call studio.submit_journeys with everything and end your turn. The team edits the map and presses "Prototype this journey" when they want it built.
 `.trim()
 }
 

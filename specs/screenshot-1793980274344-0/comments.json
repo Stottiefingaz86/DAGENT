@@ -12,5 +12,19 @@
     "replies": [],
     "resolved": false,
     "sentAt": null
+  },
+  {
+    "id": "190a5574",
+    "n": 2,
+    "image": "specs/screenshot-1793980274344-0/refs/proto-desktop.png",
+    "x": 0.13718070009460737,
+    "y": 0.24702324702324702,
+    "text": "too much space",
+    "by": "CH",
+    "byId": "bb53c1f7-4345-4b21-92a2-a7b53658ccfe",
+    "at": "2026-11-12T09:31:16.690Z",
+    "replies": [],
+    "resolved": false,
+    "sentAt": null
   }
 ]

@@ -70,6 +70,8 @@ After fixing something, click **Check again** on Home (Owner). The studio also r
 
 ## Hosting the studio for the team
 
+**On AWS (recommended): follow [DEPLOY_AWS.md](DEPLOY_AWS.md).** It has the Docker image, load balancer setup, secrets, the one-time Figma/Mobbin sign-in on a server, and the git sync. The notes below are the general version.
+
 The **live site** (`apps/live-site`) deploys to Vercel. The **studio cannot run on Vercel**: it is a long-running server that keeps files on disk (`specs/`, `knowledge/`, sign-ins), runs Chrome for screenshots and starts the prototype site on :3001. Host it on a machine that stays on, e.g. a small cloud VM (AWS EC2 / Lightsail, Google Compute, Azure VM), a container platform with a persistent volume, or an office Mac mini.
 
 On that machine:

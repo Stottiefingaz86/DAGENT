@@ -27,6 +27,7 @@ import {
   DAILY_SPIN_ID,
   type DailySpinSegment,
 } from '@/lib/lumen/daily-spin'
+import type { IntercomTourIntent } from '@/lib/lumen/intercom-intents'
 import {
   claimableCount,
   RAF_SHARE_COMMISSION,
@@ -337,6 +338,10 @@ type ShellContextValue = {
   intercomVipMatchPending: boolean
   /** Open Intercom with the VIP status-match conversation (Match Status Now). */
   openVipStatusMatch: () => void
+  /** Active Fin-style product tour from Intercom intents (null = none). */
+  productTourId: IntercomTourIntent | null
+  startProductTour: (id: IntercomTourIntent) => void
+  endProductTour: () => void
   /** Live deposit poll — crypto or card (survives closing the wallet). */
   depositTracker: DepositTracker | null
   /** Demo: crypto copy / card Deposit → poll → credit + welcome free spins. */
@@ -566,6 +571,9 @@ export function ShellProvider({
   const [cashierOpen, setCashierOpen] = useState(false)
   const [welcomeOfferOpen, setWelcomeOfferOpen] = useState(false)
   const [intercomOpen, setIntercomOpenState] = useState(false)
+  const [productTourId, setProductTourId] = useState<IntercomTourIntent | null>(
+    null,
+  )
   const [intercomWelcomePending, setIntercomWelcomePending] = useState(false)
   const [intercomLevelUpPending, setIntercomLevelUpPending] = useState(false)
   const [intercomVipMatchPending, setIntercomVipMatchPending] = useState(false)
@@ -1547,6 +1555,7 @@ export function ShellProvider({
 
   const openVipHub = useCallback((value: boolean, tab: VipHubTab = 'VIP') => {
     if (value) {
+      setProductTourId(null)
       setDrawerOpen(false)
       setCashierOpen(false)
       setAuthOpen(false)
@@ -1588,6 +1597,18 @@ export function ShellProvider({
     setIntercomLevelUpPending(false)
     setIntercomVipMatchPending(true)
     setIntercomOpenState(true)
+  }, [])
+
+  const startProductTour = useCallback((id: IntercomTourIntent) => {
+    setIntercomOpenState(false)
+    setIntercomWelcomePending(false)
+    setIntercomLevelUpPending(false)
+    setIntercomVipMatchPending(false)
+    setProductTourId(id)
+  }, [])
+
+  const endProductTour = useCallback(() => {
+    setProductTourId(null)
   }, [])
 
   /* #24 — catch every cashier close (including raw setState paths). */
@@ -1997,6 +2018,9 @@ export function ShellProvider({
       intercomLevelUpPending,
       intercomVipMatchPending,
       openVipStatusMatch,
+      productTourId,
+      startProductTour,
+      endProductTour,
       depositTracker,
       startDepositTracking,
       clearDepositTracker,
@@ -2109,6 +2133,9 @@ export function ShellProvider({
       intercomLevelUpPending,
       intercomVipMatchPending,
       openVipStatusMatch,
+      productTourId,
+      startProductTour,
+      endProductTour,
     ],
   )
 

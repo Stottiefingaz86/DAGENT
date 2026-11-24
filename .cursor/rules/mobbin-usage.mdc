@@ -4,3 +4,5 @@ alwaysApply: true
 ---
 
 Use the Mobbin MCP tools when the user asks about UI/UX patterns, design references, or wants to see how real apps implement specific flows (onboarding, checkout, settings, etc.). Mobbin searches 621,500+ real production app screens.
+
+Mobbin has no casino or sportsbook apps (Chris, Nov 2026). Search adjacent categories (fintech, crypto exchanges, trading, loyalty, games, streaming) and take the **journey** — steps, order, states, feedback — never the layout or visual style; those don't fit iGaming. Layout always comes from our shell + Lumen. Real competitors come from the research Figma folder, PEERS.md and COMPETITOR_RESEARCH.md. See `.claude/skills/mobbin/SKILL.md`.

@@ -17,3 +17,8 @@
 - Never end a Figma run with an empty or half-built page.
 - Technical: Lumen `color/card` is translucent in Dark mode. On the canvas (sections are white) put `color/background` under it, or text disappears.
 - Technical: instances don't expose hidden children to findOne — guard text overrides.
+
+## Chris, Nov 12 2026 (handover fidelity)
+- Figma screens are checked side by side against a prod screenshot at the same width before hand-off. Shell (side nav rail with its icons, header, sub-nav) must look like prod, not a stand-in.
+- Overlays (alt-lines popover) are positioned exactly like prod: beside the arrows, vertically aligned to them — not dropped below.
+- Show components in situ on the real page as well as on the components board.

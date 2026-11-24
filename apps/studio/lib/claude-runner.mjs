@@ -207,6 +207,44 @@ function studioServer(store, slug, origin, lane, taste) {
         },
         async (a) => ok(t.submit_recommendations(a)),
       ),
+      tool(
+        'submit_journeys',
+        'Save the journey maps (today vs proposed, friction, peers, KPI). Ends your turn.',
+        (() => {
+          const step = z.object({
+            id: z.string().optional().describe('Keep the id of an existing step you are keeping.'),
+            title: z.string().describe('Short step name, max ~40 characters.'),
+            detail: z.string().optional().describe('What the player sees or what happens, one or two sentences.'),
+            kind: z.enum(['screen', 'system', 'message']).optional().describe('screen = something the player sees; system = something that happens (polling, animation); message = alert, toast, chat, email.'),
+            route: z.string().optional(),
+            screen: z.string().optional().describe('Repo path of a capture_site screenshot of this step (specs/<slug>/refs/…png). Real screenshots only.'),
+            friction: z.string().optional().describe('TODAY lane only: what goes wrong or slows the player here, with the evidence. Leave empty if none.'),
+            change: z.enum(['same', 'changed', 'new', 'removed']).optional().describe('PROPOSED lane only: how this step differs from today.'),
+            why: z.string().optional().describe('PROPOSED lane only: why the change, and the KPI or peer evidence behind it.'),
+            source: z.enum(['human', 'agent']).optional().describe("Keep 'human' on steps a person wrote."),
+            by: z.string().optional(),
+          })
+          return {
+            summary: z.string(),
+            journeys: z.array(
+              z.object({
+                id: z.string().optional().describe('The id of an existing journey when you are updating it.'),
+                name: z.string(),
+                goal: z.string().describe('What the player is trying to do, one sentence.'),
+                surface: z.string().optional(),
+                kpis: z.array(z.string()).describe('KPIS.md metrics it moves, e.g. "#4 Median time from first deposit to first casino stake".'),
+                summary: z.string().describe('The headline finding in two or three sentences.'),
+                impact: z.string().optional().describe('Expected effect of the proposed journey on the KPI, with the assumption behind it.'),
+                current: z.array(step).describe('The journey on the live site today, in order.'),
+                proposed: z.array(step).describe('The improved journey, in order.'),
+                peers: z.array(z.object({ peer: z.string(), pattern: z.string(), source: z.string().optional() })).optional(),
+                opportunities: z.array(z.object({ title: z.string(), why: z.string(), kpi: z.string().optional(), effort: z.string().optional() })).optional(),
+              }),
+            ),
+          }
+        })(),
+        async (a) => ok(t.submit_journeys(a)),
+      ),
       tool('submit_handoff', 'Submit the dev handoff package. Ends your turn.', { file: z.string().optional(), summary: z.string() }, async (a) => ok(t.submit_handoff(a))),
     ],
   })
@@ -273,7 +311,7 @@ export function createClaudeRunner({ store, repoRoot, model, models, siteOrigin 
       // studio tools + read-only tools never need approval; everything else goes through canUseTool below
       // An independent reviewer with a fresh context checks the work before Chris sees it (see REVIEWER below).
       agents: { 'design-reviewer': REVIEWER },
-      allowedTools: ['propose_rule', 'submit_figma', 'set_title', 'set_stage', 'log', 'capture_site', 'ask_questions', 'submit_proposal', 'submit_prototype', 'record_learning', 'submit_handoff', 'answer_dev_question', 'submit_recommendations'].map((n) => `mcp__studio__${n}`),  // Read/Glob/Grep go through canUseTool so the secret guard applies
+      allowedTools: ['propose_rule', 'submit_figma', 'set_title', 'set_stage', 'log', 'capture_site', 'ask_questions', 'submit_proposal', 'submit_prototype', 'record_learning', 'submit_handoff', 'answer_dev_question', 'submit_recommendations', 'submit_journeys'].map((n) => `mcp__studio__${n}`),  // Read/Glob/Grep go through canUseTool so the secret guard applies
       canUseTool: permission(repoRoot),
       abortController,
     }
